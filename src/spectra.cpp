@@ -23,10 +23,10 @@ double cloads[MAX_CPUS];
 omp_lock_t glocks[MAX_GPUS];
 omp_lock_t clocks[MAX_CPUS];
 
-double gcosts[MAX_TASKS] = {1,1,1,1};
-double ccosts[MAX_TASKS] = {1,1,1,1};
+double gcosts[MAX_TASKS] = {1,1,2,1};
+double ccosts[MAX_TASKS] = {8,2,10,1};
 
-#define GPU_MULT 4
+#define GPU_MULT 1
 #endif
 
 #ifdef GPU
@@ -348,7 +348,7 @@ public:
     int cid = sched_getcpu();
     int gid = rinfos[tid]->gpu_id;
 
-    if(gloads[gid] > (cloads[cid] + 1) * GPU_MULT) {
+    if(gloads[gid] > (cloads[cid] + ccosts[0]) * GPU_MULT) {
       decision = CPUID;
     }
     
@@ -446,7 +446,7 @@ public:
     int cid = sched_getcpu();
     int gid = rinfos[tid]->gpu_id;
 
-    if(gloads[gid] > (cloads[cid] + 1) * GPU_MULT) {
+    if(gloads[gid] > (cloads[cid] + ccosts[2]) * GPU_MULT) {
       decision = CPUID;
     }
     
@@ -801,10 +801,15 @@ class LCO {};
 
 int main(int argc, char** argv) {
 #ifndef GPU
-  if(argc == 1) {
+  if(argc < 5) {
     cout << "Usage: " << argv[0] << " xdim ydim zdim nthreads " << endl;
+    return 0;
   }
 #else
+ if(argc < 6) {
+    cout << "Usage: " << argv[0] << " xdim ydim zdim nthreads ngpus" << endl;
+    return 0;
+  }
 #endif
   
   Eigen::setNbThreads(1);
@@ -835,11 +840,12 @@ int main(int argc, char** argv) {
     ttt = omp_get_thread_num();
 #pragma omp critical
     {
-      gpuErrchk(cudaSetDevice(ttt % no_gpus));
+      gpuErrchk(cudaSetDevice((ttt % no_gpus)));
+      //cudaSetDeviceFlags(cudaDeviceScheduleYield);
       cudaFree(0);
 
       int deviceID; cudaGetDevice(&deviceID);
-      if(deviceID != ttt % no_gpus) {
+      if(deviceID != (ttt % no_gpus)) {
 	cout << "device ID is not equal to the given one " << endl;
 	failed = true;
       }
