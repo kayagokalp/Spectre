@@ -16,15 +16,18 @@ class FGM;
 #ifdef SMART
 #define MAX_TASKS 4
 #define MAX_GPUS 4
-#define MAX_CPUS 32  
+#define MAX_CPUS 32
+#define SAMPLE_SIZE 2
+  
 double gloads[MAX_GPUS];
 double cloads[MAX_CPUS];
 
 omp_lock_t glocks[MAX_GPUS];
 omp_lock_t clocks[MAX_CPUS];
 
-double gcosts[MAX_TASKS] = {1,1,2,1};
-double ccosts[MAX_TASKS] = {8,2,10,1};
+double gcosts[MAX_GPUS][MAX_TASKS] {}; //= {{0.6,1,0.74,1}, {1,1,1,1}, {1,1,1,1}, {1,1,1,1}};
+//std::fill(*gcosts, *gcosts + M*N, 1);
+double ccosts[MAX_TASKS] = {4.32,0.95,5.35,0.52}; //can also be extended to costs per CPU
 
 #define GPU_MULT 1
 #endif
@@ -356,13 +359,13 @@ public:
       //cout << tid << " decision 1 GPU - " << gloads[gid] << " " << cloads[cid] << endl;
 
       omp_set_lock(&glocks[gid]);
-      gloads[gid] += gcosts[0];
+      gloads[gid] += gcosts[gid][0];
       omp_unset_lock(&glocks[gid]);
 
       T1_system_matrices_GPU();
 
       omp_set_lock(&glocks[gid]);
-      gloads[gid] -= gcosts[0];
+      gloads[gid] -= gcosts[gid][0];
       omp_unset_lock(&glocks[gid]);
     } else {
       //cout << tid << " decision 1 CPU - " << gloads[gid] << " " << cloads[cid] << endl;
@@ -452,23 +455,23 @@ public:
     
     if(decision == GPUID) {            
       omp_set_lock(&glocks[gid]);
-      gloads[gid] += gcosts[1];
+      gloads[gid] += gcosts[gid][2];
       omp_unset_lock(&glocks[gid]);
 
       T3_mul_inv_GPU(a0, P);
 
       omp_set_lock(&glocks[gid]);
-      gloads[gid] -= gcosts[1];
+      gloads[gid] -= gcosts[gid][2];
       omp_unset_lock(&glocks[gid]);
     } else {
       omp_set_lock(&clocks[cid]);
-      cloads[cid] += ccosts[1];
+      cloads[cid] += ccosts[2];
       omp_unset_lock(&clocks[cid]);
 
       T3_mul_inv_CPU(a0, P);
 
       omp_set_lock(&clocks[cid]);
-      cloads[cid] -= ccosts[1];
+      cloads[cid] -= ccosts[2];
       omp_unset_lock(&clocks[cid]);
     }    
 #elif defined GPU
@@ -491,6 +494,92 @@ public:
       evalues = eigs.eigenvalues();
       small_eig = evalues(nconv-1).real();
     }
+  }
+
+void compute_gpu_costs(const int noeigs, const int ncv, int& nconv, double& small_eig, const double shift = 0.01, const int max_iter = -1, const double tol = -1, int g_id = 0, int sample_size = 1) {
+    
+    double cost;
+    gcosts[g_id][0] = 0;
+    for(int i = 0; i < sample_size; i++){
+      double t1t = omp_get_wtime();
+      T1_system_matrices_GPU();
+      cost = omp_get_wtime() - t1t;   
+      gcosts[g_id][0] += cost; 
+    }
+    gcosts[g_id][0] /= sample_size;
+
+    MatrixXd BC_3D_I = boundary_condition_3d(0, 0);
+    MatrixXd BC_3D_II = boundary_condition_3d(0, 1);
+
+    MatrixXd BC_1 = beta_matrix_3d(BC_3D_I, 0);
+    MatrixXd BC_2 = beta_matrix_3d(BC_3D_II, 0);
+    MatrixXd BC(BC_1.rows() + BC_2.rows(), BC_1.cols());
+    BC << BC_1, BC_2;
+
+    MatrixXd V;
+    T2_svd(BC, V);
+
+    MatrixXd P = V(seq(0, V.rows() - 1), seq(BC.rows(), BC.cols() - 1));
+    MatrixXd a0;
+    gcosts[g_id][2] = 0;
+    for(int i = 0; i < sample_size; i++){
+      double t3t = omp_get_wtime();
+      T3_mul_inv_GPU(a0, P);
+      cost = omp_get_wtime()-t3t;
+      gcosts[g_id][2] += cost;
+    }
+    gcosts[g_id][2] /= sample_size;
+  }
+  
+void compute_cpu_costs(const int noeigs, const int ncv, int& nconv, double& small_eig, 
+	       const double shift = 0.01, const int max_iter = -1, const double tol = -1, const int sample_size = 1) {
+    double cost;
+    ccosts[0] = 0;
+    for(int i = 0; i < sample_size; i++){
+      double t1t = omp_get_wtime();
+      T1_system_matrices_CPU();
+      cost = omp_get_wtime() - t1t;
+      ccosts[0] += cost;
+    }
+    ccosts[0] /= sample_size;
+  
+    MatrixXd BC_3D_I = boundary_condition_3d(0, 0);
+    MatrixXd BC_3D_II = boundary_condition_3d(0, 1);
+
+    MatrixXd BC_1 = beta_matrix_3d(BC_3D_I, 0);
+    MatrixXd BC_2 = beta_matrix_3d(BC_3D_II, 0);
+    MatrixXd BC(BC_1.rows() + BC_2.rows(), BC_1.cols());
+    BC << BC_1, BC_2;
+
+    MatrixXd V; 
+    ccosts[1] = 0;
+    for(int i = 0; i < sample_size; i++){
+      double t2t = omp_get_wtime();
+      T2_svd(BC, V);
+      cost = omp_get_wtime() - t2t;
+      ccosts[1] += cost;
+    }
+    ccosts[1] /= sample_size;
+
+    MatrixXd P = V(seq(0, V.rows() - 1), seq(BC.rows(), BC.cols() - 1));
+    MatrixXd a0;
+    ccosts[2] = 0;
+    for(int i = 0; i < sample_size; i++){
+      double t3t = omp_get_wtime();
+      T3_mul_inv_CPU(a0, P);
+      cost = omp_get_wtime()-t3t;
+      ccosts[2] += cost;
+    }
+    ccosts[2] /= sample_size;
+
+    ccosts[3] = 0;
+    for(int i = 0; i < sample_size; i++){
+      double t4t = omp_get_wtime();
+      T4_eigen(a0, nconv, small_eig);  
+      cost = omp_get_wtime() - t4t;
+      ccosts[3] += cost;
+    }
+    ccosts[3] /= sample_size;
   }
   
   void compute(const int noeigs, const int ncv, int& nconv, double& small_eig, 
@@ -811,7 +900,11 @@ int main(int argc, char** argv) {
     return 0;
   }
 #endif
-  
+
+  cout << "*******************************************************************" << endl;
+  cout << "*******************************************************************" << endl;
+  cout << "Starting Preproccesing..." << endl;  
+  double pstart = omp_get_wtime();
   Eigen::setNbThreads(1);
   
   mkl_set_num_threads_local(1);
@@ -830,10 +923,29 @@ int main(int argc, char** argv) {
   for(int i = 0; i < MAX_CPUS; i++) omp_init_lock(&clocks[i]);
 #endif
 
+//temp vars for cost calculation
+Material tfirst(1, 0.3, 1);
+Material tsecond(200.0/70.0, 0.3, 5700.0/2702.0);
+Shape tshape(2, 1, 0.3, xdim, ydim, zdim);
+//
+
+//set CPU costs for each task
+FGM tfgm(tshape, tfirst, tsecond, 0.1, 0.1);
+int tnconv;
+double tmineig;
+tfgm.compute_cpu_costs(10, 60, tnconv, tmineig, 0.01, 100, 0.01, SAMPLE_SIZE);
+//
+
+cout << "CPU costs: " << endl;
+for(int i = 0; i < 4; i++){
+  cout << "T" << i+1 << ": " << ccosts[i] << endl;
+}
+
 #ifdef GPU
   rinfos = new rinfo*[nthreads];
 
   int no_gpus = atoi(argv[5]);
+  
   bool failed = false;
 #pragma omp parallel num_threads(nthreads) 
   {
@@ -866,6 +978,17 @@ int main(int argc, char** argv) {
       cublasSetStream(handle[ttt], stream[ttt]);
       cusolverDnSetStream(dnhandle[ttt], stream[ttt]);
       rinfos[ttt] = new rinfo(ttt % no_gpus, xdim, ydim, zdim);
+
+      //set costs for each task per gpu
+      if(ttt / no_gpus < 1){
+	int i = ttt % no_gpus;
+        tfgm.compute_gpu_costs(10, 60, tnconv, tmineig, 0.01, 100, 0.01, i, SAMPLE_SIZE);
+        cout << "GPU" << i << " costs: " << endl;
+        for(int j = 0; j < 4; j++){
+          cout << "T" << j+1 << ": " << gcosts[i][j] << endl;
+        } 
+      }    
+      //
     }
   }
   
@@ -881,7 +1004,16 @@ int main(int argc, char** argv) {
       problems.push_back(make_pair(cy, cz));
     }
   }
+
+  cout << "Preprocessing ended." << endl;
+  cout << "Time spent for preprocessing is " << omp_get_wtime() - pstart << endl;
+  cout << "*******************************************************************" << endl;
+  cout << "*******************************************************************" << endl;
+  cout << endl;
   
+  cout << "*******************************************************************" << endl;
+  cout << "*******************************************************************" << endl;
+  cout << "Starting Computation..." << endl;
   omp_set_num_threads(nthreads);
   cout << "No problems: " << problems.size() << endl;
   
@@ -919,8 +1051,10 @@ int main(int argc, char** argv) {
  cout << endl << "Result:" << endl;
  cout << "Smallest eig: " << smallest_mineig << " - (" << best_y << ", " << best_z << ")" << endl;
  double oend = omp_get_wtime();
- cout << "Total time: " << oend - ostart << endl;
-
+ cout << "Time spent on computation: " << oend - ostart << endl;
+ cout << "*******************************************************************" << endl;
+ cout << "Total time: " << oend - pstart << endl;
+ cout << "*******************************************************************" << endl;
 #ifdef GPU
   for(int i = 0; i < nthreads; i++) {
     cudaStreamDestroy(stream[i]);
