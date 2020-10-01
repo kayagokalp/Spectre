@@ -17,6 +17,7 @@ class FGM;
 #define MAX_TASKS 4
 #define MAX_GPUS 4
 #define MAX_CPUS 32
+#define PADDING 32
 #define SAMPLE_SIZE 2
   
 double gloads[MAX_GPUS];
@@ -25,7 +26,7 @@ double cloads[MAX_CPUS];
 omp_lock_t glocks[MAX_GPUS];
 omp_lock_t clocks[MAX_CPUS];
 
-double gcosts[MAX_GPUS][MAX_TASKS] {}; //= {{0.6,1,0.74,1}, {1,1,1,1}, {1,1,1,1}, {1,1,1,1}};
+double gcosts[PADDING*MAX_GPUS][MAX_TASKS] {}; //= {{0.6,1,0.74,1}, {1,1,1,1}, {1,1,1,1}, {1,1,1,1}};
 //std::fill(*gcosts, *gcosts + M*N, 1);
 double ccosts[MAX_TASKS] = {4.32,0.95,5.35,0.52}; //can also be extended to costs per CPU
 
@@ -344,7 +345,7 @@ public:
 	(gammayz.transpose() * (VD_mu * gammayz));
   }
   
-  void T1_system_matrices() {
+  bool T1_system_matrices() {
 #ifdef SMART
     int decision = GPUID;
     int tid = omp_get_thread_num();
@@ -359,14 +360,15 @@ public:
       //cout << tid << " decision 1 GPU - " << gloads[gid] << " " << cloads[cid] << endl;
 
       omp_set_lock(&glocks[gid]);
-      gloads[gid] += gcosts[gid][0];
+      gloads[gid] += gcosts[PADDING*gid][0];
       omp_unset_lock(&glocks[gid]);
 
       T1_system_matrices_GPU();
 
       omp_set_lock(&glocks[gid]);
-      gloads[gid] -= gcosts[gid][0];
+      gloads[gid] -= gcosts[PADDING*gid][0];
       omp_unset_lock(&glocks[gid]);
+      return true;
     } else {
       //cout << tid << " decision 1 CPU - " << gloads[gid] << " " << cloads[cid] << endl;
 
@@ -379,11 +381,14 @@ public:
       omp_set_lock(&clocks[cid]);
       cloads[cid] -= ccosts[0];
       omp_unset_lock(&clocks[cid]);
+      return false;
     }
 #elif defined GPU
     T1_system_matrices_GPU();
+    return true;
 #else
     T1_system_matrices_CPU();
+    return false;
 #endif    
   }
   
@@ -442,7 +447,7 @@ public:
     a0 = M_phy.inverse() * K_phy;
   }
   
-  void T3_mul_inv(MatrixXd& a0, MatrixXd& P) {
+  bool T3_mul_inv(MatrixXd& a0, MatrixXd& P) {
 #ifdef SMART
     int decision = GPUID;
     int tid = omp_get_thread_num();
@@ -455,14 +460,15 @@ public:
     
     if(decision == GPUID) {            
       omp_set_lock(&glocks[gid]);
-      gloads[gid] += gcosts[gid][2];
+      gloads[gid] += gcosts[PADDING*gid][2];
       omp_unset_lock(&glocks[gid]);
 
       T3_mul_inv_GPU(a0, P);
 
       omp_set_lock(&glocks[gid]);
-      gloads[gid] -= gcosts[gid][2];
+      gloads[gid] -= gcosts[PADDING*gid][2];
       omp_unset_lock(&glocks[gid]);
+      return true;
     } else {
       omp_set_lock(&clocks[cid]);
       cloads[cid] += ccosts[2];
@@ -473,11 +479,14 @@ public:
       omp_set_lock(&clocks[cid]);
       cloads[cid] -= ccosts[2];
       omp_unset_lock(&clocks[cid]);
+      return false;
     }    
 #elif defined GPU
     T3_mul_inv_GPU(a0, P);
+    return true.;
 #else
     T3_mul_inv_CPU(a0, P);
+    return false;
 #endif
   }
   
@@ -499,14 +508,14 @@ public:
 void compute_gpu_costs(const int noeigs, const int ncv, int& nconv, double& small_eig, const double shift = 0.01, const int max_iter = -1, const double tol = -1, int g_id = 0, int sample_size = 1) {
     
     double cost;
-    gcosts[g_id][0] = 0;
+    gcosts[PADDING*g_id][0] = 0;
     for(int i = 0; i < sample_size; i++){
       double t1t = omp_get_wtime();
       T1_system_matrices_GPU();
       cost = omp_get_wtime() - t1t;   
-      gcosts[g_id][0] += cost; 
+      gcosts[PADDING*g_id][0] += cost; 
     }
-    gcosts[g_id][0] /= sample_size;
+    gcosts[PADDING*g_id][0] /= sample_size;
 
     MatrixXd BC_3D_I = boundary_condition_3d(0, 0);
     MatrixXd BC_3D_II = boundary_condition_3d(0, 1);
@@ -521,14 +530,14 @@ void compute_gpu_costs(const int noeigs, const int ncv, int& nconv, double& smal
 
     MatrixXd P = V(seq(0, V.rows() - 1), seq(BC.rows(), BC.cols() - 1));
     MatrixXd a0;
-    gcosts[g_id][2] = 0;
+    gcosts[PADDING*g_id][2] = 0;
     for(int i = 0; i < sample_size; i++){
       double t3t = omp_get_wtime();
       T3_mul_inv_GPU(a0, P);
       cost = omp_get_wtime()-t3t;
-      gcosts[g_id][2] += cost;
+      gcosts[PADDING*g_id][2] += cost;
     }
-    gcosts[g_id][2] /= sample_size;
+    gcosts[PADDING*g_id][2] /= sample_size;
   }
   
 void compute_cpu_costs(const int noeigs, const int ncv, int& nconv, double& small_eig, 
@@ -584,14 +593,18 @@ void compute_cpu_costs(const int noeigs, const int ncv, int& nconv, double& smal
   
   void compute(const int noeigs, const int ncv, int& nconv, double& small_eig, 
 	       const double shift = 0.01, const int max_iter = -1, const double tol = -1) {
-
-#ifdef OMP_TIMER    
-    double t1t = omp_get_wtime();
-#endif
-    T1_system_matrices();
-#ifdef OMP_TIMER    
-    cout << "system-matrices: " << omp_get_wtime() - t1t << " secs " << endl;
-#endif
+    int tid = omp_get_thread_num();
+   
+     double t1t = omp_get_wtime();
+    bool gpu_load = T1_system_matrices();
+    double cost = omp_get_wtime() - t1t;
+    if(gpu_load){
+      gcosts[PADDING*rinfos[tid]->gpu_id][0] = cost;
+    }
+    else{
+      ccosts[0] = cost;
+    }
+    cout << "system-matrices: " << cost << " secs " << endl;
       
     MatrixXd BC_3D_I = boundary_condition_3d(0, 0);
     MatrixXd BC_3D_II = boundary_condition_3d(0, 1);
@@ -602,31 +615,30 @@ void compute_cpu_costs(const int noeigs, const int ncv, int& nconv, double& smal
     BC << BC_1, BC_2;
 
     MatrixXd V;
-#ifdef OMP_TIMER    
     double t2t = omp_get_wtime();
-#endif
     T2_svd(BC, V);
-#ifdef OMP_TIMER    
-    cout << "SVD: " << omp_get_wtime() - t2t << " secs " << endl;
-#endif
+    cost = omp_get_wtime() - t2t;
+    ccosts[1] = cost;
+    cout << "SVD: " << cost << " secs " << endl;
 
     MatrixXd P = V(seq(0, V.rows() - 1), seq(BC.rows(), BC.cols() - 1));
     MatrixXd a0;
-#ifdef OMP_TIMER
     double t3t = omp_get_wtime();
-#endif
-    T3_mul_inv(a0, P);
-#ifdef OMP_TIMER    
-    cout << "Mul-and-Inv: " << omp_get_wtime()-t3t << " secs" << endl;
-#endif
+    gpu_load = T3_mul_inv(a0, P);
+    cost = omp_get_wtime() - t3t;
+    if(gpu_load){
+      gcosts[PADDING*rinfos[tid]->gpu_id][2] = cost;
+    }
+    else{
+      ccosts[2] = cost;
+    }
+    cout << "Mul-and-Inv: " << cost << " secs" << endl;
 
-#ifdef OMP_TIMER
     double t4t = omp_get_wtime();
-#endif
     T4_eigen(a0, nconv, small_eig);  
-#ifdef OMP_TIMER    
-  cout << "Eigen: " << omp_get_wtime() - t4t << " secs - nconv = " << nconv << endl;
-#endif
+    cost = omp_get_wtime() - t4t;
+    ccosts[3] = cost;
+    cout << "Eigen: " << cost << " secs - nconv = " << nconv << endl;
   }
   
   MatrixXd beta_matrix_3d(MatrixXd& BC_3D, int xyz) {
@@ -985,7 +997,7 @@ for(int i = 0; i < 4; i++){
         tfgm.compute_gpu_costs(10, 60, tnconv, tmineig, 0.01, 100, 0.01, i, SAMPLE_SIZE);
         cout << "GPU" << i << " costs: " << endl;
         for(int j = 0; j < 4; j++){
-          cout << "T" << j+1 << ": " << gcosts[i][j] << endl;
+          cout << "T" << j+1 << ": " << gcosts[PADDING*i][j] << endl;
         } 
       }    
       //
