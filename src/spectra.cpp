@@ -595,7 +595,7 @@ void compute_cpu_costs(const int noeigs, const int ncv, int& nconv, double& smal
 	       const double shift = 0.01, const int max_iter = -1, const double tol = -1) {
     int tid = omp_get_thread_num();
    
-     double t1t = omp_get_wtime();
+    double t1t = omp_get_wtime();
     bool gpu_load = T1_system_matrices();
     double cost = omp_get_wtime() - t1t;
     if(gpu_load){
@@ -604,7 +604,7 @@ void compute_cpu_costs(const int noeigs, const int ncv, int& nconv, double& smal
     else{
       ccosts[0] = cost;
     }
-    cout << "system-matrices: " << cost << " secs " << endl;
+    //cout << "system-matrices: " << cost << " secs " << endl;
       
     MatrixXd BC_3D_I = boundary_condition_3d(0, 0);
     MatrixXd BC_3D_II = boundary_condition_3d(0, 1);
@@ -619,7 +619,7 @@ void compute_cpu_costs(const int noeigs, const int ncv, int& nconv, double& smal
     T2_svd(BC, V);
     cost = omp_get_wtime() - t2t;
     ccosts[1] = cost;
-    cout << "SVD: " << cost << " secs " << endl;
+    //cout << "SVD: " << cost << " secs " << endl;
 
     MatrixXd P = V(seq(0, V.rows() - 1), seq(BC.rows(), BC.cols() - 1));
     MatrixXd a0;
@@ -632,13 +632,13 @@ void compute_cpu_costs(const int noeigs, const int ncv, int& nconv, double& smal
     else{
       ccosts[2] = cost;
     }
-    cout << "Mul-and-Inv: " << cost << " secs" << endl;
+    //cout << "Mul-and-Inv: " << cost << " secs" << endl;
 
     double t4t = omp_get_wtime();
     T4_eigen(a0, nconv, small_eig);  
     cost = omp_get_wtime() - t4t;
     ccosts[3] = cost;
-    cout << "Eigen: " << cost << " secs - nconv = " << nconv << endl;
+    //cout << "Eigen: " << cost << " secs - nconv = " << nconv << endl;
   }
   
   MatrixXd beta_matrix_3d(MatrixXd& BC_3D, int xyz) {
