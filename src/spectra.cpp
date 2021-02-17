@@ -695,14 +695,17 @@ void compute_cpu_costs(const int noeigs, const int ncv, int& nconv, double& smal
     for(int j = 0; j < np[1]; j++) {
       for(int k = 0; k < np[2]; k++) {
 	//bu satirda funtion pointer olabilir
-	double vcijk = V_min + (V_max-V_min) * pow((z(k)/c), p) * pow((0.5+y(j)/b), q);
+	//double vcijk = V_min + (V_max-V_min) * pow((z(k)/c), p) * pow((0.5+y(j)/b), q);
+	double vcijk = V_min + (V_max-V_min) * pow(1-(z(k)/c), p) * pow(1-(z(k)/c), q) ;
 	double vmijk  = 1 - vcijk;
 	double rhotemp = (rho_c * vcijk) + (rho_m * vmijk);
-	double K = K_m + (K_c - K_m) * vcijk / (1 + (1 - vcijk) * (3 * (K_c - K_m) / (3*K_m + 4*G_m)));
-	double f1 = G_m*(9*K_m+8*G_m)/(6*(K_m+2*G_m));
-	double G = G_m + (G_c-G_m) * vcijk/(1 + (1- vcijk)*( (G_c-G_m)/(G_m+f1)));
-	double eijk = 9*K*G/(3*K+G);
-	double poisijk = (3*K-2*G)/(2*(3*K+G));  
+	//double K = K_m + (K_c - K_m) * vcijk / (1 + (1 - vcijk) * (3 * (K_c - K_m) / (3*K_m + 4*G_m)));
+	//double f1 = G_m*(9*K_m+8*G_m)/(6*(K_m+2*G_m));
+	//double G = G_m + (G_c-G_m) * vcijk/(1 + (1- vcijk)*( (G_c-G_m)/(G_m+f1)));
+	//double eijk = 9*K*G/(3*K+G);
+	//double poisijk = (3*K-2*G)/(2*(3*K+G));  
+  double eijk = (mats[1].mod_elasticity * vcijk) + (mats[0].mod_elasticity * vmijk);
+	double poisijk = (mats[1].poisson_ratio * vcijk) + (mats[0].poisson_ratio * vmijk);  
 	double mutemp = eijk / (2 * (1 + poisijk));
 	double lametemp = (2 * mutemp * poisijk) / (1 - 2 * poisijk);
 	
@@ -1007,6 +1010,14 @@ for(int i = 0; i < 4; i++){
   if(failed) {exit(1);}
 #endif
 
+  unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
+  unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
+  unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
+
+  Material first(1, 0.3, 1);
+  Material second(200.0/70.0, 0.3, 5700.0/2702.0);
+  Shape shape(2, 1, 0.3, xdim, ydim, zdim);
+
   double min_ctrl_y = 0.1, max_ctrl_y = 0.40, min_ctrl_z = 0.1, max_ctrl_z = 0.40;
   double interval = 0.025;
   
@@ -1032,10 +1043,6 @@ for(int i = 0; i < 4; i++){
   double smallest_mineig =  std::numeric_limits<double>::max();
   double best_y = -1, best_z = -1;
   double ostart = omp_get_wtime();
-
-  Material first(1, 0.3, 1);
-  Material second(200.0/70.0, 0.3, 5700.0/2702.0);
-  Shape shape(2, 1, 0.3, xdim, ydim, zdim);
 
 #pragma omp parallel for  schedule(dynamic, 1)
   //{
