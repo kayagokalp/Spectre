@@ -235,6 +235,7 @@ public:
 
   MatrixXd MM;
   MatrixXd KK;
+  int nnxyz;
 
   int num_shapes;
 
@@ -304,35 +305,35 @@ public:
   // }
 
 #ifdef GPU
-  void T1_system_matrices_GPU()
+  void T1_system_matrices_GPU(unsigned int l)
   {
     int ub = 0;
-    int ue = nxyz - 1;
-    int vb = nxyz;
-    int ve = 2 * nxyz - 1;
-    int wb = 2 * nxyz;
-    int we = 3 * nxyz - 1;
+    int ue = nxyz[l] - 1;
+    int vb = nxyz[l];
+    int ve = 2 * nxyz[l] - 1;
+    int wb = 2 * nxyz[l];
+    int we = 3 * nxyz[l] - 1;
 
-    M(seq(ub, ue), seq(ub, ue)) = VD_rho;
-    M(seq(vb, ve), seq(vb, ve)) = VD_rho;
-    M(seq(wb, we), seq(wb, we)) = VD_rho;
+    M(seq(ub, ue), seq(ub, ue)) = VD_rho[l];
+    M(seq(vb, ve), seq(vb, ve)) = VD_rho[l];
+    M(seq(wb, we), seq(wb, we)) = VD_rho[l];
 
-    MatrixXd epx = MatrixXd::Zero(nxyz, 3 * nxyz);
-    epx(seq(0, nxyz - 1), seq(ub, ue)) = shape.QDx;
-    MatrixXd epy = MatrixXd::Zero(nxyz, 3 * nxyz);
-    epy(seq(0, nxyz - 1), seq(vb, ve)) = shape.QDy;
-    MatrixXd epz = MatrixXd::Zero(nxyz, 3 * nxyz);
-    epz(seq(0, nxyz - 1), seq(wb, we)) = shape.QDz;
+    MatrixXd epx = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+    epx(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDx;
+    MatrixXd epy = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+    epy(seq(0, nxyz[l] - 1), seq(vb, ve)) = shapes[l].QDy;
+    MatrixXd epz = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+    epz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDz;
 
-    MatrixXd gammaxy = MatrixXd::Zero(nxyz, 3 * nxyz);
-    gammaxy(seq(0, nxyz - 1), seq(ub, ue)) = shape.QDy;
-    gammaxy(seq(0, nxyz - 1), seq(vb, ve)) = shape.QDx;
-    MatrixXd gammayz = MatrixXd::Zero(nxyz, 3 * nxyz);
-    gammayz(seq(0, nxyz - 1), seq(vb, ve)) = shape.QDz;
-    gammayz(seq(0, nxyz - 1), seq(wb, we)) = shape.QDy;
-    MatrixXd gammaxz = MatrixXd::Zero(nxyz, 3 * nxyz);
-    gammaxz(seq(0, nxyz - 1), seq(ub, ue)) = shape.QDz;
-    gammaxz(seq(0, nxyz - 1), seq(wb, we)) = shape.QDx;
+    MatrixXd gammaxy = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+    gammaxy(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDy;
+    gammaxy(seq(0, nxyz[l] - 1), seq(vb, ve)) = shapes[l].QDx;
+    MatrixXd gammayz = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+    gammayz(seq(0, nxyz[l] - 1), seq(vb, ve)) = shapes[l].QDz;
+    gammayz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDy;
+    MatrixXd gammaxz = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+    gammaxz(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDz;
+    gammaxz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDx;
 
     const double tu = 2.0;
     const double van = 1.0;
@@ -343,8 +344,8 @@ public:
 
     int nc = epx.cols();
     d_VD_lame = gpu_mem;                    //1
-    d_VD_mu = d_VD_lame + VD_lame.size();   //1
-    d_epx = d_VD_mu + VD_mu.size();         //3
+    d_VD_mu = d_VD_lame + VD_lame[l].size();   //1
+    d_epx = d_VD_mu + VD_mu[l].size();         //3
     d_epy = d_epx + epx.size();             //3
     d_epz = d_epy + epy.size();             //3
     d_gammaxy = d_epz + epz.size();         //3
@@ -355,8 +356,8 @@ public:
     d_K = d_temp_K + (nc * nc);             //9
     d_temp = d_K + (nc * nc);               //3
 
-    cudaMemcpy(d_VD_lame, VD_lame.data(), VD_lame.size() * sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_VD_mu, VD_mu.data(), VD_mu.size() * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_VD_lame[l], VD_lame[l].data(), VD_lame[l].size() * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_VD_mu[l], VD_mu[l].data(), VD_mu[l].size() * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(d_epx, epx.data(), epx.size() * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(d_epy, epy.data(), epy.size() * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(d_epz, epz.data(), epz.size() * sizeof(double), cudaMemcpyHostToDevice);
@@ -367,32 +368,32 @@ public:
     cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, epx.rows(), epx.cols(), &van, d_epx, epx.rows(), &van, d_epy, epy.rows(), d_epxyz, epx.rows());
     cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, epx.rows(), epx.cols(), &van, d_epxyz, epx.rows(), &van, d_epz, epz.rows(), d_epxyz, epx.rows()); //(x + y + z)
 
-    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame.rows(), nc, VD_lame.cols(), &van, d_VD_lame, VD_lame.rows(), d_epxyz, epx.rows(), &ziro, d_temp, VD_lame.rows()); //VD_lame * epxyz
-    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epxyz, epx.rows(), d_temp, VD_lame.rows(), &ziro, d_temp_K, nc);                              //epxyzT * VD_lame * epxyz
+    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame[l].rows(), nc, VD_lame[l].cols(), &van, d_VD_lame, VD_lame[l].rows(), d_epxyz, epx.rows(), &ziro, d_temp, VD_lame[l].rows()); //VD_lame * epxyz
+    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epxyz, epx.rows(), d_temp, VD_lame[l].rows(), &ziro, d_temp_K, nc);                              //epxyzT * VD_lame * epxyz
     cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &ziro, d_K, nc, &van, d_temp_K, nc, d_K, nc);
 
-    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_mu.rows(), nc, VD_mu.cols(), &van, d_VD_mu, VD_mu.rows(), d_epx, epx.rows(), &ziro, d_temp, VD_mu.rows()); //VD_mu * epx
-    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_mu.rows(), &ziro, d_temp_K, nc);                      //epxT * VD_mu * epx
+    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_mu[l].rows(), nc, VD_mu[l].cols(), &van, d_VD_mu, VD_mu[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_mu[l].rows()); //VD_mu * epx
+    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_mu[l].rows(), &ziro, d_temp_K, nc);                      //epxT * VD_mu * epx
     cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &tu, d_temp_K, nc, d_K, nc);
 
-    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_mu.rows(), nc, VD_mu.cols(), &van, d_VD_mu, VD_mu.rows(), d_epy, epy.rows(), &ziro, d_temp, VD_mu.rows()); //VD_mu * epy
-    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_mu.rows(), &ziro, d_temp_K, nc);                      //epyT * VD_mu * epy
+    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_mu[l].rows(), nc, VD_mu[l].cols(), &van, d_VD_mu, VD_mu[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_mu[l].rows()); //VD_mu * epy
+    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_mu[l].rows(), &ziro, d_temp_K, nc);                      //epyT * VD_mu * epy
     cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &tu, d_temp_K, nc, d_K, nc);
 
-    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_mu.rows(), nc, VD_mu.cols(), &van, d_VD_mu, VD_mu.rows(), d_epz, epz.rows(), &ziro, d_temp, VD_mu.rows()); //VD_mu * epz
-    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_mu.rows(), &ziro, d_temp_K, nc);                      //epzT * VD_mu * epz
+    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_mu[l].rows(), nc, VD_mu[l].cols(), &van, d_VD_mu, VD_mu[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_mu[l].rows()); //VD_mu * epz
+    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_mu[l].rows(), &ziro, d_temp_K, nc);                      //epzT * VD_mu * epz
     cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &tu, d_temp_K, nc, d_K, nc);
 
-    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_mu.rows(), nc, VD_mu.cols(), &van, d_VD_mu, VD_mu.rows(), d_gammaxy, gammaxy.rows(), &ziro, d_temp, VD_mu.rows()); //VD_mu * gammaxy
-    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxy.rows(), &van, d_gammaxy, gammaxy.rows(), d_temp, VD_mu.rows(), &ziro, d_temp_K, nc);                  //gammaxy * VD_mu * gammaxy
+    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_mu[l].rows(), nc, VD_mu[l].cols(), &van, d_VD_mu, VD_mu[l].rows(), d_gammaxy, gammaxy.rows(), &ziro, d_temp, VD_mu[l].rows()); //VD_mu * gammaxy
+    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxy.rows(), &van, d_gammaxy, gammaxy.rows(), d_temp, VD_mu[l].rows(), &ziro, d_temp_K, nc);                  //gammaxy * VD_mu * gammaxy
     cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);
 
-    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_mu.rows(), nc, VD_mu.cols(), &van, d_VD_mu, VD_mu.rows(), d_gammaxz, gammaxz.rows(), &ziro, d_temp, VD_mu.rows()); //VD_mu * gammaxz
-    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxz.rows(), &van, d_gammaxz, gammaxz.rows(), d_temp, VD_mu.rows(), &ziro, d_temp_K, nc);                  //gammaxz * VD_mu * gammaxz
+    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_mu[l].rows(), nc, VD_mu[l].cols(), &van, d_VD_mu, VD_mu[l].rows(), d_gammaxz, gammaxz.rows(), &ziro, d_temp, VD_mu[l].rows()); //VD_mu * gammaxz
+    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxz.rows(), &van, d_gammaxz, gammaxz.rows(), d_temp, VD_mu[l].rows(), &ziro, d_temp_K, nc);                  //gammaxz * VD_mu * gammaxz
     cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);
 
-    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_mu.rows(), nc, VD_mu.cols(), &van, d_VD_mu, VD_mu.rows(), d_gammayz, gammayz.rows(), &ziro, d_temp, VD_mu.rows()); //VD_mu * gammayz
-    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammayz.rows(), &van, d_gammayz, gammayz.rows(), d_temp, VD_mu.rows(), &ziro, d_temp_K, nc);                  //gammayz * VD_mu * gammayz
+    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_mu[l].rows(), nc, VD_mu[l].cols(), &van, d_VD_mu, VD_mu[l].rows(), d_gammayz, gammayz.rows(), &ziro, d_temp, VD_mu[l].rows()); //VD_mu * gammayz
+    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammayz.rows(), &van, d_gammayz, gammayz.rows(), d_temp, VD_mu[l].rows(), &ziro, d_temp_K, nc);                  //gammayz * VD_mu * gammayz
     cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);
     cudaStreamSynchronize(stream[ttt]);
 
@@ -401,47 +402,47 @@ public:
   }
 #endif
 
-  void T1_system_matrices_CPU()
+  void T1_system_matrices_CPU(unsigned int l)
   {
     int ub = 0;
-    int ue = nxyz - 1;
-    int vb = nxyz;
-    int ve = 2 * nxyz - 1;
-    int wb = 2 * nxyz;
-    int we = 3 * nxyz - 1;
+    int ue = nxyz[l] - 1;
+    int vb = nxyz[l];
+    int ve = 2 * nxyz[l] - 1;
+    int wb = 2 * nxyz[l];
+    int we = 3 * nxyz[l] - 1;
 
-    M(seq(ub, ue), seq(ub, ue)) = VD_rho;
-    M(seq(vb, ve), seq(vb, ve)) = VD_rho;
-    M(seq(wb, we), seq(wb, we)) = VD_rho;
+    M(seq(ub, ue), seq(ub, ue)) = VD_rho[l];
+    M(seq(vb, ve), seq(vb, ve)) = VD_rho[l];
+    M(seq(wb, we), seq(wb, we)) = VD_rho[l];
 
-    MatrixXd epx = MatrixXd::Zero(nxyz, 3 * nxyz);
-    epx(seq(0, nxyz - 1), seq(ub, ue)) = shape.QDx;
-    MatrixXd epy = MatrixXd::Zero(nxyz, 3 * nxyz);
-    epy(seq(0, nxyz - 1), seq(vb, ve)) = shape.QDy;
-    MatrixXd epz = MatrixXd::Zero(nxyz, 3 * nxyz);
-    epz(seq(0, nxyz - 1), seq(wb, we)) = shape.QDz;
+    MatrixXd epx = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+    epx(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDx;
+    MatrixXd epy = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+    epy(seq(0, nxyz[l] - 1), seq(vb, ve)) = shapes[l].QDy;
+    MatrixXd epz = MatrixXd::Zero(nxyz[l], 3 * nxyz);
+    epz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDz;
 
-    MatrixXd gammaxy = MatrixXd::Zero(nxyz, 3 * nxyz);
-    gammaxy(seq(0, nxyz - 1), seq(ub, ue)) = shape.QDy;
-    gammaxy(seq(0, nxyz - 1), seq(vb, ve)) = shape.QDx;
+    MatrixXd gammaxy = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+    gammaxy(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDy;
+    gammaxy(seq(0, nxyz[l] - 1), seq(vb, ve)) = shapes[l].QDx;
     MatrixXd gammayz = MatrixXd::Zero(nxyz, 3 * nxyz);
-    gammayz(seq(0, nxyz - 1), seq(vb, ve)) = shape.QDz;
-    gammayz(seq(0, nxyz - 1), seq(wb, we)) = shape.QDy;
-    MatrixXd gammaxz = MatrixXd::Zero(nxyz, 3 * nxyz);
-    gammaxz(seq(0, nxyz - 1), seq(ub, ue)) = shape.QDz;
-    gammaxz(seq(0, nxyz - 1), seq(wb, we)) = shape.QDx;
+    gammayz(seq(0, nxyz[l] - 1), seq(vb, ve)) = shapes[l].QDz;
+    gammayz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDy;
+    MatrixXd gammaxz = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+    gammaxz(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDz;
+    gammaxz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDx;
 
     MatrixXd epxyz = epx + epy + epz;
-    K = (epxyz.transpose() * (VD_lame * epxyz)) +
-        2 * ((epx.transpose() * (VD_mu * epx)) +
-             (epy.transpose() * (VD_mu * epy)) +
-             (epz.transpose() * (VD_mu * epz))) +
-        (gammaxy.transpose() * (VD_mu * gammaxy)) +
-        (gammaxz.transpose() * (VD_mu * gammaxz)) +
-        (gammayz.transpose() * (VD_mu * gammayz));
+    K = (epxyz.transpose() * (VD_lame[l] * epxyz)) +
+        2 * ((epx.transpose() * (VD_mu[l] * epx)) +
+             (epy.transpose() * (VD_mu[l] * epy)) +
+             (epz.transpose() * (VD_mu[l] * epz))) +
+        (gammaxy.transpose() * (VD_mu[l] * gammaxy)) +
+        (gammaxz.transpose() * (VD_mu[l] * gammaxz)) +
+        (gammayz.transpose() * (VD_mu[l] * gammayz));
   }
 
-  bool T1_system_matrices()
+  bool T1_system_matrices(unsigned int l)
   {
 #ifdef SMART
     int decision = GPUID;
@@ -462,7 +463,7 @@ public:
       gloads[gid] += gcosts[PADDING * gid][0];
       omp_unset_lock(&glocks[gid]);
 
-      T1_system_matrices_GPU();
+      T1_system_matrices_GPU(l);
 
       omp_set_lock(&glocks[gid]);
       gloads[gid] -= gcosts[PADDING * gid][0];
@@ -477,7 +478,7 @@ public:
       cloads[cid] += ccosts[0];
       omp_unset_lock(&clocks[cid]);
 
-      T1_system_matrices_CPU();
+      T1_system_matrices_CPU(l);
 
       omp_set_lock(&clocks[cid]);
       cloads[cid] -= ccosts[0];
@@ -485,10 +486,10 @@ public:
       return false;
     }
 #elif defined GPU
-    T1_system_matrices_GPU();
+    T1_system_matrices_GPU(l);
     return true;
 #else
-    T1_system_matrices_CPU();
+    T1_system_matrices_CPU(l);
     return false;
 #endif
   }
@@ -511,27 +512,27 @@ public:
 
     int nc = P.cols();
     d_K = gpu_mem;                            //9
-    d_M = d_K + (9 * nxyz * nxyz);            //9
-    d_P = d_M + (9 * nxyz * nxyz);            //max 9
-    d_K_phy = d_P + (3 * nxyz * nc);          //max 9
+    d_M = d_K + (9 * nnxyz * nnxyz);            //9
+    d_P = d_M + (9 * nnxyz * nnxyz);            //max 9
+    d_K_phy = d_P + (3 * nnxyz * nc);          //max 9
     d_M_phy = d_K_phy + (nc * nc);            //max 9
     d_a0 = d_M_phy + (nc * nc);               //max 9
     d_temp = d_a0 + (nc * nc);                //max 9
-    d_M_phy_i = d_temp + (3 * nxyz * nc);     //max 9
+    d_M_phy_i = d_temp + (3 * nnxyz * nc);     //max 9
     d_pivot = (int *)(d_M_phy_i + (nc * nc)); //max 1
     d_info = d_pivot + nc;                    //max 1
     d_work = (double *)(d_info + nc);         //max 1.
 
-    cudaMemcpy(d_K, K.data(), K.size() * sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_M, M.data(), M.size() * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_K, KK.data(), KK.size() * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_M, MM.data(), MM.size() * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(d_P, P.data(), P.size() * sizeof(double), cudaMemcpyHostToDevice);
     MatrixXd Id = MatrixXd::Identity(nc, nc);
     cudaMemcpy(d_M_phy_i, Id.data(), Id.size() * sizeof(double), cudaMemcpyHostToDevice);
 
-    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, K.rows(), nc, K.cols(), &van, d_K, K.rows(), d_P, P.rows(), &ziro, d_temp, K.rows()); //alpha * K * P + beta * K
-    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, P.rows(), &van, d_P, P.rows(), d_temp, K.rows(), &ziro, d_K_phy, P.cols());   //Pt * K * P
-    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, M.rows(), nc, M.cols(), &van, d_M, M.rows(), d_P, P.rows(), &ziro, d_temp, M.rows()); //M * P
-    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, P.rows(), &van, d_P, P.rows(), d_temp, M.rows(), &ziro, d_M_phy, P.cols());   //Pt * M * P
+    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, KK.rows(), nc, KK.cols(), &van, d_K, KK.rows(), d_P, P.rows(), &ziro, d_temp, KK.rows()); //alpha * K * P + beta * K
+    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, P.rows(), &van, d_P, P.rows(), d_temp, KK.rows(), &ziro, d_K_phy, P.cols());   //Pt * K * P
+    cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, MM.rows(), nc, MM.cols(), &van, d_M, MM.rows(), d_P, P.rows(), &ziro, d_temp, MM.rows()); //M * P
+    cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, P.rows(), &van, d_P, P.rows(), d_temp, MM.rows(), &ziro, d_M_phy, P.cols());   //Pt * M * P
     cusolverDnDgetrf_bufferSize(dnhandle[ttt], nc, nc, d_M_phy, nc, &Lwork);
     cusolverDnDgetrf(dnhandle[ttt], nc, nc, d_M_phy, nc, d_work, d_pivot, d_info);
     cusolverDnDgetrs(dnhandle[ttt], CUBLAS_OP_N, nc, nc, d_M_phy, nc, d_pivot, d_M_phy_i, nc, d_info);
@@ -546,8 +547,8 @@ public:
 
   void T3_mul_inv_CPU(MatrixXd &a0, MatrixXd &P)
   {
-    MatrixXd K_phy = P.transpose() * (K * P);
-    MatrixXd M_phy = P.transpose() * (M * P);
+    MatrixXd K_phy = P.transpose() * (KK * P);
+    MatrixXd M_phy = P.transpose() * (MM * P);
     a0 = M_phy.inverse() * K_phy;
   }
 
@@ -603,13 +604,13 @@ public:
   {
     MatrixXd MM = a0;
     DenseGenRealShiftSolve<double> op(MM);
-    GenEigsRealShiftSolver<double, LARGEST_MAGN, DenseGenRealShiftSolve<double>> eigs(&op, 10, 50, 0);
+    GenEigsRealShiftSolver<DenseGenRealShiftSolve<double>> eigs(op, 10, 50, 0);
 
     eigs.init();
     nconv = eigs.compute();
 
     Eigen::VectorXcd evalues;
-    if (eigs.info() == SUCCESSFUL)
+    if (eigs.info() == CompInfo::Successful)
     {
       evalues = eigs.eigenvalues();
       small_eig = evalues(nconv - 1).real();
@@ -765,32 +766,32 @@ public:
     //cout << "Eigen: " << cost << " secs - nconv = " << nconv << endl;
   }
 
-  MatrixXd beta_matrix_3d(MatrixXd &BC_3D, int xyz)
+  MatrixXd beta_matrix_3d(MatrixXd &BC_3D, int xyz, unsigned int l)
   {
-    MatrixXd BC = MatrixXd::Zero(3 * nxyz / np[xyz], 3 * nxyz);
+    MatrixXd BC = MatrixXd::Zero(3 * nxyz[l] / np[xyz], 3 * nxyz[l]);
     int ids[3];
     for (int dim = 0; dim < 3; dim++)
     {
-      for (int i = 0; i < np[0]; i++)
+      for (int i = 0; i < np[l][0]; i++)
       {
         ids[0] = i;
-        for (int j = 0; j < np[1]; j++)
+        for (int j = 0; j < np[l][1]; j++)
         {
           ids[1] = j;
-          for (int k = 0; k < np[2]; k++)
+          for (int k = 0; k < np[l][2]; k++)
           {
             ids[2] = k;
 
-            int idx = dim * (nxyz / np[xyz]);
+            int idx = dim * (nxyz[l] / np[xyz]);
             if (xyz == 0)
-              idx += j * np[2] + k;
+              idx += j * np[l][2] + k;
             else if (xyz == 1)
-              idx += i * np[2] + k;
+              idx += i * np[l][2] + k;
             else if (xyz == 2)
-              idx += i * np[1] + j;
-            int idy = dim * nxyz +
-                      i * np[1] * np[2] +
-                      j * np[2] +
+              idx += i * np[l][1] + j;
+            int idy = dim * nxyz[l] +
+                      i * np[l][1] * np[l][2] +
+                      j * np[l][2] +
                       k;
 
             BC(idx, idy) = BC_3D(dim, ids[xyz]);
@@ -999,11 +1000,11 @@ public:
     inner_helper(lame[l], Xadl, Ybem, Zcfn, VD_lame[l], l);
   }
 
-  MatrixXd boundary_condition_3d(int xyz, int ol)
+  MatrixXd boundary_condition_3d(int xyz, int ol, unsigned int l)
   {
     double bc[3] = {1, 1, 1};
-    RowVectorXd e(np[xyz]);
-    for (int i = 0; i < np[xyz]; i++)
+    RowVectorXd e(np[l][xyz]);
+    for (int i = 0; i < np[l][xyz]; i++)
       e(i) = 0;
     if (ol == 0)
     {
@@ -1011,9 +1012,9 @@ public:
     }
     else
     {
-      e(np[xyz] - 1) = 1.0;
+      e(np[l][xyz] - 1) = 1.0;
     }
-    MatrixXd BC(3, np[xyz]);
+    MatrixXd BC(3, np[l][xyz]);
     BC << (bc[0] * e), (bc[1] * e), (bc[2] * e);
     return BC;
   }
