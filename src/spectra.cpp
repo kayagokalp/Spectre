@@ -801,32 +801,32 @@ public:
     return BC;
   }
 
-  void FG_var_MT()
+  void FG_var_MT(unsigned int l) //problem
   {
-    VectorXd &x = shape.spaces[0].s;
-    VectorXd &y = shape.spaces[1].s;
-    VectorXd &z = shape.spaces[2].s;
+    VectorXd &x = shape[l].spaces[0].s;
+    VectorXd &y = shape[l].spaces[1].s;
+    VectorXd &z = shape[l].spaces[2].s;
 
-    double K_m = (mats[0].mod_elasticity / 3) / (1 - 2 * mats[0].poisson_ratio);
-    double G_m = (mats[0].mod_elasticity / 2) / (1 + mats[0].poisson_ratio);
+    double K_m = (shape[0].material.mod_elasticity / 3) / (1 - 2 * shape[0].material.poisson_ratio);
+    double G_m = (shape[0].material.mod_elasticity / 2) / (1 + shape[0].material.poisson_ratio);
 
-    double K_c = (mats[1].mod_elasticity / 3) / (1 - 2 * mats[1].poisson_ratio);
-    double G_c = (mats[1].mod_elasticity / 2) / (1 + mats[1].poisson_ratio);
+    double K_c = (shape[1].material.mod_elasticity / 3) / (1 - 2 * shape[1].material.poisson_ratio);
+    double G_c = (shape[1].material.mod_elasticity / 2) / (1 + shape[1].material.poisson_ratio);
 
     double V_min = 0;
     double V_max = 1;
 
     //for matlab conversion - can be removed later
-    double c = shape.dim[2];
-    double b = shape.dim[1];
+    double c = shape[l].dim[2];
+    double b = shape[l].dim[1];
     double p = ctrl_z;
     double q = ctrl_y;
-    double rho_m = mats[0].density;
-    double rho_c = mats[1].density;
+    double rho_m = shape[0].material.density;
+    double rho_c = shape[1].material.density;
 
-    for (int j = 0; j < np[1]; j++)
+    for (int j = 0; j < np[l][1]; j++)
     {
-      for (int k = 0; k < np[2]; k++)
+      for (int k = 0; k < np[l][2]; k++)
       {
         //bu satirda funtion pointer olabilir
         //double vcijk = V_min + (V_max-V_min) * pow((z(k)/c), p) * pow((0.5+y(j)/b), q);
@@ -838,16 +838,16 @@ public:
         //double G = G_m + (G_c-G_m) * vcijk/(1 + (1- vcijk)*( (G_c-G_m)/(G_m+f1)));
         //double eijk = 9*K*G/(3*K+G);
         //double poisijk = (3*K-2*G)/(2*(3*K+G));
-        double eijk = (mats[1].mod_elasticity * vcijk) + (mats[0].mod_elasticity * vmijk);
-        double poisijk = (mats[1].poisson_ratio * vcijk) + (mats[0].poisson_ratio * vmijk);
+        double eijk = (shape[1].material.mod_elasticity * vcijk) + (shape[0].material.mod_elasticity * vmijk);
+        double poisijk = (shape[1].material.poisson_ratio * vcijk) + (shape[0].material.poisson_ratio * vmijk);
         double mutemp = eijk / (2 * (1 + poisijk));
         double lametemp = (2 * mutemp * poisijk) / (1 - 2 * poisijk);
 
-        for (int i = 0; i < np[0]; i++)
+        for (int i = 0; i < np[l][0]; i++)
         {
-          rho(i, j, k) = rhotemp;
-          mu(i, j, k) = mutemp;
-          lame(i, j, k) = lametemp;
+          rho[l](i, j, k) = rhotemp;
+          mu[l](i, j, k) = mutemp;
+          lame[l](i, j, k) = lametemp;
         }
       }
     }
@@ -874,20 +874,20 @@ public:
   }
 
   void inner_helper(Tensor<double, 3> &Axyz, Tensor<double, 3> &Xadl, Tensor<double, 3> &Ybem, Tensor<double, 3> &Zcfn,
-                    MatrixXd &VD)
+                    MatrixXd &VD, unsigned int l)
   {
     double ****Xadmn;
-    alloc4D(Xadmn, np[0], np[0], np[1], np[2]);
-    for (int i = 0; i < np[0]; i++)
+    alloc4D(Xadmn, np[l][0], np[l][0], np[l][1], np[l][2]);
+    for (int i = 0; i < np[l][0]; i++)
     {
-      for (int j = 0; j < np[0]; j++)
+      for (int j = 0; j < np[l][0]; j++)
       {
-        for (int k = 0; k < np[1]; k++)
+        for (int k = 0; k < np[l][1]; k++)
         {
-          for (int l = 0; l < np[2]; l++)
+          for (int l = 0; l < np[l][2]; l++)
           {
             double sum = 0;
-            for (int m = 0; m < np[0]; m++)
+            for (int m = 0; m < np[l][0]; m++)
             {
               sum += Xadl(i, j, m) * Axyz(m, k, l);
             }
@@ -898,19 +898,19 @@ public:
     }
 
     double *****Gamma_adnbe;
-    alloc5D(Gamma_adnbe, np[0], np[0], np[2], np[1], np[1]);
-    for (int i = 0; i < np[0]; i++)
+    alloc5D(Gamma_adnbe, np[l][0], np[l][0], np[l][2], np[l][1], np[l][1]);
+    for (int i = 0; i < np[l][0]; i++)
     {
-      for (int j = 0; j < np[0]; j++)
+      for (int j = 0; j < np[l][0]; j++)
       {
-        for (int k = 0; k < np[2]; k++)
+        for (int k = 0; k < np[l][2]; k++)
         {
-          for (int l = 0; l < np[1]; l++)
+          for (int l = 0; l < np[l][1]; l++)
           {
-            for (int m = 0; m < np[1]; m++)
+            for (int m = 0; m < np[l][1]; m++)
             {
               double sum = 0;
-              for (int o = 0; o < np[1]; o++)
+              for (int o = 0; o < np[l][1]; o++)
               {
                 sum += Xadmn[i][j][o][k] * Ybem(o, l, m);
               }
@@ -921,25 +921,25 @@ public:
       }
     }
 
-    for (int i = 0; i < np[0]; i++)
+    for (int i = 0; i < np[l][0]; i++)
     {
-      for (int j = 0; j < np[0]; j++)
+      for (int j = 0; j < np[l][0]; j++)
       {
-        for (int k = 0; k < np[1]; k++)
+        for (int k = 0; k < np[l][1]; k++)
         {
-          for (int l = 0; l < np[1]; l++)
+          for (int l = 0; l < np[l][1]; l++)
           {
-            for (int m = 0; m < np[2]; m++)
+            for (int m = 0; m < np[l][2]; m++)
             {
-              for (int o = 0; o < np[2]; o++)
+              for (int o = 0; o < np[l][2]; o++)
               {
                 double sum = 0;
-                for (int v = 0; v < np[2]; v++)
+                for (int v = 0; v < np[l][2]; v++)
                 {
                   sum += Gamma_adnbe[i][j][v][k][l] * Zcfn(v, m, o);
                 }
-                int row = (i)*np[1] * np[2] + (k)*np[2] + m;
-                int col = (j)*np[1] * np[2] + (l)*np[2] + o;
+                int row = (i)*np[l][1] * np[l][2] + (k)*np[l][2] + m;
+                int col = (j)*np[l][1] * np[l][2] + (l)*np[l][2] + o;
 
                 VD(row, col) += sum;
               }
@@ -949,18 +949,18 @@ public:
       }
     }
 
-    free4D(Xadmn, np[0], np[0], np[1], np[2]);
-    free5D(Gamma_adnbe, np[0], np[0], np[2], np[1], np[1]);
+    free4D(Xadmn, np[l][0], np[l][0], np[l][1], np[l][2]);
+    free5D(Gamma_adnbe, np[l][0], np[l][0], np[l][2], np[l][1], np[l][1]);
   }
 
-  void inner_product()
+  void inner_product(unsigned int l)
   {
     MatrixXd IFT[3][3][2];
     for (int i = 0; i < 3; i++)
     { //xyz loop
       for (int j = 0; j < 3; j++)
       { //123 loop
-        int sz = (j + 1) * np[i];
+        int sz = (j + 1) * np[l][i];
         IFT[i][j][0] = MatrixXd::Zero(sz, sz);
         IFT[i][j][1] = MatrixXd::Zero(sz, sz);
         cheb(sz, IFT[i][j][0], IFT[i][j][1]);
@@ -970,33 +970,33 @@ public:
     VectorXd v_d3N[3];
     for (int i = 0; i < 3; i++)
     {
-      VectorXd temp = cheb_int(shape.spaces[i].start, shape.spaces[i].end, 3 * np[i]);
+      VectorXd temp = cheb_int(shape[l].spaces[i].start, shape[l].spaces[i].end, 3 * np[l][i]);
       v_d3N[i] = (temp.transpose() * IFT[i][2][1]).transpose();
     }
 
     MatrixXd Ss[3];
     for (int i = 0; i < 3; i++)
     {
-      MatrixXd I = MatrixXd::Identity(np[i], np[i]);
-      MatrixXd Z = MatrixXd::Zero(np[i], np[i]);
-      MatrixXd C(3 * np[i], np[i]);
+      MatrixXd I = MatrixXd::Identity(np[l][i], np[l][i]);
+      MatrixXd Z = MatrixXd::Zero(np[l][i], np[l][i]);
+      MatrixXd C(3 * np[l][i], np[l][i]);
       C << I, Z, Z;
       Ss[i] = IFT[i][2][0] * C * IFT[i][0][1];
     }
 
-    Tensor<double, 3> Xadl(np[0], np[0], np[0]);
+    Tensor<double, 3> Xadl(np[l][0], np[l][0], np[l][0]);
     Xadl.setZero();
-    tensor3(v_d3N[0], Ss[0], np[0], Xadl);
-    Tensor<double, 3> Ybem(np[1], np[1], np[1]);
+    tensor3(v_d3N[0], Ss[0], np[l][0], Xadl);
+    Tensor<double, 3> Ybem(np[l][1], np[l][1], np[l][1]);
     Ybem.setZero();
-    tensor3(v_d3N[1], Ss[1], np[1], Ybem);
-    Tensor<double, 3> Zcfn(np[2], np[2], np[2]);
+    tensor3(v_d3N[1], Ss[1], np[l][1], Ybem);
+    Tensor<double, 3> Zcfn(np[l][2], np[l][2], np[l][2]);
     Zcfn.setZero();
-    tensor3(v_d3N[2], Ss[2], np[2], Zcfn);
+    tensor3(v_d3N[2], Ss[2], np[l][2], Zcfn);
 
-    inner_helper(mu, Xadl, Ybem, Zcfn, VD_mu);
-    inner_helper(rho, Xadl, Ybem, Zcfn, VD_rho);
-    inner_helper(lame, Xadl, Ybem, Zcfn, VD_lame);
+    inner_helper(mu[l], Xadl, Ybem, Zcfn, VD_mu[l], l);
+    inner_helper(rho[l], Xadl, Ybem, Zcfn, VD_rho[l], l);
+    inner_helper(lame[l], Xadl, Ybem, Zcfn, VD_lame[l], l);
   }
 
   MatrixXd boundary_condition_3d(int xyz, int ol)
