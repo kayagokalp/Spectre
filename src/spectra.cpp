@@ -103,6 +103,21 @@ public:
   }
 };
 
+class Material
+{
+public:
+  Material(dtype _mod_elasticity,
+           dtype _poisson_ratio,
+           dtype _density)
+      : mod_elasticity(_mod_elasticity),
+        poisson_ratio(_poisson_ratio),
+        density(_density) {}
+
+  //member variables
+  const dtype mod_elasticity;
+  const dtype poisson_ratio;
+  const dtype density;
+};
 class Shape
 {
 public:
@@ -172,6 +187,7 @@ public:
   const dtype curve[2];
 
   Space spaces[3];
+  Material material;
 
   const int xyz;
   MatrixXd VD;
@@ -180,53 +196,112 @@ public:
   MatrixXd QDz;
 };
 
-class Material
-{
-public:
-  Material(dtype _mod_elasticity,
-           dtype _poisson_ratio,
-           dtype _density)
-      : mod_elasticity(_mod_elasticity),
-        poisson_ratio(_poisson_ratio),
-        density(_density) {}
-
-  //member variables
-  const dtype mod_elasticity;
-  const dtype poisson_ratio;
-  const dtype density;
-};
-
 //Functionally graded material
 class FGM
 {
 public:
-  FGM(Shape &_shape,
-      Material &first, Material &second,
-      double _ctrl_y, double _ctrl_z) : shape(_shape),
-                                        ctrl_y(_ctrl_y), ctrl_z(_ctrl_z),
-                                        mats{first, second},
-                                        np{_shape.spaces[0].no_points, _shape.spaces[1].no_points, _shape.spaces[2].no_points},
-                                        nxyz(np[0] * np[1] * np[2]),
-                                        mu(np[0], np[1], np[2]),
-                                        lame(np[0], np[1], np[2]),
-                                        rho(np[0], np[1], np[2]),
-                                        VD_mu(nxyz, nxyz),
-                                        VD_lame(nxyz, nxyz),
-                                        VD_rho(nxyz, nxyz),
-                                        M(3 * nxyz, 3 * nxyz),
-                                        K(3 * nxyz, 3 * nxyz)
+  // int np[3]; //not to do this everytime
+  // int nxyz;  //not to do this everytime
+  int * np;
+  int * nxyz;
+
+  // Shape shape;
+  // Material mats[2];
+  Shape * shapes;
+
+  // const double ctrl_y;
+  // const double ctrl_z;
+  double ctrl_y;
+  double ctrl_z; 
+
+  // Tensor<double, 3> mu;
+  // Tensor<double, 3> lame;
+  // Tensor<double, 3> rho;
+  Tensor<double, 3> * mu;
+  Tensor<double, 3> * lame;
+  Tensor<double, 3> * rho;
+
+  // MatrixXd VD_mu;
+  // MatrixXd VD_lame;
+  // MatrixXd VD_rho;
+  MatrixXd * VD_mu;
+  MatrixXd * VD_lame;
+  MatrixXd * VD_rho;
+
+  // MatrixXd M;
+  // MatrixXd K;
+  MatrixXd * M;
+  MatrixXd * K;
+
+  MatrixXd MM;
+  MatrixXd KK;
+
+  int num_shapes;
+
+  FGM(int n_shapes, Shape * shps, double ctrl_y, double ctrl_z) : ctrl_y(ctrl_y), ctrl_z(ctrl_z) 
   {
-    mu.setZero();
-    lame.setZero();
-    rho.setZero();
-    VD_mu.setZero();
-    VD_lame.setZero();
-    VD_rho.setZero();
-    M.setZero();
-    K.setZero();
-    FG_var_MT();
-    inner_product();
+    num_shapes = n_shapes;
+    shapes = shps;
+    np = new int[num_shapes];
+    nxyz = new int[num_shapes];
+
+    for(unsigned int i = 0; i < n_shapes; i++){
+      np[i] = new int[3];
+      for(unsigned int j = 0; j < 3; j++){
+        np[i][j] = shapes[i].spaces[j].no_points;
+      }
+      nxyz[i] = np[i][0] * np[i][1] * np[i][2];
+      mu[i] = MatrixXd(np[i][0], np[i][1], np[i][2]);
+      mu[i].set_zero();
+      lame[i] = MatrixXd(np[i][0], np[i][1], np[i][2]);
+      lame[i].set_zero();
+      rho[i] = MatrixXd(np[i][0], np[i][1], np[i][2]);
+      rho[i].set_zero();
+      VD_mu[i] = MatrixXd(nxyz[i], nxyz[i]);
+      VD_mu[i].set_zero();
+      VD_lame[i] = MatrixXd(nxyz[i], nxyz[i]);
+      VD_lame[i].set_zero();
+      VD_rho[i] = MatrixXd(nxyz[i], nxyz[i]);
+      VD_rho[i].set_zero();
+      M[i] = MatrixXd(3 * nxyz[i], 3 * nxyz[i]);
+      M[i].set_zero();
+      K[i] = MatrixXd(3 * nxyz[i], 3 * nxyz[i]);
+      K[i].set_zero();
+      FG_var_MT(i);
+      inner_product(i);
+    }
+
+    //initialize MM and KK
+    //
   }
+
+  // FGM(Shape &_shape,
+  //     Material &first, Material &second,
+  //     double _ctrl_y, double _ctrl_z) : shape(_shape),
+  //                                       ctrl_y(_ctrl_y), ctrl_z(_ctrl_z),
+  //                                       mats{first, second},
+  //                                       np{_shape.spaces[0].no_points, _shape.spaces[1].no_points, _shape.spaces[2].no_points},
+  //                                       nxyz(np[0] * np[1] * np[2]),
+  //                                       mu(np[0], np[1], np[2]),
+  //                                       lame(np[0], np[1], np[2]),
+  //                                       rho(np[0], np[1], np[2]),
+  //                                       VD_mu(nxyz, nxyz),
+  //                                       VD_lame(nxyz, nxyz),
+  //                                       VD_rho(nxyz, nxyz),
+  //                                       M(3 * nxyz, 3 * nxyz),
+  //                                       K(3 * nxyz, 3 * nxyz)
+  // {
+  //   mu.setZero();
+  //   lame.setZero();
+  //   rho.setZero();
+  //   VD_mu.setZero();
+  //   VD_lame.setZero();
+  //   VD_rho.setZero();
+  //   M.setZero();
+  //   K.setZero();
+  //   FG_var_MT();
+  //   inner_product();
+  // }
 
 #ifdef GPU
   void T1_system_matrices_GPU()
@@ -943,24 +1018,6 @@ public:
     return BC;
   }
 
-  int np[3]; //not to do this everytime
-  int nxyz;  //not to do this everytime
-
-  Shape shape;
-  Material mats[2];
-  const double ctrl_y;
-  const double ctrl_z;
-
-  Tensor<double, 3> mu;
-  Tensor<double, 3> lame;
-  Tensor<double, 3> rho;
-
-  MatrixXd VD_mu;
-  MatrixXd VD_lame;
-  MatrixXd VD_rho;
-
-  MatrixXd M;
-  MatrixXd K;
 };
 
 ostream &operator<<(ostream &os, const Space &spc)
@@ -1142,12 +1199,17 @@ int main(int argc, char **argv)
   double min_ctrl_y = 0.1, max_ctrl_y = 0.40, min_ctrl_z = 0.1, max_ctrl_z = 0.40;
   double interval = 0.025;
 
-  vector<pair<double, double>> problems;
+  vector<FGM> problems;
   for (double cy = min_ctrl_y; cy <= max_ctrl_y; cy += interval)
   {
     for (double cz = min_ctrl_z; cz <= max_ctrl_z; cz += interval)
     {
-      problems.push_back(make_pair(cy, cz));
+      for(double h_a = 0.01; h_a <= 0.04; h_a += 0.01)
+      {
+        for(double h1_h2 = 0.01; h1_h2 <= 0.04; h1_h2 += 0.01){
+          
+        }
+      }
     }
   }
 
