@@ -9,6 +9,12 @@
 #include "helpers.h"
 #include "mkl.h"
 
+void debug() {};
+void printMatrix(const Ref<const Matrix3d> t){
+      cout << "rows: " << t.rows() << " cols: " << t.cols() << endl;
+      cout << t.coeff(0, 0) << endl;
+	cout << "ea" << endl;
+}
 #define CPUID 0
 #define GPUID 1
 
@@ -273,6 +279,14 @@ public:
     shapes = shps;
     np = new unsigned int * [num_shapes];
     nxyz = new int[num_shapes];
+    mu = new Tensor<double, 3>[num_shapes];
+    lame = new Tensor<double, 3>[num_shapes];
+    rho = new Tensor<double, 3>[num_shapes];
+    VD_mu = new MatrixXd[num_shapes];
+    VD_lame = new MatrixXd[num_shapes];
+    VD_rho = new MatrixXd[num_shapes];
+    M = new MatrixXd[num_shapes];
+    K = new MatrixXd[num_shapes];
 
     for(unsigned int i = 0; i < n_shapes; i++){
       np[i] = new unsigned int[3];
@@ -280,22 +294,22 @@ public:
         np[i][j] = shapes[i].spaces[j].no_points;
       }
       nxyz[i] = np[i][0] * np[i][1] * np[i][2];
-      mu[i] = MatrixXd(np[i][0], np[i][1], np[i][2]);
-      mu[i].set_zero();
-      lame[i] = MatrixXd(np[i][0], np[i][1], np[i][2]);
-      lame[i].set_zero();
-      rho[i] = MatrixXd(np[i][0], np[i][1], np[i][2]);
-      rho[i].set_zero();
+      mu[i] = Tensor<double, 3>(np[i][0], np[i][1], np[i][2]);
+      mu[i].setZero();
+      lame[i] = Tensor<double, 3>(np[i][0], np[i][1], np[i][2]);
+      lame[i].setZero();
+      rho[i] = Tensor<double, 3>(np[i][0], np[i][1], np[i][2]);
+      rho[i].setZero();
       VD_mu[i] = MatrixXd(nxyz[i], nxyz[i]);
-      VD_mu[i].set_zero();
+      VD_mu[i].setZero();
       VD_lame[i] = MatrixXd(nxyz[i], nxyz[i]);
-      VD_lame[i].set_zero();
+      VD_lame[i].setZero();
       VD_rho[i] = MatrixXd(nxyz[i], nxyz[i]);
-      VD_rho[i].set_zero();
+      VD_rho[i].setZero();
       M[i] = MatrixXd(3 * nxyz[i], 3 * nxyz[i]);
-      M[i].set_zero();
+      M[i].setZero();
       K[i] = MatrixXd(3 * nxyz[i], 3 * nxyz[i]);
-      K[i].set_zero();
+      K[i].setZero();
       FG_var_MT(i);
       inner_product(i);
     }
@@ -328,7 +342,7 @@ public:
   //   VD_rho.setZero();
   //   M.setZero();
   //   K.setZero();
-  //   FG_var_MT();
+  //   FG_var_MT()n
   //   inner_product();
   // }
 
@@ -342,9 +356,9 @@ public:
     int wb = 2 * nxyz[l];
     int we = 3 * nxyz[l] - 1;
 
-    M(seq(ub, ue), seq(ub, ue)) = VD_rho[l];
-    M(seq(vb, ve), seq(vb, ve)) = VD_rho[l];
-    M(seq(wb, we), seq(wb, we)) = VD_rho[l];
+    M[l](seq(ub, ue), seq(ub, ue)) = VD_rho[l];
+    M[l](seq(vb, ve), seq(vb, ve)) = VD_rho[l];
+    M[l](seq(wb, we), seq(wb, we)) = VD_rho[l];
 
     MatrixXd epx = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
     epx(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDx;
@@ -439,9 +453,9 @@ public:
     int wb = 2 * nxyz[l];
     int we = 3 * nxyz[l] - 1;
 
-    M(seq(ub, ue), seq(ub, ue)) = VD_rho[l];
-    M(seq(vb, ve), seq(vb, ve)) = VD_rho[l];
-    M(seq(wb, we), seq(wb, we)) = VD_rho[l];
+    M[l](seq(ub, ue), seq(ub, ue)) = VD_rho[l];
+    M[l](seq(vb, ve), seq(vb, ve)) = VD_rho[l];
+    M[l](seq(wb, we), seq(wb, we)) = VD_rho[l];
 
     MatrixXd epx = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
     epx(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDx;
@@ -461,7 +475,7 @@ public:
     gammaxz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDx;
 
     MatrixXd epxyz = epx + epy + epz;
-    K = (epxyz.transpose() * (VD_lame[l] * epxyz)) +
+    K[l] = (epxyz.transpose() * (VD_lame[l] * epxyz)) +
         2 * ((epx.transpose() * (VD_mu[l] * epx)) +
              (epy.transpose() * (VD_mu[l] * epy)) +
              (epz.transpose() * (VD_mu[l] * epz))) +
@@ -745,12 +759,16 @@ public:
   void compute(const int noeigs, const int ncv, int &nconv, double &small_eig,
                const double shift = 0.01, const int max_iter = -1, const double tol = -1)
   {
-/*
     int tid = omp_get_thread_num();
 
     double t1t = omp_get_wtime();
-    bool gpu_load = T1_system_matrices();
+    bool gpu_load = T1_system_matrices(0);
     double cost = omp_get_wtime() - t1t;
+      cout << "rows: " << M[0].rows() << " cols: " << M[0].cols() << endl;
+      cout << M[0].coeff(0, 0) << endl;
+debug();
+    
+/*
     if (gpu_load)
     {
       gcosts[PADDING * rinfos[tid]->gpu_id][0] = cost;
@@ -918,14 +936,14 @@ public:
       {
         for (int k = 0; k < np[l][1]; k++)
         {
-          for (int l = 0; l < np[l][2]; l++)
+          for (int ll = 0; ll < np[l][2]; ll++)
           {
             double sum = 0;
             for (int m = 0; m < np[l][0]; m++)
             {
-              sum += Xadl(i, j, m) * Axyz(m, k, l);
+              sum += Xadl(i, j, m) * Axyz(m, k, ll);
             }
-            Xadmn[i][j][k][l] = sum;
+            Xadmn[i][j][k][ll] = sum;
           }
         }
       }
@@ -939,16 +957,16 @@ public:
       {
         for (int k = 0; k < np[l][2]; k++)
         {
-          for (int l = 0; l < np[l][1]; l++)
+          for (int ll = 0; ll < np[l][1]; ll++)
           {
             for (int m = 0; m < np[l][1]; m++)
             {
               double sum = 0;
               for (int o = 0; o < np[l][1]; o++)
               {
-                sum += Xadmn[i][j][o][k] * Ybem(o, l, m);
+                sum += Xadmn[i][j][o][k] * Ybem(o, ll, m);
               }
-              Gamma_adnbe[i][j][k][l][m] = sum;
+              Gamma_adnbe[i][j][k][ll][m] = sum;
             }
           }
         }
@@ -961,7 +979,7 @@ public:
       {
         for (int k = 0; k < np[l][1]; k++)
         {
-          for (int l = 0; l < np[l][1]; l++)
+          for (int ll = 0; ll < np[l][1]; ll++)
           {
             for (int m = 0; m < np[l][2]; m++)
             {
@@ -970,7 +988,7 @@ public:
                 double sum = 0;
                 for (int v = 0; v < np[l][2]; v++)
                 {
-                  sum += Gamma_adnbe[i][j][v][k][l] * Zcfn(v, m, o);
+                  sum += Gamma_adnbe[i][j][v][k][ll] * Zcfn(v, m, o);
                 }
                 int row = (i)*np[l][1] * np[l][2] + (k)*np[l][2] + m;
                 int col = (j)*np[l][1] * np[l][2] + (l)*np[l][2] + o;
@@ -1216,7 +1234,7 @@ int main(int argc, char **argv)
       if (ttt / no_gpus < 1)
       {
         int i = ttt % no_gpus;
-        tfgm.compute_gpu_costs(10, 60, tnconv, tmineig, 0.01, 100, 0.01, i, SAMPLE_SIZE);
+        tfgm.compute_gpu_costs(11, 60, tnconv, tmineig, 0.01, 100, 0.01, i, SAMPLE_SIZE);
         cout << "GPU" << i << " costs: " << endl;
         for (int j = 0; j < 4; j++)
         {
@@ -1242,8 +1260,8 @@ int main(int argc, char **argv)
   double Lr1 = 1;
 
   double min_ctrl_y = 0.1, max_ctrl_y = 0.40, min_ctrl_z = 0.1, max_ctrl_z = 0.40;
-  double interval = 0.025;
-
+  double interval = 0.1;
+//debug();
   vector<FGM > problems;
   for (double cy = min_ctrl_y; cy <= max_ctrl_y; cy += interval)
   {
@@ -1251,15 +1269,15 @@ int main(int argc, char **argv)
     {
       for(double h_a = 0.01; h_a <= 0.04; h_a += 0.01)
       {
-        for(double h1_h2 = 0.01; h1_h2 <= 0.04; h1_h2 += 0.01){
+        for(double h1_h2 = 0.1; h1_h2 <= 0.4; h1_h2 += 0.1){
           Shape * shapes = new Shape[num_layers];
           double ht = h_a * Lr1;
           double w_over_h2 = ht / (h1_h2 + 2);
           double w_over_h1 = h1_h2 * w_over_h2;
           double w_over_h3 = w_over_h1;
           shapes[0] = Shape(Lr1, asp_Rat1, w_over_h1, xi1, eta1, zeta1, first);
-          shapes[0] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second);
-          shapes[0] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first);
+          shapes[1] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second);
+          shapes[2] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first);
           problems.push_back(FGM(num_layers, shapes, cy, cz));
         }
       }
@@ -1291,6 +1309,7 @@ int main(int argc, char **argv)
     int nconv;
     double mineig;
     FGM fgm = problems[i];
+debug();
     fgm.compute(10, 60, nconv, mineig, 0.01, 100, 0.01);
     double end = omp_get_wtime();
 
