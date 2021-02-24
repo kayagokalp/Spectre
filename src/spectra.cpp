@@ -2,6 +2,7 @@
 #include <chrono>
 #include <limits>
 #include <algorithm>
+#include <vector>
 
 #include "omp.h"
 #include "consts.h"
@@ -106,7 +107,7 @@ public:
 class Material
 {
 public:
-  Material(): mod_elasticity(0), poisson_ratio(0), density(0) {}
+  //Material(): mod_elasticity(0), poisson_ratio(0), density(0) {}
   Material(dtype _mod_elasticity,
            dtype _poisson_ratio,
            dtype _density)
@@ -119,12 +120,13 @@ public:
   const dtype poisson_ratio;
   const dtype density;
 };
+
 class Shape
 {
 public:
-  Shape() : dim{0, 0, 0}, is_curved(false), curve{0, 0}, xyz(0){}
+  Shape() : dim{0, 0, 0}, is_curved(false), curve{0, 0}, xyz(0) {}
   Shape(dtype x_dim, dtype y_dim, dtype z_dim,
-        int x_sample, int y_sample, int z_sample, Material mat
+        int x_sample, int y_sample, int z_sample, Material mat,
         dtype xcurve = 0, dtype ycurve = 0) : dim{x_dim, y_dim, z_dim}, curve{xcurve, ycurve},
                                               is_curved(~(xcurve == 0 && ycurve == 0)),
                                               spaces{Space(-x_dim / 2, x_dim / 2, x_sample), Space(-y_dim / 2, y_dim / 2, y_sample), Space(0, z_dim, z_sample)},
@@ -137,6 +139,10 @@ public:
     QDz.setZero();
     vector_map_nojac();
   }
+
+  //Shape oparator=(const Shape& s){
+//	return s;
+  //}
 
   void vector_map_nojac()
   {
@@ -204,7 +210,7 @@ class FGM
 public:
   // int np[3]; //not to do this everytime
   // int nxyz;  //not to do this everytime
-  int * np;
+  int ** np;
   int * nxyz;
 
   // Shape shape;
@@ -246,11 +252,11 @@ public:
   {
     num_shapes = n_shapes;
     shapes = shps;
-    np = new int[num_shapes];
+    np = new unsigned int * [num_shapes];
     nxyz = new int[num_shapes];
 
     for(unsigned int i = 0; i < n_shapes; i++){
-      np[i] = new int[3];
+      np[i] = new unsigned int[3];
       for(unsigned int j = 0; j < 3; j++){
         np[i][j] = shapes[i].spaces[j].no_points;
       }
@@ -359,8 +365,8 @@ public:
     d_K = d_temp_K + (nc * nc);             //9
     d_temp = d_K + (nc * nc);               //3
 
-    cudaMemcpy(d_VD_lame[l], VD_lame[l].data(), VD_lame[l].size() * sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_VD_mu[l], VD_mu[l].data(), VD_mu[l].size() * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_VD_lame, VD_lame[l].data(), VD_lame[l].size() * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_VD_mu, VD_mu[l].data(), VD_mu[l].size() * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(d_epx, epx.data(), epx.size() * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(d_epy, epy.data(), epy.size() * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(d_epz, epz.data(), epz.size() * sizeof(double), cudaMemcpyHostToDevice);
@@ -400,8 +406,8 @@ public:
     cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);
     cudaStreamSynchronize(stream[ttt]);
 
-    K = MatrixXd::Zero(nc, nc);
-    cudaMemcpy(K.data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
+    K[l] = MatrixXd::Zero(nc, nc);
+    cudaMemcpy(K[l].data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
   }
 #endif
 
@@ -422,13 +428,13 @@ public:
     epx(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDx;
     MatrixXd epy = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
     epy(seq(0, nxyz[l] - 1), seq(vb, ve)) = shapes[l].QDy;
-    MatrixXd epz = MatrixXd::Zero(nxyz[l], 3 * nxyz);
+    MatrixXd epz = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
     epz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDz;
 
     MatrixXd gammaxy = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
     gammaxy(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDy;
     gammaxy(seq(0, nxyz[l] - 1), seq(vb, ve)) = shapes[l].QDx;
-    MatrixXd gammayz = MatrixXd::Zero(nxyz, 3 * nxyz);
+    MatrixXd gammayz = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
     gammayz(seq(0, nxyz[l] - 1), seq(vb, ve)) = shapes[l].QDz;
     gammayz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDy;
     MatrixXd gammaxz = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
@@ -622,7 +628,7 @@ public:
 
   void compute_gpu_costs(const int noeigs, const int ncv, int &nconv, double &small_eig, const double shift = 0.01, const int max_iter = -1, const double tol = -1, int g_id = 0, int sample_size = 1)
   {
-
+/*
     double cost;
     gcosts[PADDING * g_id][0] = 0;
     for (int i = 0; i < sample_size; i++)
@@ -656,11 +662,13 @@ public:
       gcosts[PADDING * g_id][2] += cost;
     }
     gcosts[PADDING * g_id][2] /= sample_size;
+*/
   }
 
   void compute_cpu_costs(const int noeigs, const int ncv, int &nconv, double &small_eig,
                          const double shift = 0.01, const int max_iter = -1, const double tol = -1, const int sample_size = 1)
   {
+/*
     double cost;
     ccosts[0] = 0;
     for (int i = 0; i < sample_size; i++)
@@ -712,11 +720,13 @@ public:
       ccosts[3] += cost;
     }
     ccosts[3] /= sample_size;
+*/
   }
 
   void compute(const int noeigs, const int ncv, int &nconv, double &small_eig,
                const double shift = 0.01, const int max_iter = -1, const double tol = -1)
   {
+/*
     int tid = omp_get_thread_num();
 
     double t1t = omp_get_wtime();
@@ -767,11 +777,12 @@ public:
     cost = omp_get_wtime() - t4t;
     ccosts[3] = cost;
     //cout << "Eigen: " << cost << " secs - nconv = " << nconv << endl;
+    //*/
   }
 
   MatrixXd beta_matrix_3d(MatrixXd &BC_3D, int xyz, unsigned int l)
   {
-    MatrixXd BC = MatrixXd::Zero(3 * nxyz[l] / np[xyz], 3 * nxyz[l]);
+    MatrixXd BC = MatrixXd::Zero(3 * nxyz[l] / np[xyz][l], 3 * nxyz[l]);
     int ids[3];
     for (int dim = 0; dim < 3; dim++)
     {
@@ -785,7 +796,7 @@ public:
           {
             ids[2] = k;
 
-            int idx = dim * (nxyz[l] / np[xyz]);
+            int idx = dim * (nxyz[l] / np[xyz][l]);
             if (xyz == 0)
               idx += j * np[l][2] + k;
             else if (xyz == 1)
@@ -807,15 +818,15 @@ public:
 
   void FG_var_MT(unsigned int l) //problem
   {
-    VectorXd &x = shape[l].spaces[0].s;
-    VectorXd &y = shape[l].spaces[1].s;
-    VectorXd &z = shape[l].spaces[2].s;
+    VectorXd &x = shapes[l].spaces[0].s;
+    VectorXd &y = shapes[l].spaces[1].s;
+    VectorXd &z = shapes[l].spaces[2].s;
 
-    double K_m = (shape[0].material.mod_elasticity / 3) / (1 - 2 * shape[0].material.poisson_ratio);
-    double G_m = (shape[0].material.mod_elasticity / 2) / (1 + shape[0].material.poisson_ratio);
+    double K_m = (shapes[0].material.mod_elasticity / 3) / (1 - 2 * shapes[0].material.poisson_ratio);
+    double G_m = (shapes[0].material.mod_elasticity / 2) / (1 + shapes[0].material.poisson_ratio);
 
-    double K_c = (shape[1].material.mod_elasticity / 3) / (1 - 2 * shape[1].material.poisson_ratio);
-    double G_c = (shape[1].material.mod_elasticity / 2) / (1 + shape[1].material.poisson_ratio);
+    double K_c = (shapes[1].material.mod_elasticity / 3) / (1 - 2 * shapes[1].material.poisson_ratio);
+    double G_c = (shapes[1].material.mod_elasticity / 2) / (1 + shapes[1].material.poisson_ratio);
 
     double V_min = 0;
     double V_max = 1;
@@ -974,7 +985,7 @@ public:
     VectorXd v_d3N[3];
     for (int i = 0; i < 3; i++)
     {
-      VectorXd temp = cheb_int(shape[l].spaces[i].start, shape[l].spaces[i].end, 3 * np[l][i]);
+      VectorXd temp = cheb_int(shapes[l].spaces[i].start, shapes[l].spaces[i].end, 3 * np[l][i]);
       v_d3N[i] = (temp.transpose() * IFT[i][2][1]).transpose();
     }
 
@@ -1024,40 +1035,40 @@ public:
 
 };
 
-ostream &operator<<(ostream &os, const Space &spc)
-{
-  os << spc.start << "\t" << spc.end << "\t" << spc.no_points;
-  return os;
-}
-
-ostream &operator<<(ostream &os, const Material &mat)
-{
-  os << mat.mod_elasticity << "\t" << mat.poisson_ratio << "\t" << mat.density;
-  return os;
-}
-
-ostream &operator<<(ostream &os, const Shape &shp)
-{
-  os << "\tDims  : " << shp.dim[0] << "\t" << shp.dim[1] << "\t" << shp.dim[2] << "\n"
-     << "\tCurved: " << shp.curve[0] << "\t" << shp.curve[1] << "\n"
-     << "\t\tX-space: " << shp.spaces[0] << "\n"
-     << "\t\tY-space: " << shp.spaces[1] << "\n"
-     << "\t\tZ-space: " << shp.spaces[2] << "\n";
-  return os;
-}
-
-ostream &operator<<(ostream &os, const FGM &fgm)
-{
-  os << "Shape -------------------------------------------\n"
-     << fgm.shape
-     << "Materials ---------------------------------------\n"
-     << "\tMat 1: " << fgm.mats[0] << "\n"
-     << "\tMat 2: " << fgm.mats[1] << "\n"
-     << "Parameters --------------------------------------\n"
-     << "\tCtrl : " << fgm.ctrl_y << "\t" << fgm.ctrl_z << "\n";
-  cout << "-------------------------------------------------\n";
-  return os;
-}
+// -ostream &operator<<(ostream &os, const Space &spc)
+// -{
+// -  os << spc.start << "\t" << spc.end << "\t" << spc.no_points;
+// -  return os;
+// -}
+// -
+// -ostream &operator<<(ostream &os, const Material &mat)
+// -{
+// -  os << mat.mod_elasticity << "\t" << mat.poisson_ratio << "\t" << mat.density;
+// -  return os;
+// -}
+// -
+// -ostream &operator<<(ostream &os, const Shape &shp)
+// -{
+// -  os << "\tDims  : " << shp.dim[0] << "\t" << shp.dim[1] << "\t" << shp.dim[2] << "\n"
+// -     << "\tCurved: " << shp.curve[0] << "\t" << shp.curve[1] << "\n"
+// -     << "\t\tX-space: " << shp.spaces[0] << "\n"
+// -     << "\t\tY-space: " << shp.spaces[1] << "\n"
+// -     << "\t\tZ-space: " << shp.spaces[2] << "\n";
+// -  return os;
+// -}
+// -
+// -ostream &operator<<(ostream &os, const FGM &fgm)
+// -{
+// -  os << "Shape -------------------------------------------\n"
+// -     << fgm.shape
+// -     << "Materials ---------------------------------------\n"
+// -     << "\tMat 1: " << fgm.mats[0] << "\n"
+// -     << "\tMat 2: " << fgm.mats[1] << "\n"
+// -     << "Parameters --------------------------------------\n"
+// -     << "\tCtrl : " << fgm.ctrl_y << "\t" << fgm.ctrl_z << "\n";
+// -  cout << "-------------------------------------------------\n";
+// -  return os;
+// -}
 
 //Fiber induced composite
 class FIC
@@ -1119,15 +1130,15 @@ int main(int argc, char **argv)
   Material tsecond(200.0 / 70.0, 0.3, 5700.0 / 2702.0);
   Shape * shps = new Shape[num_layers];
   Shape tshape1(2, 1, 0.3, xi1, eta1, zeta1, tfirst);
-  shsps[0] = tshape1;
+  shps[0] = tshape1;
   Shape tshape2(2, 1, 0.3, xi1, eta1, zeta1, tsecond);
-  shsps[1] = tshape2;
+  shps[1] = tshape2;
   Shape tshape3(2, 1, 0.3, xi1, eta1, zeta1, tfirst);
-  shsps[2] = tshape3;
+  shps[2] = tshape3;
   //
 
   //set CPU costs for each task
-  FGM tfgm(num_layers, shps, tfirst, tsecond, 0.1, 0.1);
+  FGM tfgm(num_layers, shps, 0.1, 0.1);
   int tnconv;
   double tmineig;
   tfgm.compute_cpu_costs(10, 60, tnconv, tmineig, 0.01, 100, 0.01, SAMPLE_SIZE);
@@ -1214,7 +1225,7 @@ int main(int argc, char **argv)
   double min_ctrl_y = 0.1, max_ctrl_y = 0.40, min_ctrl_z = 0.1, max_ctrl_z = 0.40;
   double interval = 0.025;
 
-  vector<FGM> problems;
+  vector<FGM > problems;
   for (double cy = min_ctrl_y; cy <= max_ctrl_y; cy += interval)
   {
     for (double cz = min_ctrl_z; cz <= max_ctrl_z; cz += interval)
@@ -1230,7 +1241,7 @@ int main(int argc, char **argv)
           shapes[0] = Shape(Lr1, asp_Rat1, w_over_h1, xi1, eta1, zeta1, first);
           shapes[0] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second);
           shapes[0] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first);
-          problems.push(FGM(num_layers, shapes, cy, cz));
+          problems.push_back(FGM(num_layers, shapes, cy, cz));
         }
       }
     }
@@ -1260,7 +1271,8 @@ int main(int argc, char **argv)
     // FGM fgm(shape, first, second, problems[i].first, problems[i].second);
     int nconv;
     double mineig;
-    problems[i].compute(10, 60, nconv, mineig, 0.01, 100, 0.01);
+    FGM fgm = problems[i];
+    fgm.compute(10, 60, nconv, mineig, 0.01, 100, 0.01);
     double end = omp_get_wtime();
 
 #pragma omp critical
