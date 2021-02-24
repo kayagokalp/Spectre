@@ -106,6 +106,7 @@ public:
 class Material
 {
 public:
+  Material(): mod_elasticity(0), poisson_ratio(0), density(0) {}
   Material(dtype _mod_elasticity,
            dtype _poisson_ratio,
            dtype _density)
@@ -121,6 +122,7 @@ public:
 class Shape
 {
 public:
+  Shape() : dim{0, 0, 0}, is_curved(false), curve{0, 0}, xyz(0){}
   Shape(dtype x_dim, dtype y_dim, dtype z_dim,
         int x_sample, int y_sample, int z_sample, Material mat
         dtype xcurve = 0, dtype ycurve = 0) : dim{x_dim, y_dim, z_dim}, curve{xcurve, ycurve},
@@ -211,8 +213,8 @@ public:
 
   // const double ctrl_y;
   // const double ctrl_z;
-  double ctrl_y;
-  double ctrl_z; 
+  const double ctrl_y;
+  const double ctrl_z; 
 
   // Tensor<double, 3> mu;
   // Tensor<double, 3> lame;
@@ -239,6 +241,7 @@ public:
 
   int num_shapes;
 
+  FGM(): ctrl_y(0), ctrl_z(0){}
   FGM(unsigned int n_shapes, Shape * shps, double ctrl_y, double ctrl_z) : ctrl_y(ctrl_y), ctrl_z(ctrl_z) 
   {
     num_shapes = n_shapes;
