@@ -75,6 +75,7 @@ public:
   MatrixXd V;
   MatrixXd Q1;
 
+  Space() {}
   Space(dtype start, dtype end, int no_points)
       : start(start), end(end), no_points(no_points),
         IT(no_points, no_points), FT(no_points, no_points), D(no_points, no_points), s(no_points)
@@ -107,7 +108,7 @@ public:
 class Material
 {
 public:
-  //Material(): mod_elasticity(0), poisson_ratio(0), density(0) {}
+  Material(): mod_elasticity(0), poisson_ratio(0), density(0) {}
   Material(dtype _mod_elasticity,
            dtype _poisson_ratio,
            dtype _density)
@@ -115,10 +116,15 @@ public:
         poisson_ratio(_poisson_ratio),
         density(_density) {}
 
+  void operator=(const Material& s){
+	mod_elasticity = s.mod_elasticity;
+	poisson_ratio = s.poisson_ratio;
+	density = s.density;
+  }
   //member variables
-  const dtype mod_elasticity;
-  const dtype poisson_ratio;
-  const dtype density;
+  dtype mod_elasticity;
+  dtype poisson_ratio;
+  dtype density;
 };
 
 class Shape
@@ -140,9 +146,22 @@ public:
     vector_map_nojac();
   }
 
-  //Shape oparator=(const Shape& s){
-//	return s;
-  //}
+  void operator=(const Shape& s){
+	for(unsigned int i = 0; i < 3; i++){
+		dim[i] = s.dim[i];
+		spaces[i] = s.spaces[i];
+		if(i < 2){
+			curve[i] = s.curve[i];
+		}
+	}
+	is_curved = s.is_curved;
+	xyz = s.xyz;
+	VD = s.VD;
+	QDx = s.QDx;
+	QDy = s.QDy;
+	QDz = s.QDz;
+	material = s.material;
+  }
 
   void vector_map_nojac()
   {
@@ -190,14 +209,14 @@ public:
     VD = VDx * VDy * VDz;
   }
 
-  const dtype dim[3];
-  const bool is_curved;
-  const dtype curve[2];
+  dtype dim[3];
+  bool is_curved;
+  dtype curve[2];
 
   Space spaces[3];
   Material material;
 
-  const int xyz;
+  int xyz;
   MatrixXd VD;
   MatrixXd QDx;
   MatrixXd QDy;
@@ -210,7 +229,7 @@ class FGM
 public:
   // int np[3]; //not to do this everytime
   // int nxyz;  //not to do this everytime
-  int ** np;
+  unsigned int ** np;
   int * nxyz;
 
   // Shape shape;
@@ -832,12 +851,12 @@ public:
     double V_max = 1;
 
     //for matlab conversion - can be removed later
-    double c = shape[l].dim[2];
-    double b = shape[l].dim[1];
+    double c = shapes[l].dim[2];
+    double b = shapes[l].dim[1];
     double p = ctrl_z;
     double q = ctrl_y;
-    double rho_m = shape[0].material.density;
-    double rho_c = shape[1].material.density;
+    double rho_m = shapes[0].material.density;
+    double rho_c = shapes[1].material.density;
 
     for (int j = 0; j < np[l][1]; j++)
     {
@@ -853,8 +872,8 @@ public:
         //double G = G_m + (G_c-G_m) * vcijk/(1 + (1- vcijk)*( (G_c-G_m)/(G_m+f1)));
         //double eijk = 9*K*G/(3*K+G);
         //double poisijk = (3*K-2*G)/(2*(3*K+G));
-        double eijk = (shape[1].material.mod_elasticity * vcijk) + (shape[0].material.mod_elasticity * vmijk);
-        double poisijk = (shape[1].material.poisson_ratio * vcijk) + (shape[0].material.poisson_ratio * vmijk);
+        double eijk = (shapes[1].material.mod_elasticity * vcijk) + (shapes[0].material.mod_elasticity * vmijk);
+        double poisijk = (shapes[1].material.poisson_ratio * vcijk) + (shapes[0].material.poisson_ratio * vmijk);
         double mutemp = eijk / (2 * (1 + poisijk));
         double lametemp = (2 * mutemp * poisijk) / (1 - 2 * poisijk);
 
