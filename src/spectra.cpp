@@ -122,13 +122,13 @@ class Shape
 {
 public:
   Shape(dtype x_dim, dtype y_dim, dtype z_dim,
-        int x_sample, int y_sample, int z_sample,
+        int x_sample, int y_sample, int z_sample, Material mat
         dtype xcurve = 0, dtype ycurve = 0) : dim{x_dim, y_dim, z_dim}, curve{xcurve, ycurve},
                                               is_curved(~(xcurve == 0 && ycurve == 0)),
                                               spaces{Space(-x_dim / 2, x_dim / 2, x_sample), Space(-y_dim / 2, y_dim / 2, y_sample), Space(0, z_dim, z_sample)},
                                               xyz(x_sample * y_sample * z_sample),
                                               VD(xyz, xyz),
-                                              QDx(xyz, xyz), QDy(xyz, xyz), QDz(xyz, xyz)
+                                              QDx(xyz, xyz), QDy(xyz, xyz), QDz(xyz, xyz), material(mat)
   {
     QDx.setZero();
     QDy.setZero();
@@ -239,7 +239,7 @@ public:
 
   int num_shapes;
 
-  FGM(int n_shapes, Shape * shps, double ctrl_y, double ctrl_z) : ctrl_y(ctrl_y), ctrl_z(ctrl_z) 
+  FGM(unsigned int n_shapes, Shape * shps, double ctrl_y, double ctrl_z) : ctrl_y(ctrl_y), ctrl_z(ctrl_z) 
   {
     num_shapes = n_shapes;
     shapes = shps;
@@ -1106,14 +1106,25 @@ int main(int argc, char **argv)
     omp_init_lock(&clocks[i]);
 #endif
 
+  unsigned int num_layers = 3;
+  unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
+  unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
+  unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
+
   //temp vars for cost calculation
   Material tfirst(1, 0.3, 1);
   Material tsecond(200.0 / 70.0, 0.3, 5700.0 / 2702.0);
-  Shape tshape(2, 1, 0.3, xdim, ydim, zdim);
+  Shape * shps = new Shape[num_layers];
+  Shape tshape1(2, 1, 0.3, xi1, eta1, zeta1, tfirst);
+  shsps[0] = tshape1;
+  Shape tshape2(2, 1, 0.3, xi1, eta1, zeta1, tsecond);
+  shsps[1] = tshape2;
+  Shape tshape3(2, 1, 0.3, xi1, eta1, zeta1, tfirst);
+  shsps[2] = tshape3;
   //
 
   //set CPU costs for each task
-  FGM tfgm(tshape, tfirst, tsecond, 0.1, 0.1);
+  FGM tfgm(num_layers, shps, tfirst, tsecond, 0.1, 0.1);
   int tnconv;
   double tmineig;
   tfgm.compute_cpu_costs(10, 60, tnconv, tmineig, 0.01, 100, 0.01, SAMPLE_SIZE);
@@ -1189,13 +1200,13 @@ int main(int argc, char **argv)
   }
 #endif
 
-  unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
-  unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
-  unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
 
   Material first(1, 0.3, 1);
   Material second(200.0 / 70.0, 0.3, 5700.0 / 2702.0);
-  Shape shape(2, 1, 0.3, xdim, ydim, zdim);
+
+  //geometric properties
+  double asp_Rat1 = 1;
+  double Lr1 = 1;
 
   double min_ctrl_y = 0.1, max_ctrl_y = 0.40, min_ctrl_z = 0.1, max_ctrl_z = 0.40;
   double interval = 0.025;
@@ -1208,7 +1219,15 @@ int main(int argc, char **argv)
       for(double h_a = 0.01; h_a <= 0.04; h_a += 0.01)
       {
         for(double h1_h2 = 0.01; h1_h2 <= 0.04; h1_h2 += 0.01){
-          
+          Shape * shapes = new Shape[num_layers];
+          double ht = h_a * Lr1;
+          double w_over_h2 = ht / (h1_h2 + 2);
+          double w_over_h1 = h1_h2 * w_over_h2;
+          double w_over_h3 = w_over_h1;
+          shapes[0] = Shape(Lr1, asp_Rat1, w_over_h1, xi1, eta1, zeta1, first);
+          shapes[0] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second);
+          shapes[0] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first);
+          problems.push(FGM(num_layers, shapes, cy, cz));
         }
       }
     }
@@ -1235,10 +1254,10 @@ int main(int argc, char **argv)
   for (int i = 0; i < problems.size(); i++)
   {
     double start = omp_get_wtime();
-    FGM fgm(shape, first, second, problems[i].first, problems[i].second);
+    // FGM fgm(shape, first, second, problems[i].first, problems[i].second);
     int nconv;
     double mineig;
-    fgm.compute(10, 60, nconv, mineig, 0.01, 100, 0.01);
+    problems[i].compute(10, 60, nconv, mineig, 0.01, 100, 0.01);
     double end = omp_get_wtime();
 
 #pragma omp critical
