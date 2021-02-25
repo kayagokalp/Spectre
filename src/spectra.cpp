@@ -136,15 +136,33 @@ public:
 class Shape
 {
 public:
+  bool is_curved;
+  dtype curve[2];
+  dtype dim[3];
+
+  Space spaces[3];
+  Material material;
+
+  double ctrl_y;
+  double ctrl_z;
+
+  int xyz;
+  MatrixXd VD;
+  MatrixXd QDx;
+  MatrixXd QDy;
+  MatrixXd QDz;
+
   Shape() : dim{0, 0, 0}, is_curved(false), curve{0, 0}, xyz(0) {}
   Shape(dtype x_dim, dtype y_dim, dtype z_dim,
-        int x_sample, int y_sample, int z_sample, Material mat,
+        int x_sample, int y_sample, int z_sample, 
+	Material mat, double ctrl_y, double ctrl_z,
         dtype xcurve = 0, dtype ycurve = 0) : dim{x_dim, y_dim, z_dim}, curve{xcurve, ycurve},
                                               is_curved(~(xcurve == 0 && ycurve == 0)),
                                               spaces{Space(-x_dim / 2, x_dim / 2, x_sample), Space(-y_dim / 2, y_dim / 2, y_sample), Space(0, z_dim, z_sample)},
                                               xyz(x_sample * y_sample * z_sample),
                                               VD(xyz, xyz),
-                                              QDx(xyz, xyz), QDy(xyz, xyz), QDz(xyz, xyz), material(mat)
+                                              QDx(xyz, xyz), QDy(xyz, xyz), QDz(xyz, xyz), material(mat), 
+					      ctrl_y(ctrl_y), ctrl_z(ctrl_z)
   {
     QDx.setZero();
     QDy.setZero();
@@ -167,6 +185,8 @@ public:
 	QDy = s.QDy;
 	QDz = s.QDz;
 	material = s.material;
+	ctrl_y = s.ctrl_y;
+	ctrl_z = s.ctrl_z;
   }
 
   void vector_map_nojac()
@@ -214,19 +234,6 @@ public:
 
     VD = VDx * VDy * VDz;
   }
-
-  dtype dim[3];
-  bool is_curved;
-  dtype curve[2];
-
-  Space spaces[3];
-  Material material;
-
-  int xyz;
-  MatrixXd VD;
-  MatrixXd QDx;
-  MatrixXd QDy;
-  MatrixXd QDz;
 };
 
 //Functionally graded material
@@ -244,8 +251,6 @@ public:
 
   // const double ctrl_y;
   // const double ctrl_z;
-  const double ctrl_y;
-  const double ctrl_z; 
 
   // Tensor<double, 3> mu;
   // Tensor<double, 3> lame;
@@ -272,8 +277,8 @@ public:
 
   int num_shapes;
 
-  FGM(): ctrl_y(0), ctrl_z(0){}
-  FGM(unsigned int n_shapes, Shape * shps, double ctrl_y, double ctrl_z) : ctrl_y(ctrl_y), ctrl_z(ctrl_z) 
+  //FGM(): ctrl_y(0), ctrl_z(0){}
+  FGM(unsigned int n_shapes, Shape * shps) 
   {
     num_shapes = n_shapes;
     shapes = shps;
@@ -766,6 +771,8 @@ public:
     double cost = omp_get_wtime() - t1t;
       cout << "rows: " << M[0].rows() << " cols: " << M[0].cols() << endl;
       cout << M[0].coeff(0, 0) << endl;
+      cout << "rows: " << K[0].rows() << " cols: " << K[0].cols() << endl;
+      cout << M[0].coeff(0, 0) << endl;
 debug();
     
 /*
@@ -871,10 +878,12 @@ debug();
     //for matlab conversion - can be removed later
     double c = shapes[l].dim[2];
     double b = shapes[l].dim[1];
-    double p = ctrl_z;
-    double q = ctrl_y;
+    double p = shapes[l].ctrl_y;
+    double q = shapes[l].ctrl_z;
     double rho_m = shapes[0].material.density;
     double rho_c = shapes[1].material.density;
+
+debug();
 
     for (int j = 0; j < np[l][1]; j++)
     {
@@ -903,6 +912,30 @@ debug();
         }
       }
     }
+    cout << rho[l](0, 0, 0) << endl;
+    cout << rho[l](0, 0, 1) << endl;
+    cout << rho[l](0, 0, 2) << endl;
+    cout << rho[l](0, 0, 3) << endl;
+    cout << rho[l](0, 0, 4) << endl;
+    cout << rho[l](0, 0, 5) << endl;
+    cout << rho[l](0, 0, 6) << endl;
+cout << "***********************" << endl;
+    cout << mu[l](0, 0, 0) << endl;
+    cout << mu[l](0, 0, 1) << endl;
+    cout << mu[l](0, 0, 2) << endl;
+    cout << mu[l](0, 0, 3) << endl;
+    cout << mu[l](0, 0, 4) << endl;
+    cout << mu[l](0, 0, 5) << endl;
+    cout << mu[l](0, 0, 6) << endl;
+cout << "***********************" << endl;
+    cout << lame[l](0, 0, 0) << endl;
+    cout << lame[l](0, 0, 1) << endl;
+    cout << lame[l](0, 0, 2) << endl;
+    cout << lame[l](0, 0, 3) << endl;
+    cout << lame[l](0, 0, 4) << endl;
+    cout << lame[l](0, 0, 5) << endl;
+    cout << lame[l](0, 0, 6) << endl;
+    debug();
   }
 
   void tensor3(VectorXd &v_d3Nt, MatrixXd &Sst, int n,
@@ -1166,16 +1199,16 @@ int main(int argc, char **argv)
   Material tfirst(1, 0.3, 1);
   Material tsecond(200.0 / 70.0, 0.3, 5700.0 / 2702.0);
   Shape * shps = new Shape[num_layers];
-  Shape tshape1(2, 1, 0.3, xi1, eta1, zeta1, tfirst);
+  Shape tshape1(2, 1, 0.3, xi1, eta1, zeta1, tfirst, 0.1, 0);
   shps[0] = tshape1;
-  Shape tshape2(2, 1, 0.3, xi1, eta1, zeta1, tsecond);
+  Shape tshape2(2, 1, 0.3, xi1, eta1, zeta1, tsecond, 0, 0);
   shps[1] = tshape2;
-  Shape tshape3(2, 1, 0.3, xi1, eta1, zeta1, tfirst);
+  Shape tshape3(2, 1, 0.3, xi1, eta1, zeta1, tfirst, 0.1, 0);
   shps[2] = tshape3;
   //
 
   //set CPU costs for each task
-  FGM tfgm(num_layers, shps, 0.1, 0.1);
+  FGM tfgm(num_layers, shps);
   int tnconv;
   double tmineig;
   tfgm.compute_cpu_costs(10, 60, tnconv, tmineig, 0.01, 100, 0.01, SAMPLE_SIZE);
@@ -1252,8 +1285,8 @@ int main(int argc, char **argv)
 #endif
 
 
-  Material first(1, 0.3, 1);
-  Material second(200.0 / 70.0, 0.3, 5700.0 / 2702.0);
+  Material first(70000000000.0, 0.33, 2700);
+  Material second(200000000000.0, 0.33, 5700.0);
 
   //geometric properties
   double asp_Rat1 = 1;
@@ -1261,7 +1294,7 @@ int main(int argc, char **argv)
 
   double min_ctrl_y = 0.1, max_ctrl_y = 0.40, min_ctrl_z = 0.1, max_ctrl_z = 0.40;
   double interval = 0.1;
-//debug();
+debug();
   vector<FGM > problems;
   for (double cy = min_ctrl_y; cy <= max_ctrl_y; cy += interval)
   {
@@ -1275,10 +1308,10 @@ int main(int argc, char **argv)
           double w_over_h2 = ht / (h1_h2 + 2);
           double w_over_h1 = h1_h2 * w_over_h2;
           double w_over_h3 = w_over_h1;
-          shapes[0] = Shape(Lr1, asp_Rat1, w_over_h1, xi1, eta1, zeta1, first);
-          shapes[1] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second);
-          shapes[2] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first);
-          problems.push_back(FGM(num_layers, shapes, cy, cz));
+          shapes[0] = Shape(Lr1, asp_Rat1, w_over_h1, xi1, eta1, zeta1, first, cy, 0);
+          shapes[1] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second, 0, 0);
+          shapes[2] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first, cz, 0);
+          problems.push_back(FGM(num_layers, shapes));
         }
       }
     }
@@ -1316,17 +1349,17 @@ debug();
 #pragma omp critical
     if (nconv > 0)
     {
-      cout << i << " " << fgm.ctrl_y << " " << fgm.ctrl_z << " " << mineig << " " << end - start << endl;
+      cout << i << " " << fgm.shapes[0].ctrl_y << " " << fgm.shapes[0].ctrl_z << " " << mineig << " " << end - start << endl;
       if (mineig < smallest_mineig)
       {
         smallest_mineig = mineig;
-        best_y = fgm.ctrl_y;
-        best_z = fgm.ctrl_z;
+        best_y = fgm.shapes[0].ctrl_y;
+        best_z = fgm.shapes[0].ctrl_z;
       }
     }
     else
     {
-      cout << "No eigen: " << fgm.ctrl_y << " " << fgm.ctrl_z << " " << end - start << endl;
+      cout << "No eigen: " << fgm.shapes[0].ctrl_y << " " << fgm.shapes[0].ctrl_z << " " << end - start << endl;
     }
   }
   //}
