@@ -837,11 +837,35 @@ class FGM
 				KK(seq(copyStartX, copyStartX + K[i].rows() - 1), seq(copyStartY, copyStartY+K[i].rows() - 1)) = K[i];
 				copyStartX += M[i].rows();
 				copyStartY += M[i].cols(); 
-				debug();
 //debug();
 			}
 			//cout << "system-matrices: " << cost << " secs " << endl;
 
+			MatrixXd BC_3D_V13 = boundary_condition_3d(0, 0, 0);
+			MatrixXd BC_V13 = beta_matrix_3d(BC_3D_V13, 0, 0);
+			
+			MatrixXd BC_3D_V2 = boundary_condition_3d(0, 0, 1);
+			MatrixXd BC_V2 = beta_matrix_3d(BC_3D_V2, 0, 1);
+			
+			MatrixXd BC_3D_VI13 = boundary_condition_3d(0, 1, 0);
+			MatrixXd BC_VI13 = beta_matrix_3d(BC_3D_VI13, 0, 0);
+			
+			MatrixXd BC_3D_VI2 = boundary_condition_3d(0, 1, 1);
+			MatrixXd BC_VI2 = beta_matrix_3d(BC_3D_VI2, 0, 1);
+			
+			MatrixXd BC_3D_VII13 = boundary_condition_3d(1, 0, 0);
+			MatrixXd BC_VII13 = beta_matrix_3d(BC_3D_VII13, 1, 0);
+			
+			MatrixXd BC_3D_VII2 = boundary_condition_3d(1, 0, 1);
+			MatrixXd BC_VII2 = beta_matrix_3d(BC_3D_VII2, 1, 1);
+			
+			MatrixXd BC_3D_VIII13 = boundary_condition_3d(1, 1, 0);
+			MatrixXd BC_VIII13 = beta_matrix_3d(BC_3D_VIII13, 1, 0);
+			
+			MatrixXd BC_3D_VIII2 = boundary_condition_3d(1, 1, 1);
+			MatrixXd BC_VIII2 = beta_matrix_3d(BC_3D_VIII2, 1, 1);
+			debug();
+			/*
 			MatrixXd BC_3D_I = boundary_condition_3d(0, 0, 0);
 			MatrixXd BC_3D_II = boundary_condition_3d(0, 1, 0);
 
@@ -850,7 +874,6 @@ class FGM
 			MatrixXd BC(BC_1.rows() + BC_2.rows(), BC_1.cols());
 			BC << BC_1, BC_2;
 
-			/*
 			MatrixXd V;
 			double t2t = omp_get_wtime();
 			T2_svd(BC, V);
@@ -1135,7 +1158,7 @@ class FGM
 			}
 			MatrixXd BC(3, np[l][xyz]);
 			BC << (bc[0] * e), (bc[1] * e), (bc[2] * e);
-			debug();
+//debug();
 			return BC;
 		}
 
@@ -1348,9 +1371,13 @@ int main(int argc, char **argv)
 					shapes[1] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second, 0, 0);
 					shapes[2] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first, cz, 0);
 					problems.push_back(FGM(num_layers, shapes));
+					break;
 				}
+				break;
 			}
+			break;
 		}
+		break;
 	}
 
 	cout << "Preprocessing ended." << endl;
