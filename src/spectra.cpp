@@ -812,6 +812,35 @@ class FGM
 			   */
 		}
 
+		MatrixXd removeZeroRows(MatrixXd &mat){
+			MatrixXd temp = mat.rowwise().any();
+			vector<int> vec(temp.data(), temp.data() + temp.rows()*temp.cols());
+			vector<int> res;
+			for(int i = 0; i < vec.size(); i++){
+				if(vec[i] == 1){
+					res.push_back(i);
+				}
+			}
+			return mat(res, Eigen::all);
+		}
+
+		void prepareBoundaryCondition(MatrixXd &mat, unsigned int l){
+			for(int i = 0; i < 3*np[l][0]; i++){
+				if(i == 0){
+					mat(seq(0, 0), seq(0, mat.cols())).setZero(); 
+				}
+				if(i < 3*np[l][0]-1){
+					mat(seq((i+1)*np[l][1], (i+1)*np[l][1]), seq(0, mat.cols())).setZero(); 
+				}
+				mat(seq((i+1)*np[l][1]-1, (i+1)*np[l][1]-1), seq(0, mat.cols())).setZero(); 
+			}
+			mat(seq(0, np[l][1]), seq(0, mat.cols())).setZero();
+			mat(seq(np[l][1]*(np[l][0]-1), np[l][1]*np[l][0]-1), seq(0, mat.cols())).setZero();
+			mat(seq(np[l][1]*np[l][0], np[l][1]*(np[l][0]+1)-1), seq(0, mat.cols())).setZero();
+			mat(seq(np[l][1]*(np[l][0]+np[l][1]-1),np[l][1]*(np[l][0]+np[l][1])-1), seq(0, mat.cols())).setZero();	
+			mat(seq(np[l][1]*(np[l][0]+np[l][1]), np[l][1]*(np[l][0]+np[l][1]+1)-1), seq(0, mat.cols())).setZero();
+			mat(seq(np[l][1]*(np[l][0]+np[l][1]+np[l][1]-1), np[l][1]*(np[l][0]+np[l][1]+np[l][1])-1), seq(0, mat.cols())).setZero();
+		}
 		void compute(const int noeigs, const int ncv, int &nconv, double &small_eig,
 				const double shift = 0.01, const int max_iter = -1, const double tol = -1)
 		{
@@ -837,9 +866,28 @@ class FGM
 				KK(seq(copyStartX, copyStartX + K[i].rows() - 1), seq(copyStartY, copyStartY+K[i].rows() - 1)) = K[i];
 				copyStartX += M[i].rows();
 				copyStartY += M[i].cols(); 
-//debug();
+				cout << "system-matrices: " << cost << " secs " << endl;
 			}
-			//cout << "system-matrices: " << cost << " secs " << endl;
+
+			MatrixXd BC_3D_I = boundary_condition_3d(2, 1, 0);
+			MatrixXd BC_I = beta_matrix_3d(BC_3D_I, 2, 0);
+			prepareBoundaryCondition(BC_I, 0);	
+			MatrixXd BC_I_U = removeZeroRows(BC_I);
+
+			MatrixXd BC_3D_II = boundary_condition_3d(2, 0, 1);
+			MatrixXd BC_II = beta_matrix_3d(BC_3D_II, 2, 1);
+			prepareBoundaryCondition(BC_II, 1);	
+			MatrixXd BC_II_B = removeZeroRows(BC_II);
+			
+			MatrixXd BC_3D_III = boundary_condition_3d(2, 1, 1);
+			MatrixXd BC_III = beta_matrix_3d(BC_3D_III, 2, 1);
+			prepareBoundaryCondition(BC_III, 1);	
+			MatrixXd BC_III_U = removeZeroRows(BC_III);
+			
+			MatrixXd BC_3D_IV = boundary_condition_3d(2, 0, 2);
+			MatrixXd BC_IV = beta_matrix_3d(BC_3D_IV, 2, 2);
+			prepareBoundaryCondition(BC_IV, 2);	
+			MatrixXd BC_IV_B = removeZeroRows(BC_IV);
 
 			MatrixXd BC_3D_V13 = boundary_condition_3d(0, 0, 0);
 			MatrixXd BC_V13 = beta_matrix_3d(BC_3D_V13, 0, 0);
@@ -864,6 +912,62 @@ class FGM
 			
 			MatrixXd BC_3D_VIII2 = boundary_condition_3d(1, 1, 1);
 			MatrixXd BC_VIII2 = beta_matrix_3d(BC_3D_VIII2, 1, 1);
+// cout << "r: " << BC_I_U.rows() << " c: " << BC_I_U.cols() << " s: " << BC_I_U.sum() << endl;
+// cout << "r: " << BC_II_B.rows() << " c: " << BC_II_B.cols() << " s: " << BC_II_B.sum() << endl;
+// cout << "r: " << BC_III_U.rows() << " c: " << BC_III_U.cols() << " s: " << BC_III_U.sum() << endl;
+// cout << "r: " << BC_IV_B.rows() << " c: " << BC_IV_B.cols() << " s: " << BC_IV_B.sum() << endl;
+// cout << "r: " << BC_V13.rows() << " c: " << BC_V13.cols() << " s: " << BC_V13.sum() << endl;
+// cout << "r: " << BC_V2.rows() << " c: " << BC_V2.cols() << " s: " << BC_V2.sum() << endl;
+// cout << "r: " << BC_VI13.rows() << " c: " << BC_VI13.cols() << " s: " << BC_VI13.sum() << endl;
+// cout << "r: " << BC_VI2.rows() << " c: " << BC_VI2.cols() << " s: " << BC_VI2.sum() << endl;
+// cout << "r: " << BC_VII13.rows() << " c: " << BC_VII13.cols() << " s: " << BC_VII13.sum() << endl;
+// cout << "r: " << BC_VII2.rows() << " c: " << BC_VII2.cols() << " s: " << BC_VII2.sum() << endl;
+// cout << "r: " << BC_VIII13.rows() << " c: " << BC_VIII13.cols() << " s: " << BC_VIII13.sum() << endl;
+// cout << "r: " << BC_VIII2.rows() << " c: " << BC_VIII2.cols() << " s: " << BC_VIII2.sum() << endl;
+			MatrixXd BC(BC_I_U.rows() + BC_III_U.rows() + BC_VII13.rows() + BC_VII2.rows() + BC_VII13.rows() + BC_VIII13.rows() + BC_VIII2.rows() + BC_VIII13.rows() + BC_V13.rows() + BC_V2.rows() + BC_V13.rows() + BC_VI13.rows() + BC_VI2.rows() + BC_VI13.rows(), MM.cols());
+			BC.setZero();
+			int rowStart = 0;
+			BC(seq(0, BC_I_U.rows()), seq(0, BC_I_U.cols())) = BC_I_U;
+			BC(seq(0, BC_II_B.rows()), seq(BC_I_U.cols(), BC_I_U.cols() + BC_II_B.cols())) = -1*BC_II_B;
+			
+			rowStart = BC_I_U.rows();
+			BC(seq(rowStart, rowStart+BC_III_U.rows()), seq(BC.cols()-BC_IV_B.cols()-BC_III_U.cols(), BC.cols()-BC_IV_B.cols())) = BC_III_U;
+			BC(seq(rowStart, rowStart + BC_IV_B.rows()), seq(BC.cols()-BC_IV_B.cols(), BC.cols()-1)) = -1*BC_IV_B;
+			
+			rowStart += BC_III_U.rows();
+			BC(seq(rowStart, rowStart + BC_VII13.rows()), seq(0, BC_VII13.cols())) = BC_VII13;
+				
+			rowStart += BC_VII13.rows();
+			BC(seq(rowStart, rowStart + BC_VII2.rows()), seq(np[0][0] * np[0][1] * np[0][2] * 3 - 1, np[0][0] * np[0][1] * np[0][2] * 3 - 1 + BC_VII2.cols())) = BC_VII2;
+
+			rowStart += BC_VII2.rows();
+			BC(seq(rowStart, rowStart + BC_VII13.rows()), seq(BC.cols() - BC_VII13.cols(), BC.cols()-1)) = BC_VII13;
+
+			rowStart += BC_VII13.rows();
+			BC(seq(rowStart, rowStart + BC_VIII13.rows()), seq(0, BC_VIII13.cols())) = BC_VIII13;
+
+			rowStart += BC_VIII13.rows();
+			BC(seq(rowStart, rowStart + BC_VIII2.rows()), seq(np[0][0]*np[0][1]*np[0][2]*3 - 1, np[0][0]*np[0][1]*np[0][2]*3 - 1 + BC_VIII2.cols())) = BC_VIII2; 
+
+			rowStart += BC_VIII2.rows();
+			BC(seq(rowStart, rowStart + BC_VIII13.rows()), seq(BC.cols()-BC_VIII13.cols(), BC.cols()-1)) = BC_VIII13;
+
+			rowStart += BC_VIII13.rows();
+			BC(seq(rowStart, rowStart + BC_V13.rows()), seq(0, BC_V13.cols())) = BC_V13;
+			rowStart += BC_V13.rows();
+			BC(seq(rowStart, rowStart + BC_V2.rows()), seq(np[2][0]*np[2][1]*np[2][2]*3 - 1, np[2][0]*np[2][1]*np[2][2]*3 - 1 + BC_V2.cols())) = BC_V2;
+
+			rowStart += BC_V2.rows();
+			BC(seq(rowStart, rowStart + BC_V13.rows()), seq(BC.cols() - BC_V13.cols(), BC.cols()-1)) = BC_V13;	
+
+			rowStart += BC_V13.rows();
+			BC(seq(rowStart, rowStart + BC_VI13.rows()), seq(0, BC_VI13.cols())) = BC_VI13;
+
+			rowStart += BC_VI13.rows();
+			BC(seq(rowStart, rowStart + BC_VI2.rows()), seq(np[2][0]*np[2][1]*np[2][2]*3-1, np[2][0]*np[2][1]*np[2][2]*3-1+BC_VI2.cols())) = BC_VI2;
+
+			rowStart += BC_VI2.rows();
+			BC(seq(rowStart, rowStart + BC_VI13.rows()), seq(BC.cols()-BC_VI13.cols(), BC.cols()-1)) = BC_VI13;
 			debug();
 			/*
 			MatrixXd BC_3D_I = boundary_condition_3d(0, 0, 0);
@@ -906,7 +1010,7 @@ class FGM
 
 		MatrixXd beta_matrix_3d(MatrixXd &BC_3D, int xyz, unsigned int l)
 		{
-			MatrixXd BC = MatrixXd::Zero(3 * nxyz[l] / np[xyz][l], 3 * nxyz[l]);
+			MatrixXd BC = MatrixXd::Zero(3 * nxyz[l] / np[l][xyz], 3 * nxyz[l]);
 			int ids[3];
 			for (int dim = 0; dim < 3; dim++)
 			{
@@ -920,7 +1024,7 @@ class FGM
 						{
 							ids[2] = k;
 
-							int idx = dim * (nxyz[l] / np[xyz][l]);
+							int idx = dim * (nxyz[l] / np[l][xyz]);
 							if (xyz == 0)
 								idx += j * np[l][2] + k;
 							else if (xyz == 1)
