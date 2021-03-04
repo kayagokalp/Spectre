@@ -812,6 +812,19 @@ class FGM
 			   */
 		}
 
+		void removeDuplicateRows(MatrixXd &mat){
+			vector<Eigen::VectorXd> vec;
+			for(int i = 0; i < mat.rows(); i++){
+				vec.push_back(mat.row(i));
+			}
+			sort(vec.begin(), vec.end(), [](Eigen::VectorXd const& t1, Eigen::VectorXd const& t2){ for(int i = 0; i < t1.size(); i++){ if(t1(i) != t2(i)){ return t1(i) < t2(i);}}	return false;});
+			vec.erase(unique(vec.begin(), vec.end()), vec.end());
+			mat.resize(vec.size(), mat.cols());
+			for(int i = 0; i < vec.size(); i++){
+				mat.row(i) = vec[i];
+			}
+		}
+
 		MatrixXd removeZeroRows(MatrixXd &mat){
 			MatrixXd temp = mat.rowwise().any();
 			vector<int> vec(temp.data(), temp.data() + temp.rows()*temp.cols());
@@ -927,68 +940,63 @@ class FGM
 			MatrixXd BC(BC_I_U.rows() + BC_III_U.rows() + BC_VII13.rows() + BC_VII2.rows() + BC_VII13.rows() + BC_VIII13.rows() + BC_VIII2.rows() + BC_VIII13.rows() + BC_V13.rows() + BC_V2.rows() + BC_V13.rows() + BC_VI13.rows() + BC_VI2.rows() + BC_VI13.rows(), MM.cols());
 			BC.setZero();
 			int rowStart = 0;
-			BC(seq(0, BC_I_U.rows()), seq(0, BC_I_U.cols())) = BC_I_U;
-			BC(seq(0, BC_II_B.rows()), seq(BC_I_U.cols(), BC_I_U.cols() + BC_II_B.cols())) = -1*BC_II_B;
+			BC(seq(0, BC_I_U.rows()-1), seq(0, BC_I_U.cols()-1)) = BC_I_U;
+			BC(seq(0, BC_II_B.rows()-1), seq(BC_I_U.cols(), BC_I_U.cols() + BC_II_B.cols()-1)) = -1*BC_II_B;
 			
 			rowStart = BC_I_U.rows();
-			BC(seq(rowStart, rowStart+BC_III_U.rows()), seq(BC.cols()-BC_IV_B.cols()-BC_III_U.cols(), BC.cols()-BC_IV_B.cols())) = BC_III_U;
-			BC(seq(rowStart, rowStart + BC_IV_B.rows()), seq(BC.cols()-BC_IV_B.cols(), BC.cols()-1)) = -1*BC_IV_B;
+			BC(seq(rowStart, rowStart+BC_III_U.rows()-1), seq(BC.cols()-BC_IV_B.cols()-BC_III_U.cols(), BC.cols()-BC_IV_B.cols()-1)) = BC_III_U;
+			BC(seq(rowStart, rowStart + BC_IV_B.rows()-1), seq(BC.cols()-BC_IV_B.cols(), BC.cols()-1)) = -1*BC_IV_B;
 			
 			rowStart += BC_III_U.rows();
-			BC(seq(rowStart, rowStart + BC_VII13.rows()), seq(0, BC_VII13.cols())) = BC_VII13;
+			BC(seq(rowStart, rowStart + BC_VII13.rows()-1), seq(0, BC_VII13.cols()-1)) = BC_VII13;
 				
 			rowStart += BC_VII13.rows();
-			BC(seq(rowStart, rowStart + BC_VII2.rows()), seq(np[0][0] * np[0][1] * np[0][2] * 3 - 1, np[0][0] * np[0][1] * np[0][2] * 3 - 1 + BC_VII2.cols())) = BC_VII2;
+			BC(seq(rowStart, rowStart + BC_VII2.rows()-1), seq(np[0][0] * np[0][1] * np[0][2] * 3, np[0][0] * np[0][1] * np[0][2] * 3 - 1 + BC_VII2.cols())) = BC_VII2;
 
 			rowStart += BC_VII2.rows();
-			BC(seq(rowStart, rowStart + BC_VII13.rows()), seq(BC.cols() - BC_VII13.cols(), BC.cols()-1)) = BC_VII13;
+			BC(seq(rowStart, rowStart + BC_VII13.rows()-1), seq(BC.cols() - BC_VII13.cols(), BC.cols()-1)) = BC_VII13;
 
 			rowStart += BC_VII13.rows();
-			BC(seq(rowStart, rowStart + BC_VIII13.rows()), seq(0, BC_VIII13.cols())) = BC_VIII13;
+			BC(seq(rowStart, rowStart + BC_VIII13.rows()-1), seq(0, BC_VIII13.cols()-1)) = BC_VIII13;
 
 			rowStart += BC_VIII13.rows();
-			BC(seq(rowStart, rowStart + BC_VIII2.rows()), seq(np[0][0]*np[0][1]*np[0][2]*3 - 1, np[0][0]*np[0][1]*np[0][2]*3 - 1 + BC_VIII2.cols())) = BC_VIII2; 
+			BC(seq(rowStart, rowStart + BC_VIII2.rows()-1), seq(np[0][0]*np[0][1]*np[0][2]*3, np[0][0]*np[0][1]*np[0][2]*3 - 1 + BC_VIII2.cols())) = BC_VIII2; 
 
 			rowStart += BC_VIII2.rows();
-			BC(seq(rowStart, rowStart + BC_VIII13.rows()), seq(BC.cols()-BC_VIII13.cols(), BC.cols()-1)) = BC_VIII13;
+			BC(seq(rowStart, rowStart + BC_VIII13.rows()-1), seq(BC.cols()-BC_VIII13.cols(), BC.cols()-1)) = BC_VIII13;
 
 			rowStart += BC_VIII13.rows();
-			BC(seq(rowStart, rowStart + BC_V13.rows()), seq(0, BC_V13.cols())) = BC_V13;
+			BC(seq(rowStart, rowStart + BC_V13.rows()-1), seq(0, BC_V13.cols()-1)) = BC_V13;
 			rowStart += BC_V13.rows();
-			BC(seq(rowStart, rowStart + BC_V2.rows()), seq(np[2][0]*np[2][1]*np[2][2]*3 - 1, np[2][0]*np[2][1]*np[2][2]*3 - 1 + BC_V2.cols())) = BC_V2;
+			BC(seq(rowStart, rowStart + BC_V2.rows()-1), seq(np[2][0]*np[2][1]*np[2][2]*3, np[2][0]*np[2][1]*np[2][2]*3 - 1 + BC_V2.cols())) = BC_V2;
 
 			rowStart += BC_V2.rows();
-			BC(seq(rowStart, rowStart + BC_V13.rows()), seq(BC.cols() - BC_V13.cols(), BC.cols()-1)) = BC_V13;	
+			BC(seq(rowStart, rowStart + BC_V13.rows()-1), seq(BC.cols() - BC_V13.cols(), BC.cols()-1)) = BC_V13;	
 
 			rowStart += BC_V13.rows();
-			BC(seq(rowStart, rowStart + BC_VI13.rows()), seq(0, BC_VI13.cols())) = BC_VI13;
+			BC(seq(rowStart, rowStart + BC_VI13.rows()-1), seq(0, BC_VI13.cols()-1)) = BC_VI13;
 
 			rowStart += BC_VI13.rows();
-			BC(seq(rowStart, rowStart + BC_VI2.rows()), seq(np[2][0]*np[2][1]*np[2][2]*3-1, np[2][0]*np[2][1]*np[2][2]*3-1+BC_VI2.cols())) = BC_VI2;
+			BC(seq(rowStart, rowStart + BC_VI2.rows()-1), seq(np[2][0]*np[2][1]*np[2][2]*3, np[2][0]*np[2][1]*np[2][2]*3-1+BC_VI2.cols())) = BC_VI2;
 
 			rowStart += BC_VI2.rows();
-			BC(seq(rowStart, rowStart + BC_VI13.rows()), seq(BC.cols()-BC_VI13.cols(), BC.cols()-1)) = BC_VI13;
-			debug();
-			/*
-			MatrixXd BC_3D_I = boundary_condition_3d(0, 0, 0);
-			MatrixXd BC_3D_II = boundary_condition_3d(0, 1, 0);
-
-			MatrixXd BC_1 = beta_matrix_3d(BC_3D_I, 0, 0);
-			MatrixXd BC_2 = beta_matrix_3d(BC_3D_II, 0, 0);
-			MatrixXd BC(BC_1.rows() + BC_2.rows(), BC_1.cols());
-			BC << BC_1, BC_2;
-
+			BC(seq(rowStart, rowStart + BC_VI13.rows()-1), seq(BC.cols()-BC_VI13.cols(), BC.cols()-1)) = BC_VI13;
+			removeDuplicateRows(BC);
+			cout << BC.colwise().sum() << endl;	
+			MatrixXd BCcsum = BC.colwise().sum();
+			
 			MatrixXd V;
 			double t2t = omp_get_wtime();
 			T2_svd(BC, V);
-			cost = omp_get_wtime() - t2t;
+			double cost = omp_get_wtime() - t2t;
 			ccosts[1] = cost;
 			//cout << "SVD: " << cost << " secs " << endl;
+			debug();
 
 			MatrixXd P = V(seq(0, V.rows() - 1), seq(BC.rows(), BC.cols() - 1));
 			MatrixXd a0;
 			double t3t = omp_get_wtime();
-			gpu_load = T3_mul_inv(a0, P);
+			bool gpu_load = T3_mul_inv(a0, P);
 			cost = omp_get_wtime() - t3t;
 			if (gpu_load)
 			{
