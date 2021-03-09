@@ -299,6 +299,7 @@ class FGM
 			shapes = shps;
 			np = new unsigned int * [num_shapes];
 			nxyz = new int[num_shapes];
+			nnxyz = 0;
 			mu = new Tensor<double, 3>[num_shapes];
 			lame = new Tensor<double, 3>[num_shapes];
 			rho = new Tensor<double, 3>[num_shapes];
@@ -314,6 +315,7 @@ class FGM
 					np[i][j] = shapes[i].spaces[j].no_points;
 				}
 				nxyz[i] = np[i][0] * np[i][1] * np[i][2];
+				nnxyz += nxyz[i];
 				mu[i] = Tensor<double, 3>(np[i][0], np[i][1], np[i][2]);
 				mu[i].setZero();
 				lame[i] = Tensor<double, 3>(np[i][0], np[i][1], np[i][2]);
@@ -590,8 +592,6 @@ class FGM
 		{
 			JacobiSVD<MatrixXd> svd(BC, ComputeFullV);
 			V = svd.matrixV();
-//			const SingularValuesType S = svd.singularValues();
-			cout << svd.singularValues().sum() << endl;
 		}
 
 #ifdef GPU
@@ -665,7 +665,7 @@ class FGM
 				gloads[gid] += gcosts[PADDING * gid][2];
 				omp_unset_lock(&glocks[gid]);
 
-				T3_mul_inv_CPU(a0, P);
+				T3_mul_inv_GPU(a0, P);
 
 				omp_set_lock(&glocks[gid]);
 				gloads[gid] -= gcosts[PADDING * gid][2];
@@ -686,8 +686,8 @@ class FGM
 				return false;
 			}
 #elif defined GPU
-			T3_mul_inv_GPU(a0, P);
-			return true.;
+			T3_mul_inv_CPU(a0, P);
+			return true;
 #else
 			T3_mul_inv_CPU(a0, P);
 			return false;
@@ -700,6 +700,7 @@ class FGM
 			DenseGenRealShiftSolve<double> op(MMM);
 			GenEigsRealShiftSolver<DenseGenRealShiftSolve<double>> eigs(op, 10, 50, 0);
 
+debug();
 			eigs.init();
 			nconv = eigs.compute();
 
@@ -708,7 +709,6 @@ class FGM
 			{
 				evalues = eigs.eigenvalues();
 				small_eig = evalues(nconv - 1).real();
-//debug();
 			}
 		}
 
@@ -862,10 +862,9 @@ class FGM
 				double t1t = omp_get_wtime();
 				bool gpu_load = T1_system_matrices(i);
 				double cost = omp_get_wtime() - t1t;
-				cout << "M" << i << " Rows: " << M[i].rows() << " Cols: " << M[i].cols() << " Sum: " << M[i].sum() << " Max: " << M[i].maxCoeff() << " Min: " << M[i].minCoeff() << endl;
-				cout << "K" << i << " Rows: " << K[i].rows() << " Cols: " << K[i].cols() << " Sum: " << K[i].sum() << " Max: " << K[i].maxCoeff() << " Min: " << K[i].minCoeff() << endl;
-				MatrixXd temp = K[i].colwise().sum();
-				MatrixXd sanity = M[i].colwise().sum();
+				//cout << "M" << i << " Rows: " << M[i].rows() << " Cols: " << M[i].cols() << " Sum: " << M[i].sum() << " Max: " << M[i].maxCoeff() << " Min: " << M[i].minCoeff() << endl;
+				//cout << "K" << i << " Rows: " << K[i].rows() << " Cols: " << K[i].cols() << " Sum: " << K[i].sum() << " Max: " << K[i].maxCoeff() << " Min: " << K[i].minCoeff() << endl;
+#ifdef SMART
 				if (gpu_load)
 				{
 					gcosts[PADDING * rinfos[tid]->gpu_id][0] = cost;
@@ -874,13 +873,13 @@ class FGM
 				{
 					ccosts[0] = cost;
 				}
+#endif
 				MM(seq(copyStartX, copyStartX + M[i].rows() - 1), seq(copyStartY, copyStartY+M[i].rows() - 1)) = M[i];
 				KK(seq(copyStartX, copyStartX + K[i].rows() - 1), seq(copyStartY, copyStartY+K[i].rows() - 1)) = K[i];
 				copyStartX += M[i].rows();
 				copyStartY += M[i].cols(); 
-				cout << "system-matrices: " << cost << " secs " << endl;
+				//cout << "system-matrices: " << cost << " secs " << endl;
 			}
-			MatrixXd KKcsum = KK.colwise().sum();
 
 			MatrixXd BC_3D_I = boundary_condition_3d(2, 1, 0);
 			MatrixXd BC_I = beta_matrix_3d(BC_3D_I, 2, 0);
@@ -925,19 +924,19 @@ class FGM
 			
 			MatrixXd BC_3D_VIII2 = boundary_condition_3d(1, 1, 1);
 			MatrixXd BC_VIII2 = beta_matrix_3d(BC_3D_VIII2, 1, 1);
- cout << "r: " << BC_I_U.rows() << " c: " << BC_I_U.cols() << " s: " << BC_I_U.sum() << endl;
- cout << "r: " << BC_II_B.rows() << " c: " << BC_II_B.cols() << " s: " << BC_II_B.sum() << endl;
- cout << "r: " << BC_III_U.rows() << " c: " << BC_III_U.cols() << " s: " << BC_III_U.sum() << endl;
- cout << "r: " << BC_IV_B.rows() << " c: " << BC_IV_B.cols() << " s: " << BC_IV_B.sum() << endl;
- cout << "r: " << BC_V13.rows() << " c: " << BC_V13.cols() << " s: " << BC_V13.sum() << endl;
- cout << "r: " << BC_V2.rows() << " c: " << BC_V2.cols() << " s: " << BC_V2.sum() << endl;
- cout << "r: " << BC_VI13.rows() << " c: " << BC_VI13.cols() << " s: " << BC_VI13.sum() << endl;
- cout << "r: " << BC_VI2.rows() << " c: " << BC_VI2.cols() << " s: " << BC_VI2.sum() << endl;
- cout << "r: " << BC_VII13.rows() << " c: " << BC_VII13.cols() << " s: " << BC_VII13.sum() << endl;
- cout << "r: " << BC_VII2.rows() << " c: " << BC_VII2.cols() << " s: " << BC_VII2.sum() << endl;
- cout << "r: " << BC_VIII13.rows() << " c: " << BC_VIII13.cols() << " s: " << BC_VIII13.sum() << endl;
- cout << "r: " << BC_VIII2.rows() << " c: " << BC_VIII2.cols() << " s: " << BC_VIII2.sum() << endl;
-debug();
+// cout << "r: " << BC_I_U.rows() << " c: " << BC_I_U.cols() << " s: " << BC_I_U.sum() << endl;
+// cout << "r: " << BC_II_B.rows() << " c: " << BC_II_B.cols() << " s: " << BC_II_B.sum() << endl;
+// cout << "r: " << BC_III_U.rows() << " c: " << BC_III_U.cols() << " s: " << BC_III_U.sum() << endl;
+// cout << "r: " << BC_IV_B.rows() << " c: " << BC_IV_B.cols() << " s: " << BC_IV_B.sum() << endl;
+// cout << "r: " << BC_V13.rows() << " c: " << BC_V13.cols() << " s: " << BC_V13.sum() << endl;
+// cout << "r: " << BC_V2.rows() << " c: " << BC_V2.cols() << " s: " << BC_V2.sum() << endl;
+// cout << "r: " << BC_VI13.rows() << " c: " << BC_VI13.cols() << " s: " << BC_VI13.sum() << endl;
+// cout << "r: " << BC_VI2.rows() << " c: " << BC_VI2.cols() << " s: " << BC_VI2.sum() << endl;
+// cout << "r: " << BC_VII13.rows() << " c: " << BC_VII13.cols() << " s: " << BC_VII13.sum() << endl;
+// cout << "r: " << BC_VII2.rows() << " c: " << BC_VII2.cols() << " s: " << BC_VII2.sum() << endl;
+// cout << "r: " << BC_VIII13.rows() << " c: " << BC_VIII13.cols() << " s: " << BC_VIII13.sum() << endl;
+// cout << "r: " << BC_VIII2.rows() << " c: " << BC_VIII2.cols() << " s: " << BC_VIII2.sum() << endl;
+//
 			MatrixXd BC(BC_I_U.rows() + BC_III_U.rows() + BC_VII13.rows() + BC_VII2.rows() + BC_VII13.rows() + BC_VIII13.rows() + BC_VIII2.rows() + BC_VIII13.rows() + BC_V13.rows() + BC_V2.rows() + BC_V13.rows() + BC_VI13.rows() + BC_VI2.rows() + BC_VI13.rows(), MM.cols());
 			BC.setZero();
 			int rowStart = 0;
@@ -983,20 +982,26 @@ debug();
 			rowStart += BC_VI2.rows();
 			BC(seq(rowStart, rowStart + BC_VI13.rows()-1), seq(BC.cols()-BC_VI13.cols(), BC.cols()-1)) = BC_VI13;
 			removeDuplicateRows(BC);
-			MatrixXd BCcsum = BC.colwise().sum();
 
+ //cout << "r: " << BC.rows() << " c: " << BC.cols() << " s: " << BC.sum() << endl;
+debug();
 			MatrixXd V;
 			double t2t = omp_get_wtime();
 			T2_svd(BC, V);
 			double cost = omp_get_wtime() - t2t;
+#ifdef SMART
 			ccosts[1] = cost;
-
+#endif
+debug();
 			MatrixXd P = V(seq(0, V.rows() - 1), seq(BC.rows(), BC.cols() - 1));
 			MatrixXd a0;
 			double t3t = omp_get_wtime();
 			bool gpu_load = T3_mul_inv(a0, P);
 			cost = omp_get_wtime() - t3t;
-cout << gpu_load << endl;
+ //cout << "r: " << a0.rows() << " c: " << a0.cols() << " s: " << a0.sum() << endl;
+//cout << gpu_load << endl;
+debug();
+#ifdef SMART
 			if (gpu_load)
 			{
 			gcosts[PADDING * rinfos[tid]->gpu_id][2] = cost;
@@ -1005,12 +1010,14 @@ cout << gpu_load << endl;
 			{
 			ccosts[2] = cost;
 			}
+#endif
 			//cout << "Mul-and-Inv: " << cost << " secs" << endl;
-debug();
 			double t4t = omp_get_wtime();
 			T4_eigen(a0, nconv, small_eig);
 			cost = omp_get_wtime() - t4t;
+#ifdef SMART
 			ccosts[3] = cost;
+#endif
 			//cout << "Eigen: " << cost << " secs - nconv = " << nconv << endl;
 			//*/
 		}
@@ -1319,6 +1326,7 @@ class LCO
 
 int main(int argc, char **argv)
 {
+/*
 #ifndef GPU
 	if (argc < 5)
 	{
@@ -1332,7 +1340,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 #endif
-
+*/
 	cout << "*******************************************************************" << endl;
 	cout << "*******************************************************************" << endl;
 	cout << "Starting Preproccesing..." << endl;
@@ -1341,10 +1349,10 @@ int main(int argc, char **argv)
 
 	mkl_set_num_threads_local(1);
 
-	int xdim = atoi(argv[1]);
-	int ydim = atoi(argv[2]);
-	int zdim = atoi(argv[3]);
-	int nthreads = atoi(argv[4]);
+//	int xdim = atoi(argv[1]);
+//	int ydim = atoi(argv[2]);
+//	int zdim = atoi(argv[3]);
+	int nthreads = atoi(argv[1]);
 	omp_set_num_threads(nthreads);
 
 #ifdef SMART
@@ -1379,19 +1387,20 @@ int main(int argc, char **argv)
 	FGM tfgm(num_layers, shps);
 	int tnconv;
 	double tmineig;
-	tfgm.compute_cpu_costs(10, 60, tnconv, tmineig, 0.01, 100, 0.01, SAMPLE_SIZE);
+	//tfgm.compute_cpu_costs(10, 60, tnconv, tmineig, 0.01, 100, 0.01, SAMPLE_SIZE);
 	//
-
+#ifdef SMART
 	cout << "CPU costs: " << endl;
 	for (int i = 0; i < 4; i++)
 	{
 		cout << "T" << i + 1 << ": " << ccosts[i] << endl;
 	}
+#endif
 
 #ifdef GPU
 	rinfos = new rinfo *[nthreads];
 
-	int no_gpus = atoi(argv[5]);
+	int no_gpus = atoi(argv[2]);
 
 	bool failed = false;
 #pragma omp parallel num_threads(nthreads)
@@ -1429,24 +1438,25 @@ int main(int argc, char **argv)
 			cudaStreamCreate(&stream[ttt]);
 			cublasSetStream(handle[ttt], stream[ttt]);
 			cusolverDnSetStream(dnhandle[ttt], stream[ttt]);
-			rinfos[ttt] = new rinfo(ttt % no_gpus, xdim, ydim, zdim);
+			rinfos[ttt] = new rinfo(ttt % no_gpus, xi1, eta1, zeta1);
 
+#ifdef SMART
 			//set costs for each task per gpu
 			if (ttt / no_gpus < 1)
 			{
 				int i = ttt % no_gpus;
-				tfgm.compute_gpu_costs(11, 60, tnconv, tmineig, 0.01, 100, 0.01, i, SAMPLE_SIZE);
+				//tfgm.compute_gpu_costs(11, 60, tnconv, tmineig, 0.01, 100, 0.01, i, SAMPLE_SIZE);
 				cout << "GPU" << i << " costs: " << endl;
 				for (int j = 0; j < 4; j++)
 				{
-					gcosts[PADDING * i][j] = 100;
+					gcosts[PADDING * i][j] = 1;
 					cout << "T" << j + 1 << ": " << gcosts[PADDING * i][j] << endl;
 				}
 			}
 			//
+#endif
 		}
 	}
-
 	if (failed)
 	{
 		exit(1);
@@ -1480,13 +1490,13 @@ int main(int argc, char **argv)
 					shapes[1] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second, 0, 0);
 					shapes[2] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first, cz, 0);
 					problems.push_back(FGM(num_layers, shapes));
-					break;
+					//break;
 				}
-				break;
+				//break;
 			}
-			break;
+			//break;
 		}
-		break;
+		//break;
 	}
 
 	cout << "Preprocessing ended." << endl;
@@ -1505,7 +1515,7 @@ int main(int argc, char **argv)
 	double best_y = -1, best_z = -1;
 	double ostart = omp_get_wtime();
 
-#pragma omp parallel for schedule(dynamic, 1)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(nthreads)
 	//{
 	for (int i = 0; i < problems.size(); i++)
 	{
@@ -1518,10 +1528,10 @@ int main(int argc, char **argv)
 		double end = omp_get_wtime();
 
 #pragma omp critical
+{
 		if (nconv > 0)
 		{
 			cout << i << " " << fgm.shapes[0].ctrl_y << " " << fgm.shapes[0].ctrl_z << " " << mineig << " " << end - start << endl;
-debug();
 			if (mineig < smallest_mineig)
 			{
 				smallest_mineig = mineig;
@@ -1533,8 +1543,8 @@ debug();
 		{
 			cout << "No eigen: " << fgm.shapes[0].ctrl_y << " " << fgm.shapes[0].ctrl_z << " " << end - start << endl;
 		}
+}
 	}
-	//}
 	cout << endl
 		<< "Result:" << endl;
 	cout << "Smallest eig: " << smallest_mineig << " - (" << best_y << ", " << best_z << ")" << endl;
