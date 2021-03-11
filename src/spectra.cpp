@@ -597,22 +597,27 @@ class FGM
 #ifdef GPU
 		void T3_mul_inv_GPU(MatrixXd &a0, MatrixXd &P)
 		{
+//cout << "Before r: " << a0.rows() << " c: " << a0.cols() << " s: " << a0.sum() << endl;
 			const double van = 1.0;
 			const double ziro = 0.0;
-
+debug();
 			double *gpu_mem = rinfos[ttt]->gpu_mem;
 			double *d_K, *d_M, *d_P, *d_K_phy, *d_M_phy, *d_a0, *d_temp, *d_M_phy_i, *d_work;
 			int *d_pivot, *d_info, Lwork;
 
 			int nc = P.cols();
 			d_K = gpu_mem;                            //9
-			d_M = d_K + (9 * nnxyz * nnxyz);            //9
-			d_P = d_M + (9 * nnxyz * nnxyz);            //max 9
-			d_K_phy = d_P + (3 * nnxyz * nc);          //max 9
+			//d_M = d_K + (9 * nnxyz * nnxyz);            //9
+			d_M = d_K + (KK.size());            //9
+			//d_P = d_M + (9 * nnxyz * nnxyz);            //max 9
+			d_P = d_M + (MM.size());            //max 9
+			//d_K_phy = d_P + (3 * nnxyz * nc);          //max 9
+			d_K_phy = d_P + (P.size());          //max 9
 			d_M_phy = d_K_phy + (nc * nc);            //max 9
 			d_a0 = d_M_phy + (nc * nc);               //max 9
 			d_temp = d_a0 + (nc * nc);                //max 9
-			d_M_phy_i = d_temp + (3 * nnxyz * nc);     //max 9
+			//d_M_phy_i = d_temp + (3 * nnxyz * nc);     //max 9
+			d_M_phy_i = d_temp + (3 * KK.rows() * nc);     //max 9
 			d_pivot = (int *)(d_M_phy_i + (nc * nc)); //max 1
 			d_info = d_pivot + nc;                    //max 1
 			d_work = (double *)(d_info + nc);         //max 1.
@@ -665,7 +670,7 @@ class FGM
 				gloads[gid] += gcosts[PADDING * gid][2];
 				omp_unset_lock(&glocks[gid]);
 
-				T3_mul_inv_GPU(a0, P);
+				T3_mul_inv_CPU(a0, P);
 
 				omp_set_lock(&glocks[gid]);
 				gloads[gid] -= gcosts[PADDING * gid][2];
@@ -700,7 +705,6 @@ class FGM
 			DenseGenRealShiftSolve<double> op(MMM);
 			GenEigsRealShiftSolver<DenseGenRealShiftSolve<double>> eigs(op, 10, 50, 0);
 
-debug();
 			eigs.init();
 			nconv = eigs.compute();
 
@@ -983,8 +987,6 @@ debug();
 			BC(seq(rowStart, rowStart + BC_VI13.rows()-1), seq(BC.cols()-BC_VI13.cols(), BC.cols()-1)) = BC_VI13;
 			removeDuplicateRows(BC);
 
- //cout << "r: " << BC.rows() << " c: " << BC.cols() << " s: " << BC.sum() << endl;
-debug();
 			MatrixXd V;
 			double t2t = omp_get_wtime();
 			T2_svd(BC, V);
@@ -992,14 +994,13 @@ debug();
 #ifdef SMART
 			ccosts[1] = cost;
 #endif
-debug();
 			MatrixXd P = V(seq(0, V.rows() - 1), seq(BC.rows(), BC.cols() - 1));
 			MatrixXd a0;
 			double t3t = omp_get_wtime();
 			bool gpu_load = T3_mul_inv(a0, P);
 			cost = omp_get_wtime() - t3t;
- //cout << "r: " << a0.rows() << " c: " << a0.cols() << " s: " << a0.sum() << endl;
-//cout << gpu_load << endl;
+//cout << "After r: " << a0.rows() << " c: " << a0.cols() << " s: " << a0.sum() << endl;
+//cout << "gpu: " <<  gpu_load << endl;
 debug();
 #ifdef SMART
 			if (gpu_load)
