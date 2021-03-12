@@ -890,7 +890,7 @@ class FGM
 				KK(seq(copyStartX, copyStartX + K[i].rows() - 1), seq(copyStartY, copyStartY+K[i].rows() - 1)) = K[i];
 				copyStartX += M[i].rows();
 				copyStartY += M[i].cols(); 
-				//cout << "system-matrices: " << cost << " secs " << endl;
+				cout << "T1 (system-matrices) => GPU: " << gpu_load << " Cost: " << cost << " secs " << endl;
 			}
 
 			MatrixXd BC_3D_I = boundary_condition_3d(2, 1, 0);
@@ -999,6 +999,7 @@ class FGM
 			double t2t = omp_get_wtime();
 			T2_svd(BC, V);
 			double cost = omp_get_wtime() - t2t;
+			cout <<  "T2 (svd) => Cost: " << cost << " secs" << endl;
 #ifdef SMART
 			ccosts[1] = cost;
 #endif
@@ -1007,28 +1008,25 @@ class FGM
 			double t3t = omp_get_wtime();
 			bool gpu_load = T3_mul_inv(a0, P);
 			cost = omp_get_wtime() - t3t;
-//cout << "After r: " << a0.rows() << " c: " << a0.cols() << " s: " << a0.sum() << endl;
-//cout << "gpu: " <<  gpu_load << endl;
 //debug();
 #ifdef SMART
 			if (gpu_load)
 			{
-			gcosts[PADDING * rinfos[tid]->gpu_id][2] = cost;
+				gcosts[PADDING * rinfos[tid]->gpu_id][2] = cost;
 			}
 			else
 			{
-			ccosts[2] = cost;
+				ccosts[2] = cost;
 			}
 #endif
-			//cout << "Mul-and-Inv: " << cost << " secs" << endl;
+			cout <<  "T3 (Mul-and-Inv) => GPU: " << gpu_load << " Cost: " << cost << " secs" << endl;
 			double t4t = omp_get_wtime();
 			T4_eigen(a0, nconv, small_eig);
 			cost = omp_get_wtime() - t4t;
 #ifdef SMART
 			ccosts[3] = cost;
 #endif
-			//cout << "Eigen: " << cost << " secs - nconv = " << nconv << endl;
-			//*/
+			cout << "T4 (Eigen) => Cost: " << cost << " secs - nconv = " << nconv << endl;
 		}
 
 		MatrixXd beta_matrix_3d(MatrixXd &BC_3D, int xyz, unsigned int l)
