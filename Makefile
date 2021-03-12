@@ -6,7 +6,7 @@ gpu:
 	nvcc -ccbin g++ -o gpuspec_layers.out src/spectra.cpp -std=c++11 -O3  -Xcompiler -fopenmp  -I/usr/include/mkl -lmkl_rt -lcublas -lcusolver -DGPU -I/home/users/aakyildiz/Apps/eigen/ -I/home/users/aakyildiz/Apps/spectra/include/ -Xcompiler -DNDEBUG
 
 sgpu:
-	nvcc -ccbin g++ -o sgpuspec_layers.out src/spectra.cpp -std=c++11 -g  -Xcompiler -fopenmp  -I/usr/include/mkl -lmkl_rt -lcublas -lcusolver -DSMART -I/home/users/aakyildiz/Apps/eigen/ -I/home/users/aakyildiz/Apps/spectra/include/ -Xcompiler -DNDEBUG
+	nvcc -ccbin g++ -o sgpuspec_layers.out src/spectra.cpp -std=c++11 -O3  -Xcompiler -fopenmp  -I/usr/include/mkl -lmkl_rt -lcublas -lcusolver -DSMART -I/home/users/aakyildiz/Apps/eigen/ -I/home/users/aakyildiz/Apps/spectra/include/ -Xcompiler -DNDEBUG
 
 
 

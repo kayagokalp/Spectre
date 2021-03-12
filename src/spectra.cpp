@@ -55,13 +55,21 @@ struct rinfo
 	int gpu_id;
 	int no_elements, no_bytes;
 
-	rinfo(int gpu_id, int x, int y, int z) : gpu_id(gpu_id)
+	rinfo(int gpu_id, int x1, int y1, int z1, int x2, int y2, int z2, int x3, int y3, int z3)  : gpu_id(gpu_id)
 	{
-		int nxyz = x * y * z;
-		no_elements = 75 * nxyz * nxyz;
-		no_bytes = no_elements * sizeof(double);
-		gpuErrchk(cudaMalloc((void **)&gpu_mem, no_bytes));
+		int nnxyz = (3 * x1 * y1 * z1) + (3 * x2 * y2 * z2) + (3 * x3 * y3 * z3);
+		no_elements = 10 * nnxyz * nnxyz;
+       		no_bytes = no_elements * sizeof(double);		
+		gpuErrchk(cudaMalloc((void**)&gpu_mem, no_bytes));
 	}
+
+	//rinfo(int gpu_id, int x, int y, int z) : gpu_id(gpu_id)
+	//{
+	//	int nxyz = x * y * z;
+	//	no_elements = 75 * nxyz * nxyz;
+	//	no_bytes = no_elements * sizeof(double);
+	//	gpuErrchk(cudaMalloc((void **)&gpu_mem, no_bytes));
+	//}
 };
 
 rinfo **rinfos;
@@ -600,7 +608,7 @@ class FGM
 //cout << "Before r: " << a0.rows() << " c: " << a0.cols() << " s: " << a0.sum() << endl;
 			const double van = 1.0;
 			const double ziro = 0.0;
-debug();
+//debug();
 			double *gpu_mem = rinfos[ttt]->gpu_mem;
 			double *d_K, *d_M, *d_P, *d_K_phy, *d_M_phy, *d_a0, *d_temp, *d_M_phy_i, *d_work;
 			int *d_pivot, *d_info, Lwork;
@@ -608,11 +616,11 @@ debug();
 			int nc = P.cols();
 			d_K = gpu_mem;                            //9
 			//d_M = d_K + (9 * nnxyz * nnxyz);            //9
-			d_M = d_K + (KK.size());            //9
+			d_M = d_K + (KK.rows()*KK.cols());            //9
 			//d_P = d_M + (9 * nnxyz * nnxyz);            //max 9
-			d_P = d_M + (MM.size());            //max 9
+			d_P = d_M + (MM.rows()*MM.cols());            //max 9
 			//d_K_phy = d_P + (3 * nnxyz * nc);          //max 9
-			d_K_phy = d_P + (P.size());          //max 9
+			d_K_phy = d_P + (P.rows()*P.cols());          //max 9
 			d_M_phy = d_K_phy + (nc * nc);            //max 9
 			d_a0 = d_M_phy + (nc * nc);               //max 9
 			d_temp = d_a0 + (nc * nc);                //max 9
@@ -638,8 +646,8 @@ debug();
 			cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, nc, &van, d_M_phy_i, nc, d_K_phy, nc, &ziro, d_a0, nc); //M_phy_i * K_phy
 			cudaStreamSynchronize(stream[ttt]);
 
-			MatrixXd at(nc, nc);
-			a0 = at;
+			//MatrixXd at(nc, nc);
+			//a0 = at;
 			cudaMemcpy(a0.data(), d_a0, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
 		}
 #endif
@@ -670,7 +678,7 @@ debug();
 				gloads[gid] += gcosts[PADDING * gid][2];
 				omp_unset_lock(&glocks[gid]);
 
-				T3_mul_inv_CPU(a0, P);
+				T3_mul_inv_GPU(a0, P);
 
 				omp_set_lock(&glocks[gid]);
 				gloads[gid] -= gcosts[PADDING * gid][2];
@@ -995,13 +1003,13 @@ debug();
 			ccosts[1] = cost;
 #endif
 			MatrixXd P = V(seq(0, V.rows() - 1), seq(BC.rows(), BC.cols() - 1));
-			MatrixXd a0;
+			MatrixXd a0(P.cols(), P.cols());
 			double t3t = omp_get_wtime();
 			bool gpu_load = T3_mul_inv(a0, P);
 			cost = omp_get_wtime() - t3t;
 //cout << "After r: " << a0.rows() << " c: " << a0.cols() << " s: " << a0.sum() << endl;
 //cout << "gpu: " <<  gpu_load << endl;
-debug();
+//debug();
 #ifdef SMART
 			if (gpu_load)
 			{
@@ -1368,10 +1376,13 @@ int main(int argc, char **argv)
 #endif
 
 	unsigned int num_layers = 3;
-	unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
-	unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
-	unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
+ 	unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
+ 	unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
+ 	unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
 
+// 	unsigned int xi1 = 4, xi2 = 4, xi3 = 4;
+// 	unsigned int eta1 = 4, eta2 = 4, eta3 = 4;
+// 	unsigned int zeta1 = 5, zeta2 = 4, zeta3 = 5;
 	//temp vars for cost calculation
 	Material tfirst(1, 0.3, 1);
 	Material tsecond(200.0 / 70.0, 0.3, 5700.0 / 2702.0);
@@ -1439,7 +1450,7 @@ int main(int argc, char **argv)
 			cudaStreamCreate(&stream[ttt]);
 			cublasSetStream(handle[ttt], stream[ttt]);
 			cusolverDnSetStream(dnhandle[ttt], stream[ttt]);
-			rinfos[ttt] = new rinfo(ttt % no_gpus, xi1, eta1, zeta1);
+			rinfos[ttt] = new rinfo(ttt % no_gpus, xi1, eta1, zeta1, xi2, eta2, zeta2, xi3, eta3, zeta3);
 
 #ifdef SMART
 			//set costs for each task per gpu
