@@ -699,7 +699,7 @@ class FGM
 				return false;
 			}
 #elif defined GPU
-			T3_mul_inv_CPU(a0, P);
+			T3_mul_inv_GPU(a0, P);
 			return true;
 #else
 			T3_mul_inv_CPU(a0, P);
