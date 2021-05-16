@@ -37,7 +37,7 @@ double gcosts[PADDING * MAX_GPUS][MAX_TASKS]{}; //= {{0.6,1,0.74,1}, {1,1,1,1}, 
 //std::fill(*gcosts, *gcosts + M*N, 1);
 double ccosts[MAX_TASKS] = {4.32, 0.95, 5.35, 0.52}; //can also be extended to costs per CPU
 
-#define GPU_MULT 1
+#define GPU_MULT 8
 #endif
 
 #ifdef GPU
@@ -596,10 +596,177 @@ class FGM
 #endif
 		}
 
-		void T2_svd(MatrixXd &BC, MatrixXd &V)
+
+		void T2_svd_CPU(MatrixXd &BC, MatrixXd &V)
 		{
 			JacobiSVD<MatrixXd> svd(BC, ComputeFullV);
 			V = svd.matrixV();
+		}
+
+#ifdef GPU
+		void T2_svd_GPU(MatrixXd &BC, MatrixXd &V)
+		{
+			double * gpu_mem = rinfos[ttt]->gpu_mem;
+			//dnhandle[ttt] = NULL;
+			//stream[ttt] = NULL;
+			//cusolverDnHandle_t cusolverH = NULL;	
+			gesvdjInfo_t gesvdj_params = NULL;
+
+			cusolverStatus_t status = CUSOLVER_STATUS_SUCCESS;
+			cudaError_t cudaStat1 = cudaSuccess;
+			cudaError_t cudaStat2 = cudaSuccess;
+			cudaError_t cudaStat3 = cudaSuccess;
+			cudaError_t cudaStat4 = cudaSuccess;
+			cudaError_t cudaStat5 = cudaSuccess;
+			const int m = BC.rows();
+			const int n = BC.cols();
+
+			//double A[m*n]; 
+			//double U[m*m];
+			//double V[n*n];
+			//double S[n];
+
+			double *d_A = gpu_mem;
+			double *d_S = d_A + m * n;
+			double *d_U = d_S + n;
+			double *d_V = d_U + m * m;
+			int *d_info = (int *)(d_V + n * n);
+			int lwork = 0;
+			double *d_work = (double *)(d_info + n);
+			int info = 0;
+			
+			// gesvdj configuration
+			const double tol = 1.e-7;
+			const int max_sweeps = 15;
+			const cusolverEigMode_t jobz = CUSOLVER_EIG_MODE_VECTOR;
+			const int econ = 0;
+
+			//numerical results of gesvdj
+			double residual = 0;
+			int executed_sweeps = 0;
+
+			// Step 1: create cusolver handler and bind stream
+			
+			//status = cusolverDnCreate(&dnhandle[ttt]);
+			//assert(CUSOLVER_STATUS_SUCCESS == status);
+
+			//cudaStat1 = cudaStreamCreateWithFlags(&stream[ttt], cudaStreamNonBlocking);	
+			//assert(cudaSuccess == status);
+			
+			//status = cusolverDnSetStream(dnhandle[ttt], stream);
+			//assert(CUSOLVER_STATUS_SUCCESS == status);
+			
+			//Step 1: THIS STEP IS HANDLED WHEN THE THREADS ARE CREATED
+			
+			// Step 2: configuratşon of gesvdj
+			status = cusolverDnCreateGesvdjInfo(&gesvdj_params);
+			assert(CUSOLVER_STATUS_SUCCESS == status);
+
+			status = cusolverDnXgesvdjSetTolerance(gesvdj_params, tol); //defualt value of tolerance is machine zero
+			assert(CUSOLVER_STATUS_SUCCESS == status);
+
+			status = cusolverDnXgesvdjSetMaxSweeps(gesvdj_params, max_sweeps); //defualt value of max sweeps is 100
+			assert(CUSOLVER_STATUS_SUCCESS == status);
+
+			//Step 3: copy the matrix to the device
+			//cudaStat1 = cudaMalloc((void**)&d_A, sizeof(double)*m*n);
+			//cudaStat2 = cudaMalloc((void**)&d_S, sizeof(double)*n);
+			//cudaStat3 = cudaMalloc((void**)&d_U, sizeof(double)*m*m);
+			//cudaStat4 = cudaMalloc((void**)&d_V, sizeof(double)*n*n);
+			//cudaStat5 = cudaMalloc((void**)&d_info, sizeof(int));
+			//assert(cudaSuccess == cudaStat1);
+			//assert(cudaSuccess == cudaStat2);
+			//assert(cudaSuccess == cudaStat3);
+			//assert(cudaSuccess == cudaStat4);
+			//assert(cudaSuccess == cudaStat5);
+
+			cudaStat1 = cudaMemcpy(d_A, BC.data(), BC.size() * sizeof(double), cudaMemcpyHostToDevice);
+		     	assert(cudaSuccess == cudaStat1); 	
+
+			//Step 4: query workspace of SVD
+			status = cusolverDnDgesvdj_bufferSize(dnhandle[ttt], jobz, econ, m, n, d_A, m, d_S, d_U, m, d_V, n, &lwork, gesvdj_params);
+			assert(CUSOLVER_STATUS_SUCCESS == status);
+
+			cudaStat1 = cudaMalloc((void**)&d_work, sizeof(double)*lwork);
+			assert(cudaSuccess == cudaStat1);
+			
+			//Step 5: compute SVD
+			status = cusolverDnDgesvdj(dnhandle[ttt], jobz, econ, m, n, d_A, m, d_S, d_U, m, d_V, n, d_work, lwork, d_info, gesvdj_params);
+			cudaStat1 = cudaDeviceSynchronize(); // ???
+			assert(CUSOLVER_STATUS_SUCCESS == status);
+			assert(cudaSuccess == cudaStat1);
+			
+			cudaStat2 = cudaMemcpy(V.data(), d_V, sizeof(double)*n*n, cudaMemcpyDeviceToHost);
+			assert(cudaSuccess == cudaStat2);
+			cudaStat4 = cudaMemcpy(&info, d_info, sizeof(int), cudaMemcpyDeviceToHost);
+			assert(cudaSuccess == cudaStat4);
+			if (0 == info){
+				printf("gesvdj converges \n");
+			}
+			else if( 0 > info){
+				printf("%d-th parameter is wrong \n", -info);
+			}
+			else{
+				printf("WARNING: info = %d : gesvdj does not converge \n", info);
+			}
+
+			//free resources ??
+			//if(d_A) cudaFree(d_A);
+			//if(d_S) cudaFree(d_S);
+			//if(d_U) cudaFree(d_U);
+			//if(d_V) cudaFree(d_V);
+			//if(d_info) cudaFree(d_info);
+			//if(d_work) cudaFree(d_work);
+			//
+		}
+#endif
+
+		bool T2_svd(MatrixXd &BC, MatrixXd &V)
+		{
+#ifdef SMART
+			int decision = GPUID;
+			int tid = omp_get_thread_num();
+			int cid = sched_getcpu();
+			int gid = rinfos[tid]->gpu_id;
+
+			if (gloads[gid] > (cloads[cid] + ccosts[1]) * GPU_MULT)
+			{
+				decision = CPUID;
+			}
+	
+			if (decision == GPUID)
+			{
+				omp_set_lock(&glocks[gid]);
+				gloads[gid] += gcosts[PADDING * gid][1];
+				omp_unset_lock(&glocks[gid]);
+
+				T2_svd_GPU(BC, V);
+
+				omp_set_lock(&glocks[gid]);
+				gloads[gid] -= gcosts[PADDING * gid][1];
+				omp_unset_lock(&glocks[gid]);
+				return true;
+			}
+			else
+			{
+				omp_set_lock(&clocks[cid]);
+				cloads[cid] += ccosts[1];
+				omp_unset_lock(&clocks[cid]);
+
+				T2_svd_CPU(BC, V);
+
+				omp_set_lock(&clocks[cid]);
+				cloads[cid] -= ccosts[1];
+				omp_unset_lock(&clocks[cid]);
+				return false;
+			}
+#elif defined GPU
+			T2_svd_GPU(BC, V);
+			return true;
+#else
+			T2_svd_CPU(BC, V);
+			return false;
+#endif
 		}
 
 #ifdef GPU
@@ -995,13 +1162,20 @@ class FGM
 			BC(seq(rowStart, rowStart + BC_VI13.rows()-1), seq(BC.cols()-BC_VI13.cols(), BC.cols()-1)) = BC_VI13;
 			removeDuplicateRows(BC);
 
-			MatrixXd V;
+			MatrixXd V(BC.cols(), BC.cols());
 			double t2t = omp_get_wtime();
-			T2_svd(BC, V);
+			bool ranOnGPU = T2_svd(BC, V);
 			double cost = omp_get_wtime() - t2t;
-			cout <<  "T2 (svd) => Cost: " << cost << " secs" << endl;
+			cout <<  "T2 (svd) => GPU: " << ranOnGPU << " Cost: " << cost << " secs" << endl;
 #ifdef SMART
-			ccosts[1] = cost;
+			if (ranOnGPU)
+			{
+				gcosts[PADDING * rinfos[tid]->gpu_id][1] = cost;
+			}
+			else
+			{
+				ccosts[1] = cost;
+			}
 #endif
 			MatrixXd P = V(seq(0, V.rows() - 1), seq(BC.rows(), BC.cols() - 1));
 			MatrixXd a0(P.cols(), P.cols());
@@ -1374,9 +1548,12 @@ int main(int argc, char **argv)
 #endif
 
 	unsigned int num_layers = 3;
- 	unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
- 	unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
- 	unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
+ 	//unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
+ 	//unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
+ 	//unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
+ 	unsigned int xi1 = 7, xi2 = 7, xi3 = 7;
+ 	unsigned int eta1 = 7, eta2 = 7, eta3 = 7;
+ 	unsigned int zeta1 = 9, zeta2 = 7, zeta3 = 9;
 
 // 	unsigned int xi1 = 4, xi2 = 4, xi3 = 4;
 // 	unsigned int eta1 = 4, eta2 = 4, eta3 = 4;
