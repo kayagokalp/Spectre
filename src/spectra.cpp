@@ -1506,7 +1506,20 @@ class LCO
 };
 
 int main(int argc, char **argv)
-{
+{	
+#if defined(SMART) || defined(GPU)
+	if (argc < 3)
+	{
+		cout << "Usage: " << argv[0] << " nthreads ngpus " << endl;
+		return 0;
+	}
+#else
+	if (argc < 2)
+	{
+		cout << "Usage: " << argv[0] << " nthreads " << endl;
+		return 0;
+	}
+#endif
 /*
 #ifndef GPU
 	if (argc < 5)
@@ -1548,12 +1561,12 @@ int main(int argc, char **argv)
 #endif
 
 	unsigned int num_layers = 3;
- 	//unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
- 	//unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
- 	//unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
- 	unsigned int xi1 = 7, xi2 = 7, xi3 = 7;
- 	unsigned int eta1 = 7, eta2 = 7, eta3 = 7;
- 	unsigned int zeta1 = 9, zeta2 = 7, zeta3 = 9;
+ 	unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
+ 	unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
+ 	unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
+ 	//unsigned int xi1 = 7, xi2 = 7, xi3 = 7;
+ 	//unsigned int eta1 = 7, eta2 = 7, eta3 = 7;
+ 	//unsigned int zeta1 = 9, zeta2 = 7, zeta3 = 9;
 
 // 	unsigned int xi1 = 4, xi2 = 4, xi3 = 4;
 // 	unsigned int eta1 = 4, eta2 = 4, eta3 = 4;
