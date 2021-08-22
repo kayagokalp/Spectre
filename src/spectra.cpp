@@ -125,7 +125,7 @@ struct Space
 			// cout << "IT" << " Sum: " << IT.sum() << " Max: " << IT.maxCoeff() << " Min: " << IT.minCoeff() << endl;
 			// cout << "FT" << " Sum: " << FT.sum() << " Max: " << FT.maxCoeff() << " Min: " << FT.minCoeff() << endl;
 			// cout << "D" << " Sum: " << D.sum() << " Max: " << D.maxCoeff() << " Min: " << D.minCoeff() << endl;
-			// cout << "s" << " Sum: " << s.sum() << " Max: " << s.maxCoeff() << " Min: " << s.minCoeff() << endl;
+			 cout << "s" << " Sum: " << s.sum() << " Max: " << s.maxCoeff() << " Min: " << s.minCoeff() << endl;
 			// cout << "V" << " Sum: " << V.sum() << " Max: " << V.maxCoeff() << " Min: " << V.minCoeff() << endl;
 			// cout << "Q1" << " Sum: " << Q1.sum() << " Max: " << Q1.maxCoeff() << " Min: " << Q1.minCoeff() << endl;
 		}
@@ -156,6 +156,7 @@ class Material
 class Shape
 {
 	public:
+
 		bool is_curved;
 		dtype curve[2];
 		dtype dim[3];
@@ -171,6 +172,11 @@ class Shape
 		MatrixXd QDx;
 		MatrixXd QDy;
 		MatrixXd QDz;
+
+		Tensor<double,3> shapeX;
+		Tensor<double,3> shapeY;
+		Tensor<double,3> shapeZ;
+
 
 		Shape() : dim{0, 0, 0}, is_curved(false), curve{0, 0}, xyz(0) {}
 		Shape(dtype x_dim, dtype y_dim, dtype z_dim,
@@ -188,11 +194,106 @@ class Shape
 				QDy.setZero();
 				QDz.setZero();
 				vector_map_nojac();
+				shapeX = Tensor<double,3>(z_sample, y_sample, z_sample);
+				shapeY = Tensor<double,3>(z_sample, y_sample, z_sample);
+				shapeZ = Tensor<double,3>(z_sample, y_sample, z_sample);
+				shapeX.setZero();
+				shapeY.setZero();
+				shapeZ.setZero();			
+				fillShapeTensors();
+				
+				double alpha = -1.0472; //NOTE(KAYA) : for testing...
+				vector_map_jac_curvature(alpha);				
 				// cout << "VD" << " Sum: " << VD.sum() << " Max: " << VD.maxCoeff() << " Min: " << VD.minCoeff() << endl;
 				// cout << "QDx" << " Sum: " << QDx.sum() << " Max: " << QDx.maxCoeff() << " Min: " << QDx.minCoeff() << endl;
 				// cout << "QDy" << " Sum: " << QDy.sum() << " Max: " << QDy.maxCoeff() << " Min: " << QDy.minCoeff() << endl;
 				// cout << "QDz" << " Sum: " << QDz.sum() << " Max: " << QDz.maxCoeff() << " Min: " << QDz.minCoeff() << endl;
 			}
+
+		void fillShapeTensors(){	
+			for(int i = 0; i < spaces[0].s.size(); i++){
+				for(int j = 0; j < spaces[1].s.size(); j++){
+					for(int k = 0; k < spaces[2].s.size(); k++){
+						shapeX(i,j,k) = spaces[0].s(i);
+						shapeY(i,j,k) = spaces[1].s(j);
+						shapeZ(i,j,k) = spaces[2].s(k);
+	//					cout<< "SHAPE : " << i << " " << j << " " << k << " " << shapeX(i,j,k) << endl;
+					}
+				}
+			}
+		}
+		void vector_map_jac_curvature(double alpha){
+
+			int x_sample = spaces[0].no_points;
+			int y_sample = spaces[1].no_points;
+			int z_sample = spaces[2].no_points;
+
+			Tensor<double,3> tempx = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> tempy = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> tempz = Tensor<double,3>(x_sample, y_sample, z_sample);
+
+			Tensor<double,3> temp2x = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> temp2y = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> temp2z = Tensor<double,3>(x_sample, y_sample, z_sample);
+
+			Tensor<double,3> dxdxb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> dxdyb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> dxdzb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			
+			Tensor<double,3> dydxb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> dydyb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> dydzb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+
+			Tensor<double,3> dzdxb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> dzdyb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> dzdzb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+
+			Tensor<double,3> dxdxb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> dxdyb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> dxdzb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			
+			Tensor<double,3> dydxb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> dydyb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> dydzb = Tensor<double,3>(x_sample, y_sample, z_sample);
+
+			Tensor<double,3> dzdxb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> dzdyb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			Tensor<double,3> dzdzb = Tensor<double,3>(x_sample, y_sample, z_sample);
+
+
+			if(alpha != 0){
+				//loop over temp vars
+				for(int i = 0; i<x_sample; i++){
+					for(int j = 0; j<y_sample; j++){
+						for(int k = 0; k<z_sample; k++){
+							tempx(i,j,k) = (cos(alpha*shapeX(i,j,k)) * (1/(alpha*sin(alpha*shapeX(i,j,k))))) 
+								- (sin(alpha*shapeX(i,j,k)) * (shapeZ(i,j,k) - 1/(alpha * (1-cos(alpha*shapeX(i,j,k))))));
+
+							tempy(i,j,k) = shapeY(i,j,k);
+							tempz(i,j,k) = (sin(alpha * shapeX(i,j,k)) * (1/(alpha * sin(alpha * shapeX(i,j,k)))))
+							       + (cos(alpha * shapeX(i,j,k)) * (shapeZ(i,j,k) - 1/(alpha * (1-cos(alpha*shapeX(i,j,k))))));	
+						}
+					}
+				}
+			}else{
+				tempx = shapeX;
+				tempy = shapeY;
+				tempz = shapeZ;
+			}
+/*
+			 
+			for(int i = 0; i < spaces[0].s.size(); i++){
+				for(int j = 0; j < spaces[1].s.size(); j++){
+					for(int k = 0; k < spaces[2].s.size(); k++){
+						cout<< "tempx : " << i << " " << j << " " << k << " " << tempx(i,j,k) << endl;
+						cout<< "tempy : " << i << " " << j << " " << k << " " << tempy(i,j,k) << endl;
+						cout<< "tempz : " << i << " " << j << " " << k << " " << tempz(i,j,k) << endl;
+					}
+				}
+			}
+
+*/
+		}
 
 		void operator=(const Shape& s){
 			for(unsigned int i = 0; i < 3; i++){
@@ -204,6 +305,7 @@ class Shape
 			}
 			is_curved = s.is_curved;
 			xyz = s.xyz;
+			VD = s.VD;
 			VD = s.VD;
 			QDx = s.QDx;
 			QDy = s.QDy;
@@ -234,6 +336,7 @@ class Shape
 						for (int l = 1; l <= npx; l++)
 						{
 							int J = ((l - 1) * npy * npz) + ((j - 1) * npz) + k;
+							VDx(J - 1, I - 1) += spaces[0].V(l - 1, i - 1);
 							VDx(J - 1, I - 1) += spaces[0].V(l - 1, i - 1);
 							QDx(J - 1, I - 1) += spaces[0].Q1(l - 1, i - 1);
 						}
@@ -1564,9 +1667,14 @@ int main(int argc, char **argv)
  	unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
  	unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
  	unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
- 	//unsigned int xi1 = 7, xi2 = 7, xi3 = 7;
+ 
+	//unsigned int xi1 = 7, xi2 = 7, xi3 = 7;
  	//unsigned int eta1 = 7, eta2 = 7, eta3 = 7;
  	//unsigned int zeta1 = 9, zeta2 = 7, zeta3 = 9;
+
+	//unsigned int xi1 = 13, xi2 = 13, xi3 = 13;
+ 	//unsigned int eta1 = 13, eta2 = 13, eta3 = 13;
+ 	//unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
 
 // 	unsigned int xi1 = 4, xi2 = 4, xi3 = 4;
 // 	unsigned int eta1 = 4, eta2 = 4, eta3 = 4;
@@ -1575,11 +1683,12 @@ int main(int argc, char **argv)
 	Material tfirst(1, 0.3, 1);
 	Material tsecond(200.0 / 70.0, 0.3, 5700.0 / 2702.0);
 	Shape * shps = new Shape[num_layers];
-	Shape tshape1(2, 1, 0.3, xi1, eta1, zeta1, tfirst, 0.1, 0);
+	Shape tshape1(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0);
 	shps[0] = tshape1;
-	Shape tshape2(2, 1, 0.3, xi1, eta1, zeta1, tsecond, 0, 0);
+	cout<<"DONE -----" <<endl;
+	Shape tshape2(3, 3, 0.15, xi1, eta1, zeta1, tsecond, 0, 0);
 	shps[1] = tshape2;
-	Shape tshape3(2, 1, 0.3, xi1, eta1, zeta1, tfirst, 0.1, 0);
+	Shape tshape3(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0);
 	shps[2] = tshape3;
 	//
 
@@ -1668,19 +1777,19 @@ int main(int argc, char **argv)
 	Material second(200000000000.0, 0.33, 5700.0);
 
 	//geometric properties
-	double asp_Rat1 = 1;
-	double Lr1 = 1;
+	double asp_Rat1 = 3;
+	double Lr1 = 3;
 
-	double min_ctrl_y = 0.1, max_ctrl_y = 0.40, min_ctrl_z = 0.1, max_ctrl_z = 0.40;
+	double min_ctrl_y = 0.1, max_ctrl_y = 0.20, min_ctrl_z = 0.1, max_ctrl_z = 0.20;
 	double interval = 0.1;
 	vector<FGM > problems;
 	for (double cy = min_ctrl_y; cy <= max_ctrl_y; cy += interval)
 	{
 		for (double cz = min_ctrl_z; cz <= max_ctrl_z; cz += interval)
 		{
-			for(double h_a = 0.01; h_a <= 0.04; h_a += 0.01)
+			for(double h_a = 0.01; h_a <= 0.02; h_a += 0.01)
 			{
-				for(double h1_h2 = 0.1; h1_h2 <= 0.4; h1_h2 += 0.1){
+				for(double h1_h2 = 0.1; h1_h2 <= 0.2; h1_h2 += 0.1){
 					Shape * shapes = new Shape[num_layers];
 					double ht = h_a * Lr1;
 					double w_over_h2 = ht / (h1_h2 + 2);
@@ -1763,3 +1872,4 @@ int main(int argc, char **argv)
 
 	return 0;
 }
+
