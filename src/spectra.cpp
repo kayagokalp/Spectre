@@ -125,7 +125,7 @@ struct Space
 			// cout << "IT" << " Sum: " << IT.sum() << " Max: " << IT.maxCoeff() << " Min: " << IT.minCoeff() << endl;
 			// cout << "FT" << " Sum: " << FT.sum() << " Max: " << FT.maxCoeff() << " Min: " << FT.minCoeff() << endl;
 			// cout << "D" << " Sum: " << D.sum() << " Max: " << D.maxCoeff() << " Min: " << D.minCoeff() << endl;
-			 cout << "s" << " Sum: " << s.sum() << " Max: " << s.maxCoeff() << " Min: " << s.minCoeff() << endl;
+			// cout << "s" << " Sum: " << s.sum() << " Max: " << s.maxCoeff() << " Min: " << s.minCoeff() << endl;
 			// cout << "V" << " Sum: " << V.sum() << " Max: " << V.maxCoeff() << " Min: " << V.minCoeff() << endl;
 			// cout << "Q1" << " Sum: " << Q1.sum() << " Max: " << Q1.maxCoeff() << " Min: " << Q1.minCoeff() << endl;
 		}
@@ -203,7 +203,8 @@ class Shape
 				fillShapeTensors();
 				
 				double alpha = -1.0472; //NOTE(KAYA) : for testing...
-				vector_map_jac_curvature(alpha);				
+				double beta = 0;
+				vector_map_jac_curvature(alpha,beta);				
 				// cout << "VD" << " Sum: " << VD.sum() << " Max: " << VD.maxCoeff() << " Min: " << VD.minCoeff() << endl;
 				// cout << "QDx" << " Sum: " << QDx.sum() << " Max: " << QDx.maxCoeff() << " Min: " << QDx.minCoeff() << endl;
 				// cout << "QDy" << " Sum: " << QDy.sum() << " Max: " << QDy.maxCoeff() << " Min: " << QDy.minCoeff() << endl;
@@ -211,18 +212,17 @@ class Shape
 			}
 
 		void fillShapeTensors(){	
-			for(int i = 0; i < spaces[0].s.size(); i++){
-				for(int j = 0; j < spaces[1].s.size(); j++){
-					for(int k = 0; k < spaces[2].s.size(); k++){
+			for(int i = 0; i < spaces[0].no_points; i++){
+				for(int j = 0; j < spaces[1].no_points; j++){
+					for(int k = 0; k < spaces[2].no_points; k++){
 						shapeX(i,j,k) = spaces[0].s(i);
 						shapeY(i,j,k) = spaces[1].s(j);
 						shapeZ(i,j,k) = spaces[2].s(k);
-	//					cout<< "SHAPE : " << i << " " << j << " " << k << " " << shapeX(i,j,k) << endl;
 					}
 				}
 			}
 		}
-		void vector_map_jac_curvature(double alpha){
+		void vector_map_jac_curvature(double alpha, double beta){
 
 			int x_sample = spaces[0].no_points;
 			int y_sample = spaces[1].no_points;
@@ -231,47 +231,71 @@ class Shape
 			Tensor<double,3> tempx = Tensor<double,3>(x_sample, y_sample, z_sample);
 			Tensor<double,3> tempy = Tensor<double,3>(x_sample, y_sample, z_sample);
 			Tensor<double,3> tempz = Tensor<double,3>(x_sample, y_sample, z_sample);
+			
+			tempx.setZero();
+			tempy.setZero();
+			tempz.setZero();
 
 			Tensor<double,3> temp2x = Tensor<double,3>(x_sample, y_sample, z_sample);
 			Tensor<double,3> temp2y = Tensor<double,3>(x_sample, y_sample, z_sample);
 			Tensor<double,3> temp2z = Tensor<double,3>(x_sample, y_sample, z_sample);
 
+			temp2x.setZero();
+			temp2y.setZero();
+			temp2z.setZero();
+
 			Tensor<double,3> dxdxb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dxdxb2.setZero();
 			Tensor<double,3> dxdyb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dxdyb2.setZero();
 			Tensor<double,3> dxdzb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
-			
+			dxdzb2.setZero();
+
 			Tensor<double,3> dydxb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dydxb2.setZero();
 			Tensor<double,3> dydyb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dydyb2.setZero();
 			Tensor<double,3> dydzb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dydzb2.setZero();
 
 			Tensor<double,3> dzdxb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dzdxb2.setZero();
 			Tensor<double,3> dzdyb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dzdyb2.setZero();
 			Tensor<double,3> dzdzb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dzdzb2.setZero();
 
 			Tensor<double,3> dxdxb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dxdxb.setZero();
 			Tensor<double,3> dxdyb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dxdyb.setZero();
 			Tensor<double,3> dxdzb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dxdzb.setZero();
 			
 			Tensor<double,3> dydxb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dydxb.setZero();
 			Tensor<double,3> dydyb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dydyb.setZero();
 			Tensor<double,3> dydzb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dydzb.setZero();
 
 			Tensor<double,3> dzdxb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dzdxb.setZero();
 			Tensor<double,3> dzdyb = Tensor<double,3>(x_sample, y_sample, z_sample);
+			dzdyb.setZero();
 			Tensor<double,3> dzdzb = Tensor<double,3>(x_sample, y_sample, z_sample);
-
+			dzdzb.setZero();
 
 			if(alpha != 0){
 				//loop over temp vars
 				for(int i = 0; i<x_sample; i++){
 					for(int j = 0; j<y_sample; j++){
 						for(int k = 0; k<z_sample; k++){
-							tempx(i,j,k) = (cos(alpha*shapeX(i,j,k)) * (1/(alpha*sin(alpha*shapeX(i,j,k))))) 
-								- (sin(alpha*shapeX(i,j,k)) * (shapeZ(i,j,k) - 1/(alpha * (1-cos(alpha*shapeX(i,j,k))))));
-
+							tempx(i,j,k) = (cos(alpha*shapeX(i,j,k)) * ( (1/alpha) * sin(alpha*shapeX(i,j,k))))
+								- (sin(alpha*shapeX(i,j,k)) * (shapeZ(i,j,k) - ((1/alpha) * (1-cos(alpha*shapeX(i,j,k))))));
 							tempy(i,j,k) = shapeY(i,j,k);
-							tempz(i,j,k) = (sin(alpha * shapeX(i,j,k)) * (1/(alpha * sin(alpha * shapeX(i,j,k)))))
-							       + (cos(alpha * shapeX(i,j,k)) * (shapeZ(i,j,k) - 1/(alpha * (1-cos(alpha*shapeX(i,j,k))))));	
+							tempz(i,j,k) = (sin(alpha * shapeX(i,j,k)) * ( (1/alpha) * sin(alpha * shapeX(i,j,k))))
+							       + (cos(alpha * shapeX(i,j,k)) * (shapeZ(i,j,k) - ((1/alpha) * (1-cos(alpha*shapeX(i,j,k))))));	
 						}
 					}
 				}
@@ -280,19 +304,63 @@ class Shape
 				tempy = shapeY;
 				tempz = shapeZ;
 			}
-/*
+
+			if(beta != 0){
+				//loop over temp2 vars
+				for(int i = 0; i<x_sample; i++){
+					for(int j = 0; j<y_sample; j++){
+						for(int k = 0; k<z_sample; k++){
+							temp2x(i,j,k) = tempx(i,j,k);	
+
+							temp2y(i,j,k) = (cos(beta*tempy(i,j,k)) * ( (1/beta) * sin(beta*tempx(i,j,k))))
+								- (sin(beta*tempx(i,j,k)) * (tempz(i,j,k) - ((1/beta) * (1-cos(beta*tempx(i,j,k))))));
+							
+							temp2z(i,j,k) = (sin(beta*tempy(i,j,k)) * ( (1/beta) * sin(beta*tempy(i,j,k))))
+								+ (cos(beta*tempy(i,j,k)) * (tempz(i,j,k) - ((1/beta) * (1-cos(beta*tempy(i,j,k))))));
+						}
+					}
+				}
+
+			}else{
+				temp2x = tempx;
+				temp2y = tempy;
+				temp2z = tempz;
+			}
+
+
+
 			 
-			for(int i = 0; i < spaces[0].s.size(); i++){
-				for(int j = 0; j < spaces[1].s.size(); j++){
-					for(int k = 0; k < spaces[2].s.size(); k++){
-						cout<< "tempx : " << i << " " << j << " " << k << " " << tempx(i,j,k) << endl;
-						cout<< "tempy : " << i << " " << j << " " << k << " " << tempy(i,j,k) << endl;
-						cout<< "tempz : " << i << " " << j << " " << k << " " << tempz(i,j,k) << endl;
+			for(int i = 0; i < x_sample; i++){
+				for(int j = 0; j < y_sample; j++){
+					for(int k = 0; k < z_sample; k++){
+						dxdxb2(i,j,k) = (-1 * alpha * cos(alpha * shapeX(i,j,k)) * shapeZ(i,j,k)) + cos(alpha*shapeX(i,j,k));
+						dxdyb2(i,j,k) = 0;
+						dxdzb2(i,j,k) = -1 * sin(alpha * shapeX(i,j,k));
+
+						dydxb2(i,j,k) = 0;
+						dydyb2(i,j,k) = 1;
+						dydzb2(i,j,k) = 0;
+
+						dzdxb2(i,j,k) = sin(alpha * shapeX(i,j,k)) - (shapeZ(i,j,k) * alpha * sin(alpha * shapeX(i,j,k)));
+						dzdyb2(i,j,k) = 0;
+						dzdzb2(i,j,k) = cos(alpha * shapeX(i,j,k));
+
+						dxdxb(i,j,k) = 1;
+						dxdyb(i,j,k) = 0;
+						dxdzb(i,j,k) = 0;
+
+						dydxb(i,j,k) = 0;
+						dydyb(i,j,k) = (-1 * beta * cos(beta * tempy(i,j,k)) * tempz(i,j,k)) + cos(beta * tempy(i,j,k));
+						dydzb(i,j,k) = -1 * sin(beta * tempy(i,j,k));
+
+						dzdxb(i,j,k) = 0;
+						dzdyb(i,j,k) = sin(beta * tempy(i,j,k)) - (tempz(i,j,k) * beta * sin(beta * tempy(i,j,k)));
+						dzdzb(i,k,k) = cos(beta * tempy(i,j,k));
 					}
 				}
 			}
 
-*/
+
 		}
 
 		void operator=(const Shape& s){
