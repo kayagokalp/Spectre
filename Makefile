@@ -1,5 +1,7 @@
 all: cpu gpu sgpu
 
+cpu-debug:
+	g++ -g -o f_cpuspec_layers.out src/spectra.cpp -std=c++11 -fopenmp -I/usr/include/mkl -I/data/aakyildiz/Apps/eigen/ -I/data/aakyildiz/Apps/spectra/include/ -DNDEBUG -lmkl_rt 
 cpu:
 	g++ -o f_cpuspec_layers.out src/spectra.cpp -std=c++11 -O3 -fopenmp -I/usr/include/mkl -I/data/aakyildiz/Apps/eigen/ -I/data/aakyildiz/Apps/spectra/include/ -DNDEBUG -lmkl_rt 
 gpu:

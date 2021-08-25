@@ -160,6 +160,8 @@ class Shape
 		bool is_curved;
 		dtype curve[2];
 		dtype dim[3];
+		
+		int debug_count = 0;
 
 		Space spaces[3];
 		Material material;
@@ -173,10 +175,10 @@ class Shape
 		MatrixXd QDy;
 		MatrixXd QDz;
 
-		Tensor<double,3> shapeX;
+
+		Tensor<double,3> shapeX; 
 		Tensor<double,3> shapeY;
 		Tensor<double,3> shapeZ;
-
 
 		Shape() : dim{0, 0, 0}, is_curved(false), curve{0, 0}, xyz(0) {}
 		Shape(dtype x_dim, dtype y_dim, dtype z_dim,
@@ -193,15 +195,15 @@ class Shape
 				QDx.setZero();
 				QDy.setZero();
 				QDz.setZero();
-				vector_map_nojac();
-				shapeX = Tensor<double,3>(z_sample, y_sample, z_sample);
-				shapeY = Tensor<double,3>(z_sample, y_sample, z_sample);
-				shapeZ = Tensor<double,3>(z_sample, y_sample, z_sample);
+				vector_map_nojac();	
+				shapeX = Tensor<double,3>(x_sample, y_sample, z_sample);
+				shapeY = Tensor<double,3>(x_sample, y_sample, z_sample);
+				shapeZ = Tensor<double,3>(x_sample, y_sample, z_sample);
 				shapeX.setZero();
-				shapeY.setZero();
-				shapeZ.setZero();			
+		 		shapeY.setZero();
+				shapeZ.setZero();
+
 				fillShapeTensors();
-				
 				double alpha = -1.0472; //NOTE(KAYA) : for testing...
 				double beta = 0;
 				vector_map_jac_curvature(alpha,beta);				
@@ -228,6 +230,8 @@ class Shape
 			int y_sample = spaces[1].no_points;
 			int z_sample = spaces[2].no_points;
 
+
+						
 			Tensor<double,3> tempx = Tensor<double,3>(x_sample, y_sample, z_sample);
 			Tensor<double,3> tempy = Tensor<double,3>(x_sample, y_sample, z_sample);
 			Tensor<double,3> tempz = Tensor<double,3>(x_sample, y_sample, z_sample);
@@ -243,49 +247,6 @@ class Shape
 			temp2x.setZero();
 			temp2y.setZero();
 			temp2z.setZero();
-
-			Tensor<double,3> dxdxb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dxdxb2.setZero();
-			Tensor<double,3> dxdyb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dxdyb2.setZero();
-			Tensor<double,3> dxdzb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dxdzb2.setZero();
-
-			Tensor<double,3> dydxb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dydxb2.setZero();
-			Tensor<double,3> dydyb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dydyb2.setZero();
-			Tensor<double,3> dydzb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dydzb2.setZero();
-
-			Tensor<double,3> dzdxb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dzdxb2.setZero();
-			Tensor<double,3> dzdyb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dzdyb2.setZero();
-			Tensor<double,3> dzdzb2 = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dzdzb2.setZero();
-
-			Tensor<double,3> dxdxb = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dxdxb.setZero();
-			Tensor<double,3> dxdyb = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dxdyb.setZero();
-			Tensor<double,3> dxdzb = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dxdzb.setZero();
-			
-			Tensor<double,3> dydxb = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dydxb.setZero();
-			Tensor<double,3> dydyb = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dydyb.setZero();
-			Tensor<double,3> dydzb = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dydzb.setZero();
-
-			Tensor<double,3> dzdxb = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dzdxb.setZero();
-			Tensor<double,3> dzdyb = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dzdyb.setZero();
-			Tensor<double,3> dzdzb = Tensor<double,3>(x_sample, y_sample, z_sample);
-			dzdzb.setZero();
-
 			if(alpha != 0){
 				//loop over temp vars
 				for(int i = 0; i<x_sample; i++){
@@ -328,39 +289,83 @@ class Shape
 			}
 
 
+			MatrixXd Dijk = MatrixXd(3,3);
+			MatrixXd Bijk = MatrixXd(3,3);
+			Tensor<double,3> jac = Tensor<double,3>(x_sample,y_sample,z_sample);
 
-			 
+
+			//jacobian tensors are missing
+			double dxdxb2 = 0;
+			double dxdyb2 = 0;
+			double dxdzb2 = 0;
+		
+			double dydxb2 = 0;
+			double dydyb2 = 0;
+			double dydzb2 = 0;
+
+			double dzdxb2 = 0;
+			double dzdyb2 = 0;
+			double dzdzb2 = 0;
+
+			double dxdxb = 0;
+			double dxdyb = 0;
+			double dxdzb = 0;
+		
+			double dydxb = 0;
+			double dydyb = 0;
+			double dydzb = 0;
+
+			double dzdxb = 0;
+			double dzdyb = 0;
+			double dzdzb = 0;
+
+
+						
 			for(int i = 0; i < x_sample; i++){
 				for(int j = 0; j < y_sample; j++){
 					for(int k = 0; k < z_sample; k++){
-						dxdxb2(i,j,k) = (-1 * alpha * cos(alpha * shapeX(i,j,k)) * shapeZ(i,j,k)) + cos(alpha*shapeX(i,j,k));
-						dxdyb2(i,j,k) = 0;
-						dxdzb2(i,j,k) = -1 * sin(alpha * shapeX(i,j,k));
+						dxdxb2 = (-1 * alpha * cos(alpha * shapeX(i,j,k)) * shapeZ(i,j,k)) + cos(alpha*shapeX(i,j,k));
+						dxdyb2 = 0;
+						dxdzb2 = -1 * sin(alpha * shapeX(i,j,k));
 
-						dydxb2(i,j,k) = 0;
-						dydyb2(i,j,k) = 1;
-						dydzb2(i,j,k) = 0;
+						dydxb2 = 0;
+						dydyb2 = 1;
+						dydzb2 = 0;
 
-						dzdxb2(i,j,k) = sin(alpha * shapeX(i,j,k)) - (shapeZ(i,j,k) * alpha * sin(alpha * shapeX(i,j,k)));
-						dzdyb2(i,j,k) = 0;
-						dzdzb2(i,j,k) = cos(alpha * shapeX(i,j,k));
+						dzdxb2 = sin(alpha * shapeX(i,j,k)) - (shapeZ(i,j,k) * alpha * sin(alpha * shapeX(i,j,k)));
+						dzdyb2 = 0;
+						dzdzb2 = cos(alpha * shapeX(i,j,k));
 
-						dxdxb(i,j,k) = 1;
-						dxdyb(i,j,k) = 0;
-						dxdzb(i,j,k) = 0;
+						dxdxb = 1;
+						dxdyb = 0;
+						dxdzb = 0;
 
-						dydxb(i,j,k) = 0;
-						dydyb(i,j,k) = (-1 * beta * cos(beta * tempy(i,j,k)) * tempz(i,j,k)) + cos(beta * tempy(i,j,k));
-						dydzb(i,j,k) = -1 * sin(beta * tempy(i,j,k));
+						dydxb = 0;
+						dydyb = (-1 * beta * cos(beta * tempy(i,j,k)) * tempz(i,j,k)) + cos(beta * tempy(i,j,k));
+						dydzb = -1 * sin(beta * tempy(i,j,k));
 
-						dzdxb(i,j,k) = 0;
-						dzdyb(i,j,k) = sin(beta * tempy(i,j,k)) - (tempz(i,j,k) * beta * sin(beta * tempy(i,j,k)));
-						dzdzb(i,k,k) = cos(beta * tempy(i,j,k));
+						dzdxb = 0;
+						dzdyb = sin(beta * tempy(i,j,k)) - (tempz(i,j,k) * beta * sin(beta * tempy(i,j,k)));
+						dzdzb = cos(beta * tempy(i,j,k));
+
+						Dijk << dxdxb2, dydxb2, dzdxb2,
+						        dxdyb2, dydyb2, dzdyb2,
+							dxdzb2, dydzb2, dzdzb2;
+
+						Bijk << dxdxb, dydxb, dzdxb,
+						        dxdyb, dydyb, dzdyb,
+							dxdzb, dydzb, dzdzb;
+						
+						jac(i,j,k) = (Dijk * Bijk).determinant();
+	//					cout << "i " << i << " j "<< j << " k "<<k << " == " <<jac(i,j,k) <<endl;			
+
 					}
 				}
 			}
 
 
+//cout<<debug_count<<endl;
+//debug_count+= 1;
 		}
 
 		void operator=(const Shape& s){
@@ -1678,17 +1683,51 @@ class LCO
 
 int main(int argc, char **argv)
 {	
+
+unsigned int xi1 = 0, xi2 = 0, xi3 = 0;
+unsigned int eta1 = 0, eta2 = 0, eta3 = 0;
+unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
+
 #if defined(SMART) || defined(GPU)
-	if (argc < 3)
+	if (argc < 12)
 	{
-		cout << "Usage: " << argv[0] << " nthreads ngpus " << endl;
+		cout << "Usage: " << argv[0] << " nthreads ngpus xi1 xi2 xi3 eta1 eta2 eta3 zeta1 zeta2 zeta3" << endl;
 		return 0;
+	}else{
+		xi1 = atoi(argv[3]);
+		xi2 = atoi(argv[4]);
+		xi3 = atoi(argv[5]);
+		eta1 = atoi(argv[6]);
+		eta2 = atoi(argv[7]);
+		eta3 = atoi(argv[8]);
+		zeta1 = atoi(argv[9]);
+		zeta2 = atoi(argv[10]);
+		zeta3 = atoi(argv[11]);
 	}
 #else
-	if (argc < 2)
+	if (argc < 11)
 	{
-		cout << "Usage: " << argv[0] << " nthreads " << endl;
+		cout << "Usage: " << argv[0] << " nthreads xi1 xi2 xi3 eta1 eta2 eta3 zeta1 zeta2 zeta3" << endl;
 		return 0;
+	}else{	
+		xi1 = atoi(argv[2]);
+		cout << xi1 << endl;
+		xi2 = atoi(argv[3]);
+		cout << xi2 << endl;
+		xi3 = atoi(argv[4]);
+		cout << xi3 << endl;
+		eta1 = atoi(argv[5]);
+		cout << eta1 << endl;
+		eta2 = atoi(argv[6]);
+		cout << eta2 << endl;
+		eta3 = atoi(argv[7]);
+		cout << eta3 << endl;
+		zeta1 = atoi(argv[8]);
+		cout << zeta1 << endl;
+		zeta2 = atoi(argv[9]);
+		cout << zeta2 << endl;
+		zeta3 = atoi(argv[10]);
+		cout << zeta3 << endl;
 	}
 #endif
 /*
@@ -1732,10 +1771,15 @@ int main(int argc, char **argv)
 #endif
 
 	unsigned int num_layers = 3;
- 	unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
- 	unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
- 	unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
+// 	unsigned int xi1 = 12, xi2 = 12, xi3 = 12;
+// 	unsigned int eta1 = 12, eta2 = 12, eta3 = 12;
+// 	unsigned int zeta1 = 16, zeta2 = 12, zeta3 = 16;
  
+
+ 	//unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
+ 	//unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
+ 	//unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 5;	
+
 	//unsigned int xi1 = 7, xi2 = 7, xi3 = 7;
  	//unsigned int eta1 = 7, eta2 = 7, eta3 = 7;
  	//unsigned int zeta1 = 9, zeta2 = 7, zeta3 = 9;
@@ -1753,13 +1797,11 @@ int main(int argc, char **argv)
 	Shape * shps = new Shape[num_layers];
 	Shape tshape1(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0);
 	shps[0] = tshape1;
-	cout<<"DONE -----" <<endl;
 	Shape tshape2(3, 3, 0.15, xi1, eta1, zeta1, tsecond, 0, 0);
 	shps[1] = tshape2;
 	Shape tshape3(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0);
 	shps[2] = tshape3;
 	//
-
 	//set CPU costs for each task
 	FGM tfgm(num_layers, shps);
 	int tnconv;
@@ -1848,16 +1890,16 @@ int main(int argc, char **argv)
 	double asp_Rat1 = 3;
 	double Lr1 = 3;
 
-	double min_ctrl_y = 0.1, max_ctrl_y = 0.20, min_ctrl_z = 0.1, max_ctrl_z = 0.20;
+	double min_ctrl_y = 0.1, max_ctrl_y = 0.40, min_ctrl_z = 0.1, max_ctrl_z = 0.40;
 	double interval = 0.1;
 	vector<FGM > problems;
 	for (double cy = min_ctrl_y; cy <= max_ctrl_y; cy += interval)
 	{
 		for (double cz = min_ctrl_z; cz <= max_ctrl_z; cz += interval)
 		{
-			for(double h_a = 0.01; h_a <= 0.02; h_a += 0.01)
+			for(double h_a = 0.01; h_a <= 0.04; h_a += 0.01)
 			{
-				for(double h1_h2 = 0.1; h1_h2 <= 0.2; h1_h2 += 0.1){
+				for(double h1_h2 = 0.1; h1_h2 <= 0.4; h1_h2 += 0.1){
 					Shape * shapes = new Shape[num_layers];
 					double ht = h_a * Lr1;
 					double w_over_h2 = ht / (h1_h2 + 2);
