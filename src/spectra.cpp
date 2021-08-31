@@ -296,119 +296,99 @@ class Shape
 			MatrixXd Bijk = MatrixXd(3,3);
 			MatrixXd Eijk = MatrixXd(3,3);
 
-			Tensor<double,3> dxidx(x_sample,y_sample,z_sample);
+			double dxdxb2 = 0;
+			double dxdyb2 = 0;
+			double dxdzb2 = 0;
+
+			double dydxb2 = 0;
+			double dydyb2 = 0;
+			double dydzb2 = 0;
+
+			double dzdxb2 = 0;
+			double dzdyb2 = 0;
+			double dzdzb2 = 0;
+
+			double dxdxb = 0;
+			double dxdyb = 0;
+			double dxdzb = 0;
+
+			double dydxb = 0;
+			double dydyb = 0;
+			double dydzb = 0;
+
+			double dzdxb = 0;
+			double dzdyb = 0;
+			double dzdzb = 0;
+
+
+
+			Tensor<double,3> dxidx = Tensor<double,3>(x_sample,y_sample,z_sample);
 			dxidx.setZero();
-			Tensor<double,3> detadx(x_sample,y_sample,z_sample);
+			Tensor<double,3> detadx = Tensor<double,3>(x_sample,y_sample,z_sample);
 			detadx.setZero();
-			Tensor<double,3> dzetadx(x_sample,y_sample,z_sample);
+			Tensor<double,3> dzetadx = Tensor<double,3>(x_sample,y_sample,z_sample);
 			dzetadx.setZero();
 
-			Tensor<double,3> dxidy(x_sample,y_sample,z_sample);
+
+			Tensor<double,3> dxidy = Tensor<double,3>(x_sample,y_sample,z_sample);
 			dxidy.setZero();
-			Tensor<double,3> detady(x_sample,y_sample,z_sample);
+			Tensor<double,3> detady = Tensor<double,3>(x_sample,y_sample,z_sample);
 			detady.setZero();
-			Tensor<double,3> dzetady(x_sample,y_sample,z_sample);
+			Tensor<double,3> dzetady = Tensor<double,3>(x_sample,y_sample,z_sample);
 			dzetady.setZero();
 
-			Tensor<double,3> dxidz(x_sample,y_sample,z_sample);
+
+			Tensor<double,3> dxidz = Tensor<double,3>(x_sample,y_sample,z_sample);
 			dxidz.setZero();
-			Tensor<double,3> detadz(x_sample,y_sample,z_sample);
+			Tensor<double,3> detadz = Tensor<double,3>(x_sample,y_sample,z_sample);
 			detadz.setZero();
-			Tensor<double,3> dzetadz(x_sample,y_sample,z_sample);
+			Tensor<double,3> dzetadz = Tensor<double,3>(x_sample,y_sample,z_sample);
 			dzetadz.setZero();
 
-			Tensor<double,3> dxdxb2(x_sample,y_sample,z_sample);
-			dxdxb2.setZero();
-			Tensor<double,3> dxdyb2(x_sample,y_sample,z_sample);
-			dxdyb2.setZero();
-			Tensor<double,3> dxdzb2(x_sample,y_sample,z_sample);
-			dxdzb2.setZero();
-		
-			Tensor<double,3> dydxb2(x_sample,y_sample,z_sample);
-			dydxb2.setZero();
-			Tensor<double,3> dydyb2(x_sample,y_sample,z_sample);
-			dydyb2.setZero();
-			Tensor<double,3> dydzb2(x_sample,y_sample,z_sample);
-			dydzb2.setZero();
+//			cout<<"SHAPEX SUM = "<<shapeX.sum()<<endl;
+//			cout<<"SHAPEY SUM = "<<shapeY.sum()<<endl;
+//			cout<<"SHAPEZ SUM = "<<shapeZ.sum()<<endl;
+//
+//			cout<<"TEMPX SUM = "<<tempx.sum()<<endl;
+//			cout<<"TEMPY SUM = "<<tempy.sum()<<endl;
+//			cout<<"TEMPZ SUM = "<<tempz.sum()<<endl;
 
-
-			Tensor<double,3> dzdxb2(x_sample,y_sample,z_sample);
-			dzdxb2.setZero();
-			Tensor<double,3> dzdyb2(x_sample,y_sample,z_sample);
-			dzdyb2.setZero();
-			Tensor<double,3> dzdzb2(x_sample,y_sample,z_sample);
-			dzdzb2.setZero();
-
-			Tensor<double,3> dxdxb(x_sample,y_sample,z_sample);
-			dxdxb.setZero();
-			Tensor<double,3> dxdyb(x_sample,y_sample,z_sample);
-			dxdyb.setZero();
-			Tensor<double,3> dxdzb(x_sample,y_sample,z_sample);
-			dxdzb.setZero();
-		
-			Tensor<double,3> dydxb(x_sample,y_sample,z_sample);
-			dydxb.setZero();
-			Tensor<double,3> dydyb(x_sample,y_sample,z_sample);
-			dydyb.setZero();
-			Tensor<double,3> dydzb(x_sample,y_sample,z_sample);
-			dydzb.setZero();
-
-			Tensor<double,3> dzdxb(x_sample,y_sample,z_sample);
-			dzdxb.setZero();
-			Tensor<double,3> dzdyb(x_sample,y_sample,z_sample);
-			dzdyb.setZero();
-			Tensor<double,3> dzdzb(x_sample,y_sample,z_sample);
-			dzdzb.setZero();
-
-			cout<<"SHAPEX SUM = "<<shapeX.sum()<<endl;
-			cout<<"SHAPEY SUM = "<<shapeY.sum()<<endl;
-			cout<<"SHAPEZ SUM = "<<shapeZ.sum()<<endl;
-
-			cout<<"TEMPX SUM = "<<tempx.sum()<<endl;
-			cout<<"TEMPY SUM = "<<tempy.sum()<<endl;
-			cout<<"TEMPZ SUM = "<<tempz.sum()<<endl;
-
-			double counttt = 0;
 			for(int i = 0; i < x_sample; i++){
 				for(int j = 0; j < y_sample; j++){
 					for(int k = 0; k < z_sample; k++){
-						dxdxb2(i,j,k) = cos(alpha * shapeX(i,j,k)) - (alpha * cos(alpha * shapeX(i,j,k)) * shapeZ(i,j,k));
-						dxdyb2(i,j,k) = 0;
-						dxdzb2(i,j,k) = -1 * sin(alpha * shapeX(i,j,k));
-						dydxb2(i,j,k) = 0;
-						dydyb2(i,j,k) = 1;
-						dydzb2(i,j,k) = 0;
+						dxdxb2 = cos(alpha * shapeX(i,j,k)) - (alpha * cos(alpha * shapeX(i,j,k)) * shapeZ(i,j,k));
+						dxdyb2 = 0;
+						dxdzb2 = -1 * sin(alpha * shapeX(i,j,k));
+						dydxb2 = 0;
+						dydyb2 = 1;
+						dydzb2 = 0;
 
-						dzdxb2(i,j,k) = sin(alpha * shapeX(i,j,k)) - (shapeZ(i,j,k) * alpha * sin(alpha * shapeX(i,j,k)));
-						dzdyb2(i,j,k) = 0;
-						dzdzb2(i,j,k) = cos(alpha * shapeX(i,j,k));
+						dzdxb2 = sin(alpha * shapeX(i,j,k)) - (shapeZ(i,j,k) * alpha * sin(alpha * shapeX(i,j,k)));
+						dzdyb2 = 0;
+						dzdzb2 = cos(alpha * shapeX(i,j,k));
 
-						dxdxb(i,j,k) = 1;
-						dxdyb(i,j,k) = 0;
-						dxdzb(i,j,k) = 0;
+						dxdxb = 1;
+						dxdyb = 0;
+						dxdzb = 0;
 
-						dydxb(i,j,k) = 0;
-						dydyb(i,j,k) = cos(beta * tempy(i,j,k)) - (beta * cos(beta * tempy(i,j,k)) * tempz(i,j,k));
-						dydzb(i,j,k) = -1 * sin(beta * tempy(i,j,k));
+						dydxb = 0;
+						dydyb = cos(beta * tempy(i,j,k)) - (beta * cos(beta * tempy(i,j,k)) * tempz(i,j,k));
+						dydzb = -1 * sin(beta * tempy(i,j,k));
 
-						dzdxb(i,j,k) = 0;
-						dzdyb(i,j,k) = sin(beta * tempy(i,j,k)) - (tempz(i,j,k) * beta * sin(beta * tempy(i,j,k)));
-						dzdzb(i,j,k) = cos(beta * tempy(i,j,k));
+						dzdxb = 0;
+						dzdyb = sin(beta * tempy(i,j,k)) - (tempz(i,j,k) * beta * sin(beta * tempy(i,j,k)));
+						dzdzb = cos(beta * tempy(i,j,k));
 
-						Dijk<<dxdxb2(i,j,k), dydxb2(i,j,k), dzdxb2(i,j,k),
-						        dxdyb2(i,j,k), dydyb2(i,j,k), dzdyb2(i,j,k),
-							dxdzb2(i,j,k), dydzb2(i,j,k), dzdzb2(i,j,k);
+						Dijk<<dxdxb2, dydxb2, dzdxb2,
+						      dxdyb2, dydyb2, dzdyb2,
+						      dxdzb2, dydzb2, dzdzb2;
 
-						Bijk<<dxdxb(i,j,k), dydxb(i,j,k), dzdxb(i,j,k),
-						        dxdyb(i,j,k), dydyb(i,j,k), dzdyb(i,j,k),
-							dxdzb(i,j,k), dydzb(i,j,k), dzdzb(i,j,k);
+						Bijk<<dxdxb, dydxb, dzdxb,
+						      dxdyb, dydyb, dzdyb,
+						      dxdzb, dydzb, dzdzb;
 						
 						jac(i,j,k) = (Dijk * Bijk).determinant();				
 						Eijk = (Dijk * Bijk).inverse();
-						
-
-
-
 
 						dxidx(i,j,k) = Eijk(0,0);
 						detadx(i,j,k) = Eijk(0,1);
@@ -422,7 +402,6 @@ class Shape
 						detadz(i,j,k) = Eijk(2,1);
 						dzetadz(i,j,k) = Eijk(2,2);
 						
-					//	cout<< "i : "<<i<<"j: "<<j<<"k: "<< k << " "<<dxidx(i,j,k)<<endl; 
 					}
 				}
 			}
@@ -512,31 +491,31 @@ class Shape
 			}
 
 	
-			cout<<"QDxi_dxidx MAX: " << QDxi_dxidx.maxCoeff() << " SUM: "<< QDxi_dxidx.sum()<<endl;
-			cout<<"QDxi_dxidy MAX: " << QDxi_dxidy.maxCoeff() << " SUM: "<< QDxi_dxidy.sum()<<endl;
-			cout<<"QDxi_dxidz MAX: " << QDxi_dxidz.maxCoeff() << " SUM: "<< QDxi_dxidz.sum()<<endl;
+//			cout<<"QDxi_dxidx MAX: " << QDxi_dxidx.maxCoeff() << " SUM: "<< QDxi_dxidx.sum()<<endl;
+//			cout<<"QDxi_dxidy MAX: " << QDxi_dxidy.maxCoeff() << " SUM: "<< QDxi_dxidy.sum()<<endl;
+//			cout<<"QDxi_dxidz MAX: " << QDxi_dxidz.maxCoeff() << " SUM: "<< QDxi_dxidz.sum()<<endl;
 
-			cout<<"QDeta_detadx MAX: " << QDeta_detadx.maxCoeff() << " SUM: "<< QDeta_detadx.sum()<<endl;
-			cout<<"QDeta_detady MAX: " << QDeta_detady.maxCoeff() << " SUM: "<< QDeta_detady.sum()<<endl;
-			cout<<"QDeta_detadz MAX: " << QDeta_detadz.maxCoeff() << " SUM: "<< QDeta_detadz.sum()<<endl;
+//			cout<<"QDeta_detadx MAX: " << QDeta_detadx.maxCoeff() << " SUM: "<< QDeta_detadx.sum()<<endl;
+//			cout<<"QDeta_detady MAX: " << QDeta_detady.maxCoeff() << " SUM: "<< QDeta_detady.sum()<<endl;
+//			cout<<"QDeta_detadz MAX: " << QDeta_detadz.maxCoeff() << " SUM: "<< QDeta_detadz.sum()<<endl;
 
 
-			cout<<"QDzeta_dzetadx MAX: " << QDzeta_dzetadx.maxCoeff() << " SUM: "<< QDzeta_dzetadx.sum()<<endl;
-			cout<<"QDzeta_dzetady MAX: " << QDzeta_dzetady.maxCoeff() << " SUM: "<< QDzeta_dzetady.sum()<<endl;
-			cout<<"QDzeta_dzetadz MAX: " << QDzeta_dzetadz.maxCoeff() << " SUM: "<< QDzeta_dzetadz.sum()<<endl;
+//			cout<<"QDzeta_dzetadx MAX: " << QDzeta_dzetadx.maxCoeff() << " SUM: "<< QDzeta_dzetadx.sum()<<endl;
+//			cout<<"QDzeta_dzetady MAX: " << QDzeta_dzetady.maxCoeff() << " SUM: "<< QDzeta_dzetady.sum()<<endl;
+//			cout<<"QDzeta_dzetadz MAX: " << QDzeta_dzetadz.maxCoeff() << " SUM: "<< QDzeta_dzetadz.sum()<<endl;
 
 			QDx = QDxi_dxidx+QDeta_detadx+QDzeta_dzetadx;
 			QDy = QDxi_dxidy+QDeta_detady+QDzeta_dzetady;
 			QDz = QDxi_dxidz+QDeta_detadz+QDzeta_dzetadz;
 
 			//cout<<QDxi_dxidx<<endl;
-			cout<<"QDx MAX: " << QDx.maxCoeff() << " SUM: "<< QDx.sum()<<endl;
-			cout<<"QDy MAX: " << QDy.maxCoeff() << " SUM: "<< QDy.sum()<<endl;
-			cout<<"QDz MAX: " << QDz.maxCoeff() << " SUM: "<< QDz.sum()<<endl;
+//			cout<<"QDx MAX: " << QDx.maxCoeff() << " SUM: "<< QDx.sum()<<endl;
+//			cout<<"QDy MAX: " << QDy.maxCoeff() << " SUM: "<< QDy.sum()<<endl;
+//			cout<<"QDz MAX: " << QDz.maxCoeff() << " SUM: "<< QDz.sum()<<endl;
 
-			cout<<"Q1xi MAX: " << spaces[0].Q1.maxCoeff() << " SUM: "<< spaces[0].Q1.sum()<<endl;
-			cout<<"Q2xi MAX: " << spaces[1].Q1.maxCoeff() << " SUM: "<< spaces[1].Q1.sum()<<endl;
-			cout<<"Q3xi MAX: " << spaces[2].Q1.maxCoeff() << " SUM: "<< spaces[2].Q1.sum()<<endl;
+//			cout<<"Q1xi MAX: " << spaces[0].Q1.maxCoeff() << " SUM: "<< spaces[0].Q1.sum()<<endl;
+//			cout<<"Q2xi MAX: " << spaces[1].Q1.maxCoeff() << " SUM: "<< spaces[1].Q1.sum()<<endl;
+//			cout<<"Q3xi MAX: " << spaces[2].Q1.maxCoeff() << " SUM: "<< spaces[2].Q1.sum()<<endl;
 		}
 
 		void operator=(const Shape& s){
