@@ -122,9 +122,9 @@ struct Space
 			Q1 = IT * D * FT;
 			DBG(cout << "Q1\n"
 					<< Q1 << endl;);
-			 cout << "IT" << " Sum: " << IT.sum() << " Max: " << IT.maxCoeff() << " Min: " << IT.minCoeff() << endl;
-			 cout << "FT" << " Sum: " << FT.sum() << " Max: " << FT.maxCoeff() << " Min: " << FT.minCoeff() << endl;
-			 cout << "D" << " Sum: " << D.sum() << " Max: " << D.maxCoeff() << " Min: " << D.minCoeff() << endl;
+			 //cout << "IT" << " Sum: " << IT.sum() << " Max: " << IT.maxCoeff() << " Min: " << IT.minCoeff() << endl;
+			 //cout << "FT" << " Sum: " << FT.sum() << " Max: " << FT.maxCoeff() << " Min: " << FT.minCoeff() << endl;
+			 //cout << "D" << " Sum: " << D.sum() << " Max: " << D.maxCoeff() << " Min: " << D.minCoeff() << endl;
 			// cout << "s" << " Sum: " << s.sum() << " Max: " << s.maxCoeff() << " Min: " << s.minCoeff() << endl;
 			// cout << "V" << " Sum: " << V.sum() << " Max: " << V.maxCoeff() << " Min: " << V.minCoeff() << endl;
 			// cout << "Q1" << " Sum: " << Q1.sum() << " Max: " << Q1.maxCoeff() << " Min: " << Q1.minCoeff() << endl;
@@ -197,10 +197,10 @@ class Shape
 				QDx.setZero();
 				QDy.setZero();
 				QDz.setZero();
-				vector_map_nojac();	
-				shapeX = Tensor<double,3>(x_sample, y_sample, z_sample);
-				shapeY = Tensor<double,3>(x_sample, y_sample, z_sample);
-				shapeZ = Tensor<double,3>(x_sample, y_sample, z_sample);
+				//vector_map_nojac();	
+				shapeX = Tensor<double,3>(z_sample, y_sample, z_sample);
+				shapeY = Tensor<double,3>(z_sample, y_sample, z_sample);
+				shapeZ = Tensor<double,3>(z_sample, y_sample, z_sample);
 				shapeX.setZero();
 		 		shapeY.setZero();
 				shapeZ.setZero();
@@ -345,13 +345,13 @@ class Shape
 			Tensor<double,3> dzetadz = Tensor<double,3>(x_sample,y_sample,z_sample);
 			dzetadz.setZero();
 
-//			cout<<"SHAPEX SUM = "<<shapeX.sum()<<endl;
-//			cout<<"SHAPEY SUM = "<<shapeY.sum()<<endl;
-//			cout<<"SHAPEZ SUM = "<<shapeZ.sum()<<endl;
-//
-//			cout<<"TEMPX SUM = "<<tempx.sum()<<endl;
-//			cout<<"TEMPY SUM = "<<tempy.sum()<<endl;
-//			cout<<"TEMPZ SUM = "<<tempz.sum()<<endl;
+			cout<<"SHAPEX SUM = "<<shapeX.sum()<<endl;
+			cout<<"SHAPEY SUM = "<<shapeY.sum()<<endl;
+			cout<<"SHAPEZ SUM = "<<shapeZ.sum()<<endl;
+
+			cout<<"TEMPX SUM = "<<tempx.sum()<<endl;
+			cout<<"TEMPY SUM = "<<tempy.sum()<<endl;
+			cout<<"TEMPZ SUM = "<<tempz.sum()<<endl;
 
 			for(int i = 0; i < x_sample; i++){
 				for(int j = 0; j < y_sample; j++){
@@ -406,29 +406,29 @@ class Shape
 				}
 			}
 
-//		cout<<"dxdxb2 SUM "<<dxdxb2.sum()<<endl;
-//		cout<<"dxdyb2 SUM "<<dxdyb2.sum()<<endl;
-//		cout<<"dxdzb2 SUM "<<dxdzb2.sum()<<endl;
+		//cout<<"dxdxb2 SUM "<<dxdxb2.sum()<<endl;
+		//cout<<"dxdyb2 SUM "<<dxdyb2.sum()<<endl;
+		//cout<<"dxdzb2 SUM "<<dxdzb2.sum()<<endl;
 
-//		cout<<"dydxb2 SUM "<<dydxb2.sum()<<endl;
-//		cout<<"dydyb2 SUM "<<dydyb2.sum()<<endl;
-//		cout<<"dydzb2 SUM "<<dydzb2.sum()<<endl;
+		//cout<<"dydxb2 SUM "<<dydxb2.sum()<<endl;
+		//cout<<"dydyb2 SUM "<<dydyb2.sum()<<endl;
+		//cout<<"dydzb2 SUM "<<dydzb2.sum()<<endl;
 
-//		cout<<"dzdxb2 SUM "<<dzdxb2.sum()<<endl;
-//		cout<<"dzdyb2 SUM "<<dzdyb2.sum()<<endl;
-//		cout<<"dzdzb2 SUM "<<dzdzb2.sum()<<endl;
+		//cout<<"dzdxb2 SUM "<<dzdxb2.sum()<<endl;
+		//cout<<"dzdyb2 SUM "<<dzdyb2.sum()<<endl;
+		//cout<<"dzdzb2 SUM "<<dzdzb2.sum()<<endl;
 
-//		cout<<"dxidx SUM: " << dxidx.sum()<<endl;
-//		cout<<"dxidy SUM: " << dxidy.sum()<<endl;
-//		cout<<"dxidz SUM: " << dxidz.sum()<<endl;
+		cout<<"dxidx SUM: " << dxidx.sum()<<endl;
+		cout<<"dxidy SUM: " << dxidy.sum()<<endl;
+		cout<<"dxidz SUM: " << dxidz.sum()<<endl;
 
-//		cout<<"detadx SUM: " << detadx.sum()<<endl;
-//		cout<<"detady SUM: " << detady.sum()<<endl;
-//		cout<<"detadz SUM: " << detadz.sum()<<endl;
+		cout<<"detadx SUM: " << detadx.sum()<<endl;
+		cout<<"detady SUM: " << detady.sum()<<endl;
+		cout<<"detadz SUM: " << detadz.sum()<<endl;
 
-//		cout<<"dzetadx SUM: " << dzetadx.sum()<<endl;
-//		cout<<"dzetady SUM: " << dzetady.sum()<<endl;
-//		cout<<"dzetadz SUM: " << dzetadz.sum()<<endl;
+		cout<<"dzetadx SUM: " << dzetadx.sum()<<endl;
+		cout<<"dzetady SUM: " << dzetady.sum()<<endl;
+		cout<<"dzetadz SUM: " << dzetadz.sum()<<endl;
 
 //		cout<<"jac SUM: "<< jac.sum() <<endl;	
 			//Vector mapping
@@ -491,9 +491,9 @@ class Shape
 			}
 
 	
-//			cout<<"QDxi_dxidx MAX: " << QDxi_dxidx.maxCoeff() << " SUM: "<< QDxi_dxidx.sum()<<endl;
-//			cout<<"QDxi_dxidy MAX: " << QDxi_dxidy.maxCoeff() << " SUM: "<< QDxi_dxidy.sum()<<endl;
-//			cout<<"QDxi_dxidz MAX: " << QDxi_dxidz.maxCoeff() << " SUM: "<< QDxi_dxidz.sum()<<endl;
+			cout<<"QDxi_dxidx MAX: " << QDxi_dxidx.maxCoeff() << " SUM: "<< QDxi_dxidx.sum()<<endl;
+			cout<<"QDxi_dxidy MAX: " << QDxi_dxidy.maxCoeff() << " SUM: "<< QDxi_dxidy.sum()<<endl;
+			cout<<"QDxi_dxidz MAX: " << QDxi_dxidz.maxCoeff() << " SUM: "<< QDxi_dxidz.sum()<<endl;
 
 //			cout<<"QDeta_detadx MAX: " << QDeta_detadx.maxCoeff() << " SUM: "<< QDeta_detadx.sum()<<endl;
 //			cout<<"QDeta_detady MAX: " << QDeta_detady.maxCoeff() << " SUM: "<< QDeta_detady.sum()<<endl;
@@ -509,9 +509,9 @@ class Shape
 			QDz = QDxi_dxidz+QDeta_detadz+QDzeta_dzetadz;
 
 			//cout<<QDxi_dxidx<<endl;
-//			cout<<"QDx MAX: " << QDx.maxCoeff() << " SUM: "<< QDx.sum()<<endl;
-//			cout<<"QDy MAX: " << QDy.maxCoeff() << " SUM: "<< QDy.sum()<<endl;
-//			cout<<"QDz MAX: " << QDz.maxCoeff() << " SUM: "<< QDz.sum()<<endl;
+		//	cout<<"QDx MAX: " << QDx.maxCoeff() << " SUM: "<< QDx.sum()<<endl;
+		//	cout<<"QDy MAX: " << QDy.maxCoeff() << " SUM: "<< QDy.sum()<<endl;
+		//	cout<<"QDz MAX: " << QDz.maxCoeff() << " SUM: "<< QDz.sum()<<endl;
 
 //			cout<<"Q1xi MAX: " << spaces[0].Q1.maxCoeff() << " SUM: "<< spaces[0].Q1.sum()<<endl;
 //			cout<<"Q2xi MAX: " << spaces[1].Q1.maxCoeff() << " SUM: "<< spaces[1].Q1.sum()<<endl;
@@ -533,6 +533,10 @@ class Shape
 			QDx = s.QDx;
 			QDy = s.QDy;
 			QDz = s.QDz;
+			jac = s.jac;
+			shapeX = s.shapeX;
+			shapeY = s.shapeY;
+			shapeZ = s.shapeZ;
 			material = s.material;
 			ctrl_y = s.ctrl_y;
 			ctrl_z = s.ctrl_z;
@@ -582,9 +586,6 @@ class Shape
 			}
 
 			VD = VDx * VDy * VDz;
-			cout << VD(0,0)<<endl;
-			cout << VD(0,1)<<endl;
-			cout << VD(0,2)<<endl;
 		}
 };
 
@@ -611,28 +612,40 @@ class FGM
 		Tensor<double, 3> * lame;
 		Tensor<double, 3> * rho;
 
-		//Tensor<double,3> * jac;
+
+		Tensor<double,3> * Q11T;
+		Tensor<double,3> * Q12T;
+		Tensor<double,3> * Q13T;
+		Tensor<double,3> * Q14T;
+		Tensor<double,3> * Q22T;
+		Tensor<double,3> * Q23T;
+		Tensor<double,3> * Q24T;
+		Tensor<double,3> * Q33T;
+		Tensor<double,3> * Q34T;
+		Tensor<double,3> * Q44T;
+		Tensor<double,3> * Q55T;
+		Tensor<double,3> * Q56T;
+		Tensor<double,3> * Q66T;
+
+		Tensor<double,3> * JAC;
 		// MatrixXd VD_mu;
 		// MatrixXd VD_lame;
 		// MatrixXd VD_rho;
-		MatrixXd * VD_mu;
-		MatrixXd * VD_lame;
-		MatrixXd * VD_rho;
 
-		MatrixXd * VD_lame111; 
-		MatrixXd * VD_lame221;
-		MatrixXd * VD_lame331;
-		MatrixXd * VD_lame121;
-		MatrixXd * VD_lame131;
-		MatrixXd * VD_lame231;
-		MatrixXd * VD_lame441;
-		MatrixXd * VD_lame551;
-		MatrixXd * VD_lame661;
-		MatrixXd * VD_lame141;
-		MatrixXd * VD_lame241;
-		MatrixXd * VD_lame341;
-		MatrixXd * VD_lame561;
-		MatrixXd * VD_rol;
+		MatrixXd * VD_lame11; 
+		MatrixXd * VD_lame22;
+		MatrixXd * VD_lame33;
+		MatrixXd * VD_lame12;
+		MatrixXd * VD_lame13;
+		MatrixXd * VD_lame23;
+		MatrixXd * VD_lame44;
+		MatrixXd * VD_lame55;
+		MatrixXd * VD_lame66;
+		MatrixXd * VD_lame14;
+		MatrixXd * VD_lame24;
+		MatrixXd * VD_lame34;
+		MatrixXd * VD_lame56;
+		MatrixXd * VD_ro;
 		
 
 		// MatrixXd M;
@@ -657,27 +670,40 @@ class FGM
 			mu = new Tensor<double, 3>[num_shapes];
 			lame = new Tensor<double, 3>[num_shapes];
 			rho = new Tensor<double, 3>[num_shapes];
-			VD_mu = new MatrixXd[num_shapes];
-			VD_lame = new MatrixXd[num_shapes];
-			VD_rho = new MatrixXd[num_shapes];
+			JAC = new Tensor<double,3>[num_shapes];
+
+			Q11T = new Tensor<double,3>[num_shapes];
+			Q12T = new Tensor<double,3>[num_shapes];
+			Q13T = new Tensor<double,3>[num_shapes];
+			Q14T = new Tensor<double,3>[num_shapes];
+			Q22T = new Tensor<double,3>[num_shapes];
+			Q23T = new Tensor<double,3>[num_shapes];
+			Q24T = new Tensor<double,3>[num_shapes];
+			Q33T = new Tensor<double,3>[num_shapes];
+			Q34T = new Tensor<double,3>[num_shapes];
+			Q44T = new Tensor<double,3>[num_shapes];
+			Q55T = new Tensor<double,3>[num_shapes];
+			Q56T = new Tensor<double,3>[num_shapes];
+			Q66T = new Tensor<double,3>[num_shapes];
+
 		
-			VD_lame111 = new MatrixXd[num_shapes];
-			VD_lame221 = new MatrixXd[num_shapes];
-			VD_lame331 = new MatrixXd[num_shapes];
+			VD_lame11 = new MatrixXd[num_shapes];
+			VD_lame22 = new MatrixXd[num_shapes];
+			VD_lame33 = new MatrixXd[num_shapes];
 			
-			VD_lame121 = new MatrixXd[num_shapes];
-			VD_lame131 = new MatrixXd[num_shapes];
-			VD_lame231 = new MatrixXd[num_shapes];
+			VD_lame12 = new MatrixXd[num_shapes];
+			VD_lame13 = new MatrixXd[num_shapes];
+			VD_lame23 = new MatrixXd[num_shapes];
 
-			VD_lame441 = new MatrixXd[num_shapes];
-			VD_lame551 = new MatrixXd[num_shapes];
-			VD_lame661 = new MatrixXd[num_shapes];
+			VD_lame44 = new MatrixXd[num_shapes];
+			VD_lame55 = new MatrixXd[num_shapes];
+			VD_lame66 = new MatrixXd[num_shapes];
 
-			VD_lame141 = new MatrixXd[num_shapes];
-			VD_lame241 = new MatrixXd[num_shapes];
-			VD_lame341 = new MatrixXd[num_shapes];
-			VD_lame561 = new MatrixXd[num_shapes];
-			VD_rol = new MatrixXd[num_shapes];
+			VD_lame14 = new MatrixXd[num_shapes];
+			VD_lame24 = new MatrixXd[num_shapes];
+			VD_lame34 = new MatrixXd[num_shapes];
+			VD_lame56 = new MatrixXd[num_shapes];
+			VD_ro = new MatrixXd[num_shapes];
 
 			M = new MatrixXd[num_shapes];
 			K = new MatrixXd[num_shapes];
@@ -687,6 +713,8 @@ class FGM
 				for(unsigned int j = 0; j < 3; j++){
 					np[i][j] = shapes[i].spaces[j].no_points;
 				}
+
+				JAC[i] = shapes[i].jac;
 				nxyz[i] = np[i][0] * np[i][1] * np[i][2];
 				nnxyz += nxyz[i];
 				mu[i] = Tensor<double, 3>(np[i][0], np[i][1], np[i][2]);
@@ -695,52 +723,72 @@ class FGM
 				lame[i].setZero();
 				rho[i] = Tensor<double, 3>(np[i][0], np[i][1], np[i][2]);
 				rho[i].setZero();
-				VD_mu[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_mu[i].setZero();
-				VD_lame[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame[i].setZero();
-				VD_rho[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_rho[i].setZero();
 
-				VD_lame111[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame111[i].setZero();
-				VD_lame221[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame221[i].setZero();
-				VD_lame331[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame331[i].setZero();
+				Q11T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+				Q11T[i].setZero();
+				Q12T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+				Q12T[i].setZero();
+				Q13T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+				Q13T[i].setZero();
+				Q14T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+				Q14T[i].setZero();
+				Q22T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+				Q22T[i].setZero();
+				Q23T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+				Q23T[i].setZero();
+				Q24T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+				Q24T[i].setZero();
+				Q33T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+				Q33T[i].setZero();
+				Q34T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+				Q34T[i].setZero();
+				Q44T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+				Q44T[i].setZero();
+				Q55T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+				Q56T[i].setZero();
+				Q66T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+				Q66T[i].setZero();
+				
+				VD_lame11[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame11[i].setZero();
+				VD_lame22[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame22[i].setZero();
+				VD_lame33[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame33[i].setZero();
 
 
-				VD_lame121[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame121[i].setZero();
-				VD_lame131[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame131[i].setZero();
-				VD_lame231[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame231[i].setZero();
+				VD_lame12[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame12[i].setZero();
+				VD_lame13[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame13[i].setZero();
+				VD_lame23[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame23[i].setZero();
 
-				VD_lame441[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame441[i].setZero();
-				VD_lame551[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame551[i].setZero();
-				VD_lame661[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame661[i].setZero();
+				VD_lame44[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame44[i].setZero();
+				VD_lame55[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame55[i].setZero();
+				VD_lame66[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame66[i].setZero();
 
-				VD_lame141[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame141[i].setZero();
-				VD_lame241[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame241[i].setZero();
-				VD_lame341[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame341[i].setZero();
-				VD_lame561[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_lame561[i].setZero();
+				VD_lame14[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame14[i].setZero();
+				VD_lame24[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame24[i].setZero();
+				VD_lame34[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame34[i].setZero();
+				VD_lame56[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_lame56[i].setZero();
 
-				VD_rol[i] = MatrixXd(nxyz[i], nxyz[i]);
-				VD_rol[i].setZero();
+				VD_ro[i] = MatrixXd(nxyz[i], nxyz[i]);
+				VD_ro[i].setZero();
 
 				M[i] = MatrixXd(3 * nxyz[i], 3 * nxyz[i]);
 				M[i].setZero();
 				K[i] = MatrixXd(3 * nxyz[i], 3 * nxyz[i]);
 				K[i].setZero();
-				FG_var_MT(i);
+				FG_var_MT_CNT(i);
+				//FG_var_MT(i);
 				// cout << rho[i](0, 0, 0) << endl;
 				// cout << rho[i](0, 0, 1) << endl;
 				// cout << rho[i](0, 0, 2) << endl;
@@ -817,9 +865,9 @@ class FGM
 			int wb = 2 * nxyz[l];
 			int we = 3 * nxyz[l] - 1;
 
-			M[l](seq(ub, ue), seq(ub, ue)) = VD_rho[l];
-			M[l](seq(vb, ve), seq(vb, ve)) = VD_rho[l];
-			M[l](seq(wb, we), seq(wb, we)) = VD_rho[l];
+			M[l](seq(ub, ue), seq(ub, ue)) = VD_ro[l];
+			M[l](seq(vb, ve), seq(vb, ve)) = VD_ro[l];
+			M[l](seq(wb, we), seq(wb, we)) = VD_ro[l];
 
 			MatrixXd epx = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
 			epx(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDx;
@@ -913,9 +961,9 @@ class FGM
 			int wb = 2 * nxyz[l];
 			int we = 3 * nxyz[l] - 1;
 
-			M[l](seq(ub, ue), seq(ub, ue)) = VD_rho[l];
-			M[l](seq(vb, ve), seq(vb, ve)) = VD_rho[l];
-			M[l](seq(wb, we), seq(wb, we)) = VD_rho[l];
+			M[l](seq(ub, ue), seq(ub, ue)) = VD_ro[l];
+			M[l](seq(vb, ve), seq(vb, ve)) = VD_ro[l];
+			M[l](seq(wb, we), seq(wb, we)) = VD_ro[l];
 
 			MatrixXd epx = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
 			epx(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDx;
@@ -934,14 +982,39 @@ class FGM
 			gammaxz(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDz;
 			gammaxz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDx;
 
-			MatrixXd epxyz = epx + epy + epz;
-			K[l] = (epxyz.transpose() * (VD_lame[l] * epxyz)) +
-				2 * ((epx.transpose() * (VD_mu[l] * epx)) +
-						(epy.transpose() * (VD_mu[l] * epy)) +
-						(epz.transpose() * (VD_mu[l] * epz))) +
-				(gammaxy.transpose() * (VD_mu[l] * gammaxy)) +
-				(gammaxz.transpose() * (VD_mu[l] * gammaxz)) +
-				(gammayz.transpose() * (VD_mu[l] * gammayz));
+			//MatrixXd epxyz = epx + epy + epz;
+
+			MatrixXd sigx = (VD_lame11[l] * epx) + (VD_lame12[l] * epy) + (VD_lame13[l] * epz) + (VD_lame14[l] * gammaxy);
+			MatrixXd sigy = (VD_lame12[l] * epx) + (VD_lame22[l] * epy) + (VD_lame23[l] * epz) + (VD_lame24[l] * gammaxy);
+			MatrixXd sigz = (VD_lame13[l] * epx) + (VD_lame23[l] * epy) + (VD_lame33[l] * epz) + (VD_lame34[l] * gammaxy);
+			MatrixXd tauxy = (VD_lame44[l] * gammaxy) + (VD_lame14[l] * epx) + (VD_lame24[l] * epy) + (VD_lame34[l] * epz);
+			MatrixXd tauyz = (VD_lame55[l] * gammayz) + (VD_lame56[l] * gammaxz);
+			MatrixXd tauxz = (VD_lame66[l] * gammaxz) + (VD_lame56[l] * gammayz);
+			cout<< " QDX " << shapes[l].QDx.sum() << endl;
+			cout<< " QDY " << shapes[l].QDy.sum() << endl;
+			cout<< " QDZ " << shapes[l].QDz.sum() << endl;
+			cout<< " SIGx "<< sigx.sum() << "MAX: "<< sigx.maxCoeff()<<endl;
+			cout<< " SIGy "<< sigy.sum() << "MAX: "<< sigy.maxCoeff()<<endl;
+			cout<< " SIGz "<< sigz.sum() <<	"MAX: "<< sigz.maxCoeff()<<endl;
+			cout<< " tauxy "<< tauxy.sum() << "MAX: "<< tauxy.maxCoeff()<<endl;
+			cout<< " tauyz "<< tauyz.sum() << "MAX: "<< tauyz.maxCoeff()<<endl;
+			cout<< " tauxz "<< tauxz.sum() << "MAX: "<< tauxz.maxCoeff()<<endl;
+		        cout<< " epx " << epx.sum() << endl;
+			cout<< " epy " << epy.sum() << endl;
+			cout<< " epz " << epz.sum() << endl;
+			cout<< " gammaxy " << gammaxy.sum() << endl;	
+
+			K[l] = (epx.transpose() * sigx) + (epy.transpose() * sigy) + (epz.transpose() * sigz) + (gammaxy.transpose() * tauxy) + (gammaxz.transpose() * tauxz) + (gammayz.transpose() * tauyz);
+
+			cout<< "K " << K[l].sum() << " MAX: "<< K[l].maxCoeff()<<endl;
+
+//			K[l] = (epxyz.transpose() * (VD_lame[l] * epxyz)) +
+//				2 * ((epx.transpose() * (VD_mu[l] * epx)) +
+//						(epy.transpose() * (VD_mu[l] * epy)) +
+//						(epz.transpose() * (VD_mu[l] * epz))) +
+//				(gammaxy.transpose() * (VD_mu[l] * gammaxy)) +
+//				(gammaxz.transpose() * (VD_mu[l] * gammaxz)) +
+//				(gammayz.transpose() * (VD_mu[l] * gammayz));
 		}
 
 		bool T1_system_matrices(unsigned int l)
@@ -1008,7 +1081,8 @@ class FGM
 		{
 			double * gpu_mem = rinfos[ttt]->gpu_mem;
 			//dnhandle[ttt] = NULL;
-			//stream[ttt] = NULL;
+			//stream[ttt] ;
+			//nu13.setZero();= NULL;
 			//cusolverDnHandle_t cusolverH = NULL;	
 			gesvdjInfo_t gesvdj_params = NULL;
 
@@ -1639,6 +1713,283 @@ class FGM
 			return BC;
 		}
 
+		void FG_var_MT_CNT(unsigned int l){
+			VectorXd &x = shapes[l].spaces[0].s;
+			VectorXd &y = shapes[l].spaces[1].s;
+			VectorXd &z = shapes[l].spaces[2].s;
+
+			Tensor<double,3> V_cnt = Tensor<double,3>(x.size(), y.size(), z.size());
+			V_cnt.setZero();
+			Tensor<double,3> ro_star = Tensor<double,3>(x.size(), y.size(), z.size());
+			ro_star.setZero();
+
+			Tensor<double,3> nu12 = Tensor<double,3>(x.size(), y.size(), z.size());
+			nu12.setZero();
+
+			Tensor<double,3> nu13 = Tensor<double,3>(x.size(), y.size(), z.size());
+			nu13.setZero();
+
+			Tensor<double,3> nu23 = Tensor<double,3>(x.size(), y.size(), z.size());
+			nu23.setZero();
+
+			Tensor<double,3> E_star_11 = Tensor<double,3>(x.size(), y.size(), z.size());
+			E_star_11.setZero();
+			
+			Tensor<double,3> E_star_22 = Tensor<double,3>(x.size(), y.size(), z.size());
+			E_star_22.setZero();
+
+			Tensor<double,3> E_star_33 = Tensor<double,3>(x.size(), y.size(), z.size());
+			E_star_33.setZero();
+
+			Tensor<double,3> G12_star = Tensor<double,3>(x.size(), y.size(), z.size());
+			G12_star.setZero();
+
+			Tensor<double,3> G13_star = Tensor<double,3>(x.size(), y.size(), z.size());
+			G13_star.setZero();
+
+			Tensor<double,3> G23_star = Tensor<double,3>(x.size(), y.size(), z.size());
+			G23_star.setZero();
+
+			Tensor<double,3> nu21 = Tensor<double,3>(x.size(), y.size(), z.size());
+			nu21.setZero();
+
+			Tensor<double,3> nu31 = Tensor<double,3>(x.size(), y.size(), z.size());
+			nu31.setZero();
+
+			Tensor<double,3> nu32 = Tensor<double,3>(x.size(), y.size(), z.size());
+			nu32.setZero();
+
+			Tensor<double,3> E11 = Tensor<double,3>(x.size(), y.size(), z.size());
+			E11.setZero();
+
+			Tensor<double,3> E22 = Tensor<double,3>(x.size(), y.size(), z.size());
+			E22.setZero();
+
+			Tensor<double,3> E33 = Tensor<double,3>(x.size(), y.size(), z.size());
+			E33.setZero();
+
+			Tensor<double,3> G12 = Tensor<double,3>(x.size(), y.size(), z.size());
+			G12.setZero();
+			
+			Tensor<double,3> G23 = Tensor<double,3>(x.size(), y.size(), z.size());
+			G23.setZero();
+
+			Tensor<double,3> G13 = Tensor<double,3>(x.size(), y.size(), z.size());
+			G13.setZero();
+
+			Tensor<double,3> Q11 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q11.setZero();
+			Tensor<double,3> Q12 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q12.setZero();
+			Tensor<double,3> Q13 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q13.setZero();
+			Tensor<double,3> Q22 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q22.setZero();
+			Tensor<double,3> Q23 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q23.setZero();
+			Tensor<double,3> Q33 = Tensor<double,3>(x.size(), y.size(), z.size());
+		        Q33.setZero();
+			Tensor<double,3> Q44 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q44.setZero();
+			Tensor<double,3> Q55 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q55.setZero();
+			Tensor<double,3> Q66 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q66.setZero();
+
+			Tensor<double,3> delta = Tensor<double,3>(x.size(), y.size(), z.size());
+			delta.setZero();
+	
+
+			int current_selection = 3; //This will be removed added for testing switch in the matlab code
+			double V_star_cnt = 0.14; //This will be removed added for testing.
+			double ro_cnt = 1400; //This will be removed added for testing.
+			double ro_m = 1150; //This will be removed added for testing.
+
+			double h = 0.15; //w_over_h1 this will be removed added for testing.
+
+			double nu12_cnt = 0.175; //This will be removed added for testing.
+			double nu13_cnt = 0.175; //This will be removed added for testing.
+			double nu23_cnt = 0.175; //This will be removed added for testing.
+			double nu_m = 0.34; //This will be removed added for testing.
+
+			double eta_star_1 = 0.15; //This will be removed added for testing.
+			double eta_star_2 = 0.941; //This will be removed added for testing.
+			double eta_star_3 = 0.941; //This will be removed added for testing.
+			double E11_cnt = 7.08e+12; //This will be removed added for testing.
+			double E22_cnt = 7.08e+12; //This will be removed added for testing.
+			double E33_cnt = 7.08e+12; //This will be removed added for testing.
+			double E_m = 2.1e+9; //This will be removed added for testing.
+
+
+			double G12_cnt = 1.9445e+12; //This will be removed added for testing.
+			double G13_cnt = 1.9445e+12; //This will be removed added for testing.
+			double G23_cnt = 3.0128e+12; //This will be removed added for testing.
+			double G_m = 7.8358e+8; //This will be removed added for testing.
+
+
+			int current_selection2 = 0;
+			double e0 = 0.3; //This will be removed added for testing.
+			double em = 0.1633; //This will be removed added for testing.	
+
+			double alpha = 0.6733; //This will be removed added for testing.
+			double alpha_prime = 0.8205; //This will be removed added for testing.
+			double theta = 0; //This will be removed added for testing. 
+
+			for(int i = 0; i < x.size(); i++){
+				for(int j = 0; j < y.size(); j++){
+					for(int k = 0; k < z.size(); k++){
+						switch (current_selection)
+						{
+							case 0:
+								{
+									V_cnt(i,j,k) =V_star_cnt; 		
+								}break;
+
+							case 1:
+								{
+									V_cnt(i,j,k) = (1 + 2 * (z(k) - h/2)/h)*V_star_cnt;
+								}break;
+							case 2:
+								{
+									V_cnt(i,j,k) = (1 - 2 * (z(k) - h/2)/h)*V_star_cnt;
+								}break;
+							case 3:
+								{
+									V_cnt(i,j,k) = (4 * abs(z(k) - h/2)/h) * V_star_cnt;
+								}break;
+						}
+						
+						ro_star(i,j,k) = ro_cnt * V_cnt(i,j,k) + ro_m * (1 - V_cnt(i,j,k));
+						nu12(i,j,k) = nu12_cnt * V_star_cnt + nu_m * (1 - V_star_cnt);
+						nu13(i,j,k) = nu13_cnt * V_star_cnt + nu_m * (1 - V_star_cnt);
+						nu23(i,j,k) = nu23_cnt * V_star_cnt + nu_m * (1 - V_star_cnt);	
+						E_star_11(i,j,k) = eta_star_1 * V_cnt(i,j,k) * E11_cnt + (1 - V_cnt(i,j,k)) * E_m;
+						E_star_22(i,j,k) = eta_star_2 / (V_cnt(i,j,k) / E22_cnt + (1 - V_cnt(i,j,k)) / E_m);
+						E_star_33(i,j,k) = eta_star_3 / (V_cnt(i,j,k) / E33_cnt + (1 - V_cnt(i,j,k)) / E_m);
+						G12_star(i,j,k)  = eta_star_3 / (V_cnt(i,j,k) / G12_cnt + (1 - V_cnt(i,j,k))/G_m); 	
+						G13_star(i,j,k)  = eta_star_3 / (V_cnt(i,j,k) / G13_cnt + (1 - V_cnt(i,j,k))/G_m); 	
+						G23_star(i,j,k)  = eta_star_3 / (V_cnt(i,j,k) / G23_cnt + (1 - V_cnt(i,j,k))/G_m); 
+						nu21(i,j,k) = nu12(i,j,k) * E_star_22(i,j,k) / E_star_11(i,j,k);	
+						nu31(i,j,k) = nu13(i,j,k) * E_star_33(i,j,k) / E_star_11(i,j,k);	
+						nu32(i,j,k) = nu23(i,j,k) * E_star_33(i,j,k) / E_star_22(i,j,k);	
+
+						switch(current_selection2)
+						{
+							case 0: 
+								{
+									G12(i,j,k)= G12_star(i,j,k) *(1-e0*cos(pi*(z(k)-h/2)/h));
+									G23(i,j,k)= G23_star(i,j,k) *(1-e0*cos(pi*(z(k)-h/2)/h));
+									G13(i,j,k)= G13_star(i,j,k) *(1-e0*cos(pi*(z(k)-h/2)/h));
+									rho[l](i,j,k)= ro_star(i,j,k) *(1-em*cos(pi*(z(k)-h/2)/h));
+									E11(i,j,k)= E_star_11(i,j,k)*(1-e0*cos(pi*(z(k)-h/2)/h));
+									E22(i,j,k)= E_star_22(i,j,k)*(1-e0*cos(pi*(z(k)-h/2)/h));
+									E33(i,j,k)= E_star_33(i,j,k)*(1-e0*cos(pi*(z(k)-h/2)/h));
+
+								}break;
+							case 1:
+								{
+									G12(i,j,k)= G12_star(i,j,k) *(1-e0*cos(pi*z(k)/(2*h)+pi/4));
+                    							G23(i,j,k)= G23_star(i,j,k) *(1-e0*cos(pi*z(k)/(2*h)+pi/4));
+                  							G13(i,j,k)= G13_star(i,j,k) *(1-e0*cos(pi*z(k)/(2*h)+pi/4));
+                    							rho[l](i,j,k)=  ro_star(i,j,k) *(1-em*cos(pi*z(k)/(2*h)+pi/4));
+                    							E11(i,j,k)= E_star_11(i,j,k)*(1-e0*cos(pi*z(k)/(2*h)+pi/4));
+                   							E22(i,j,k)= E_star_22(i,j,k)*(1-e0*cos(pi*z(k)/(2*h)+pi/4));
+                    							E33(i,j,k)= E_star_33(i,j,k)*(1-e0*cos(pi*z(k)/(2*h)+pi/4));
+								}break;
+							case 2:
+								{
+                    							G12(i,j,k)= G12_star(i,j,k) *alpha;
+		                        				G23(i,j,k)= G13_star(i,j,k) *alpha;
+					               		     	G13(i,j,k)= G23_star(i,j,k) *alpha;                    
+								        rho[l](i,j,k)= ro_star(i,j,k) *alpha_prime;
+									E11(i,j,k)= E_star_11(i,j,k)*alpha;
+									E22(i,j,k)= E_star_22(i,j,k)*alpha;
+									E33(i,j,k)= E_star_33(i,j,k)*alpha;
+								}break;
+						}
+
+						delta(i,j,k)=(1-nu12(i,j,k)*nu21(i,j,k)-nu23(i,j,k)*nu32(i,j,k)-nu31(i,j,k)*nu13(i,j,k)-2*nu21(i,j,k)*nu32(i,j,k)*nu13(i,j,k))/E11(i,j,k)/E22(i,j,k)/E33(i,j,k);
+						Q11(i,j,k)=(1-nu23(i,j,k)*nu32(i,j,k))/E22(i,j,k)/E33(i,j,k)/delta(i,j,k);
+						Q22(i,j,k)=(1-nu13(i,j,k)*nu31(i,j,k))/E11(i,j,k)/E33(i,j,k)/delta(i,j,k);
+						Q33(i,j,k)=(1-nu12(i,j,k)*nu21(i,j,k))/E22(i,j,k)/E11(i,j,k)/delta(i,j,k);
+						Q12(i,j,k)=(nu21(i,j,k)+nu31(i,j,k)*nu23(i,j,k))/E22(i,j,k)/E33(i,j,k)/delta(i,j,k);
+						Q13(i,j,k)=(nu31(i,j,k)+nu21(i,j,k)*nu32(i,j,k))/E22(i,j,k)/E33(i,j,k)/delta(i,j,k);
+						Q23(i,j,k)=(nu32(i,j,k)+nu12(i,j,k)*nu31(i,j,k))/E11(i,j,k)/E33(i,j,k)/delta(i,j,k);
+						Q44(i,j,k)=G12(i,j,k);
+						Q55(i,j,k)=G23(i,j,k);
+						Q66(i,j,k)=G13(i,j,k);
+
+					}
+				}
+			}
+			/*
+			cout<< " V_cnt "<< V_cnt.sum() << endl;
+
+			cout<< " nu12 " << nu12.sum() << endl;
+		        cout<< " nu21 " << nu21.sum() << endl;
+			cout<< " nu23 " << nu23.sum() << endl;
+			cout<< " nu32 " << nu32.sum() << endl;
+			cout<< " nu31 " << nu31.sum() << endl;
+			cout<< " nu13 " << nu13.sum() << endl;
+			cout<< " E11 "  << E11.sum() << endl;
+			cout<< " E22 " << E22.sum() << endl;
+			cout<< " E33 " << E33.sum() << endl; 	
+
+
+			cout << " delta "<< delta.sum() << endl; 
+			cout << " Q11 "<< Q11.sum() << endl;
+			cout << " Q12 "<< Q12.sum() << endl;
+			cout << " Q13 "<< Q13.sum() << endl;
+			cout << " Q22 "<< Q22.sum() << endl;
+			cout << " Q23 "<< Q23.sum() << endl;
+			cout << " Q33 "<< Q33.sum() << endl;
+			cout << " Q44 "<< Q44.sum() << endl;
+			cout << " Q55 "<< Q55.sum() << endl;
+			cout << " Q66 "<< Q66.sum() << endl;
+			*/
+
+				
+			Q11T[l]=Q11*pow(cos(theta),4)+2*(Q12+2*Q44)*(pow(cos(theta),2)*pow(sin(theta),2))+Q22*pow(sin(theta),4);
+			//cout<< " Q11T "<< Q11T[l].sum() <<endl;
+			
+			Q12T[l]=Q12*pow(cos(theta),4)+(Q11+Q22-4*Q44)*(pow(cos(theta),2)*pow(sin(theta),2))+Q12*pow(sin(theta),4);
+			//cout<< " Q12T "<< Q12T[l].sum() << endl;
+			
+			Q13T[l]=Q13*pow(cos(theta),2)+Q23*pow(sin(theta),2);
+			//cout<< " Q13T "<< Q13T[l].sum() << endl;
+
+			Q14T[l]=(Q11-Q12-2*Q44)*(pow(cos(theta),3)*sin(theta))+(2*Q44+Q12-Q22)*(cos(theta)*pow(sin(theta),3));
+			//cout<< " Q14T "<< Q14T[l].sum() << endl;
+
+			Q22T[l]=Q22*pow(cos(theta),4)+2*(Q12+2*Q44)*(pow(cos(theta),2)*pow(sin(theta),2))+Q11*pow(sin(theta),4);
+			//cout<< " Q22T "<< Q22T[l].sum() << endl;
+
+			Q23T[l]=Q23*pow(cos(theta),2)+Q13*pow(sin(theta),2);
+			//cout<< " Q23T "<< Q23T[l].sum() << endl;
+
+			Q24T[l]=(Q12-Q22+2*Q44)*(pow(cos(theta),3)*sin(theta))+(Q11-Q12-2*Q44)*(cos(theta)*pow(sin(theta),3));
+			//cout<< " Q24T "<< Q24T[l].sum() << endl;
+
+			Q33T[l]=Q33;
+			//cout<< " Q33T "<< Q33T[l].sum() << endl;
+
+			Q34T[l]=(Q13-Q23)*(cos(theta)*sin(theta));
+			//cout<< " Q34T "<< Q34T[l].sum() << endl;
+
+			Q44T[l]=(Q11+Q22-2*Q12-2*Q44)*(pow(cos(theta),2)*pow(sin(theta),2))+Q44*(pow(cos(theta),4)+pow(sin(theta),4));
+			//cout<< " Q44T "<< Q44T[l].sum() << endl;
+
+			Q55T[l]=Q55*pow(cos(theta),2)+Q66*pow(sin(theta),2);
+			//cout<< " Q55T "<< Q55T[l].sum() << endl;
+
+			Q56T[l]=(Q66-Q55)*cos(theta)*sin(theta);
+			//cout<< " Q56T "<< Q56T[l].sum() << endl;
+
+			Q66T[l]=Q66*pow(cos(theta),2)+Q55*pow(sin(theta),2);
+			//cout<< " Q66T "<< Q66T[l].sum() << endl;
+
+		}
+
 		void FG_var_MT(unsigned int l) //problem
 		{
 			VectorXd &x = shapes[l].spaces[0].s;
@@ -1835,10 +2186,63 @@ class FGM
 			// cout << "Xadl" << " Sum: " << Xadl.sum() << " Max: " << Xadl.maximum() << " Min: " << Xadl.minimum() << endl;
 			// cout << "Ybem" << " Sum: " << Ybem.sum() << " Max: " << Ybem.maximum() << " Min: " << Ybem.minimum() << endl;
 			// cout << "Zcfn" << " Sum: " << Zcfn.sum() << " Max: " << Zcfn.maximum() << " Min: " << Zcfn.minimum() << endl;
-			inner_helper(mu[l], Xadl, Ybem, Zcfn, VD_mu[l], l);
-			inner_helper(rho[l], Xadl, Ybem, Zcfn, VD_rho[l], l);
-			inner_helper(lame[l], Xadl, Ybem, Zcfn, VD_lame[l], l);
+			Tensor<double,3> p11 = Q11T[l] * JAC[l];
+			inner_helper(p11, Xadl, Ybem, Zcfn, VD_lame11[l], l);
+			
+			Tensor<double,3> p12 = Q12T[l] * JAC[l];
+			inner_helper(p12, Xadl, Ybem, Zcfn, VD_lame12[l], l);
 
+			Tensor<double,3> p13 = Q13T[l] * JAC[l];
+			inner_helper(p13, Xadl, Ybem, Zcfn, VD_lame13[l], l);
+
+			Tensor<double,3> p22 = Q22T[l] * JAC[l];
+			inner_helper(p22, Xadl, Ybem, Zcfn, VD_lame22[l], l);
+
+			Tensor<double,3> p33 = Q33T[l] * JAC[l];
+			inner_helper(p33, Xadl, Ybem, Zcfn, VD_lame33[l], l);
+			
+			Tensor<double,3> p23 = Q23T[l] * JAC[l];
+			inner_helper(p23, Xadl, Ybem, Zcfn, VD_lame23[l], l);
+
+			Tensor<double,3> p44 = Q44T[l] * JAC[l];
+			inner_helper(p44, Xadl, Ybem, Zcfn, VD_lame44[l], l);
+
+			Tensor<double,3> p55 = Q55T[l] * JAC[l];
+			inner_helper(p55, Xadl, Ybem, Zcfn, VD_lame55[l], l);
+
+			Tensor<double,3> p66 = Q66T[l] * JAC[l];
+			inner_helper(p66, Xadl, Ybem, Zcfn, VD_lame66[l], l);
+
+			Tensor<double,3> p14 = Q14T[l] * JAC[l];
+			inner_helper(p14, Xadl, Ybem, Zcfn, VD_lame14[l], l);
+			
+			Tensor<double,3> p24 = Q24T[l] * JAC[l];
+			inner_helper(p24, Xadl, Ybem, Zcfn, VD_lame24[l], l);
+
+			Tensor<double,3> p34 = Q34T[l] * JAC[l];
+			inner_helper(p34, Xadl, Ybem, Zcfn, VD_lame34[l], l);
+
+			Tensor<double,3> p56 = Q56T[l] * JAC[l];
+			inner_helper(p56, Xadl, Ybem, Zcfn, VD_lame56[l], l);
+			
+			Tensor<double,3> prho = rho[l] * JAC[l];
+			inner_helper(prho, Xadl, Ybem, Zcfn, VD_ro[l], l);
+/*
+			cout<< "VD_lame11 " << VD_lame11[l].sum()<<endl;
+			cout<< "VD_lame12 " << VD_lame12[l].sum()<<endl;
+			cout<< "VD_lame13 " << VD_lame13[l].sum()<<endl;
+			cout<< "VD_lame22 " << VD_lame22[l].sum()<<endl;
+			cout<< "VD_lame33 " << VD_lame33[l].sum()<<endl;
+			cout<< "VD_lame23 " << VD_lame23[l].sum()<<endl;
+			cout<< "VD_lame44 " << VD_lame44[l].sum()<<endl;
+			cout<< "VD_lame55 " << VD_lame55[l].sum()<<endl;
+			cout<< "VD_lame66 " << VD_lame66[l].sum()<<endl;
+			cout<< "VD_lame14 " << VD_lame14[l].sum()<<endl;
+			cout<< "VD_lame24 " << VD_lame24[l].sum()<<endl;
+			cout<< "VD_lame34 " << VD_lame34[l].sum()<<endl;
+			cout<< "VD_lame56 " << VD_lame56[l].sum()<<endl;
+			cout<< "VD_rho " << VD_rho[l].sum()<<endl;
+*/
 		}
 
 		MatrixXd boundary_condition_3d(int xyz, int ol, unsigned int l)
@@ -2026,8 +2430,6 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 	shps[1] = tshape2;
 	Shape tshape3(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0);
 	shps[2] = tshape3;
-	return 0;
-	//
 	//set CPU costs for each task
 	FGM tfgm(num_layers, shps);
 	int tnconv;
@@ -2116,24 +2518,30 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 	double asp_Rat1 = 3;
 	double Lr1 = 3;
 
-	double min_ctrl_y = 0.1, max_ctrl_y = 0.40, min_ctrl_z = 0.1, max_ctrl_z = 0.40;
+	double min_ctrl_y = 0.1, max_ctrl_y = 0.10, min_ctrl_z = 0.1, max_ctrl_z = 0.10;
 	double interval = 0.1;
 	vector<FGM > problems;
 	for (double cy = min_ctrl_y; cy <= max_ctrl_y; cy += interval)
 	{
 		for (double cz = min_ctrl_z; cz <= max_ctrl_z; cz += interval)
 		{
-			for(double h_a = 0.01; h_a <= 0.04; h_a += 0.01)
+			for(double h_a = 0.01; h_a <= 0.01; h_a += 0.01)
 			{
-				for(double h1_h2 = 0.1; h1_h2 <= 0.4; h1_h2 += 0.1){
+				for(double h1_h2 = 0.1; h1_h2 <= 0.1; h1_h2 += 0.1){
 					Shape * shapes = new Shape[num_layers];
 					double ht = h_a * Lr1;
 					double w_over_h2 = ht / (h1_h2 + 2);
 					double w_over_h1 = h1_h2 * w_over_h2;
 					double w_over_h3 = w_over_h1;
-					shapes[0] = Shape(Lr1, asp_Rat1, w_over_h1, xi1, eta1, zeta1, first, cy, 0);
-					shapes[1] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second, 0, 0);
-					shapes[2] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first, cz, 0);
+//					shapes[0] = Shape(Lr1, asp_Rat1, w_over_h1, xi1, eta1, zeta1, first, cy, 0);
+//					shapes[1] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second, 0, 0);
+//					shapes[2] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first, cz, 0);
+        			 	Shape tshape1(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0);
+       					shapes[0] = tshape1;
+	       	 			Shape tshape2(3, 3, 0.15, xi1, eta1, zeta1, tsecond, 0, 0);
+		       		 	shapes[1] = tshape2;
+			        	Shape tshape3(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0);
+				        shapes[2] = tshape3;
 					problems.push_back(FGM(num_layers, shapes));
 					//break;
 				}
