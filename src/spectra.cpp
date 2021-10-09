@@ -134,23 +134,32 @@ struct Space
 class Material
 {
 	public:
-		Material(): mod_elasticity(0), poisson_ratio(0), density(0) {}
+		Material(): mod_elasticity(0), poisson_ratio(0), density(0), elasticity{0,0,0},sheer_elasticity{0,0,0}, poissons{0,0,0} {}
 		Material(dtype _mod_elasticity,
 				dtype _poisson_ratio,
-				dtype _density)
+				dtype _density, dtype _elasticity_0, dtype _elasticity_1, dtype _elasticity_2, dtype _sh_elasticity_0, dtype _sh_elasticity_1, dtype _sh_elasticity_2, dtype _poisson_0, dtype _poisson_1, dtype _poisson_2)
 			: mod_elasticity(_mod_elasticity),
 			poisson_ratio(_poisson_ratio),
-			density(_density) {}
+			density(_density), elasticity{_elasticity_0, _elasticity_1, _elasticity_2}, sheer_elasticity{_sh_elasticity_0, _sh_elasticity_1, _sh_elasticity_2}, poissons{_poisson_0, _poisson_1, _poisson_2} {}
 
 		void operator=(const Material& s){
 			mod_elasticity = s.mod_elasticity;
 			poisson_ratio = s.poisson_ratio;
 			density = s.density;
+			for(int i = 0; i<3; i++){
+				elasticity[i] = s.elasticity[i];
+				sheer_elasticity[i] = s.sheer_elasticity[i];
+				poissons[i] = s.poissons[i];
+			}
 		}
 		//member variables
-		dtype mod_elasticity;
-		dtype poisson_ratio;
-		dtype density;
+		dtype mod_elasticity; //E_m
+		dtype elasticity[3]; // E_11 || E_22 || E_33 
+		dtype poisson_ratio; //nu_m
+		dtype poissons[3]; // nu12 || nu13 || nu23
+		dtype density; // ro
+		dtype mod_sheer_elasticity; // G_m
+		dtype sheer_elasticity[3]; // G_11 || G_22 || G_33
 };
 
 class Shape
@@ -169,6 +178,8 @@ class Shape
 		double ctrl_y;
 		double ctrl_z;
 
+		double zeta_add;
+
 		int xyz;
 		MatrixXd VD;
 		MatrixXd QDx;
@@ -182,17 +193,17 @@ class Shape
 
 		Tensor<double,3> jac;
 
-		Shape() : dim{0, 0, 0}, is_curved(false), curve{0, 0}, xyz(0) {}
+		Shape() : dim{0, 0, 0}, is_curved(false), curve{0, 0}, xyz(0),zeta_add(0) {}
 		Shape(dtype x_dim, dtype y_dim, dtype z_dim,
 				int x_sample, int y_sample, int z_sample, 
 				Material mat, double ctrl_y, double ctrl_z,
-				dtype xcurve = 0, dtype ycurve = 0) : dim{x_dim, y_dim, z_dim}, curve{xcurve, ycurve},
+				dtype xcurve = 0, dtype ycurve = 0,double zeta_add=0) : dim{x_dim, y_dim, z_dim}, curve{xcurve, ycurve},
 			is_curved(~(xcurve == 0 && ycurve == 0)),
 			spaces{Space(-x_dim / 2, x_dim / 2, x_sample), Space(-y_dim / 2, y_dim / 2, y_sample), Space(0, z_dim, z_sample)},
 			xyz(x_sample * y_sample * z_sample),
 			VD(xyz, xyz),
 			QDx(xyz, xyz), QDy(xyz, xyz), QDz(xyz, xyz), material(mat), 
-			ctrl_y(ctrl_y), ctrl_z(ctrl_z)
+			ctrl_y(ctrl_y), ctrl_z(ctrl_z),zeta_add(zeta_add)
 			{
 				QDx.setZero();
 				QDy.setZero();
@@ -207,8 +218,10 @@ class Shape
 				
 				jac = Tensor<double,3>(x_sample,y_sample,z_sample);
 				fillShapeTensors();
-				double alpha = -1.0472; //NOTE(KAYA) : for testing...
-				double beta = 0;
+				//double alpha = -1.0472; //NOTE(KAYA) : for testing...
+				//double beta = 0;
+				double alpha = curve[0]*2*pi/dim[0];
+				double beta = curve[1]*2*pi/dim[1];
 				vector_map_jac_curvature(alpha,beta);				
 				// cout << "VD" << " Sum: " << VD.sum() << " Max: " << VD.maxCoeff() << " Min: " << VD.minCoeff() << endl;
 				// cout << "QDx" << " Sum: " << QDx.sum() << " Max: " << QDx.maxCoeff() << " Min: " << QDx.minCoeff() << endl;
@@ -217,12 +230,13 @@ class Shape
 			}
 
 		void fillShapeTensors(){	
+			cout<< "ZETA ADD "<<zeta_add<<endl;  
 			for(int i = 0; i < spaces[0].no_points; i++){
 				for(int j = 0; j < spaces[1].no_points; j++){
 					for(int k = 0; k < spaces[2].no_points; k++){
 						shapeX(i,j,k) = spaces[0].s(i);
 						shapeY(i,j,k) = spaces[1].s(j);
-						shapeZ(i,j,k) = spaces[2].s(k);
+						shapeZ(i,j,k) = spaces[2].s(k) + zeta_add;
 					}
 				}
 			}
@@ -345,13 +359,13 @@ class Shape
 			Tensor<double,3> dzetadz = Tensor<double,3>(x_sample,y_sample,z_sample);
 			dzetadz.setZero();
 
-			cout<<"SHAPEX SUM = "<<shapeX.sum()<<endl;
-			cout<<"SHAPEY SUM = "<<shapeY.sum()<<endl;
-			cout<<"SHAPEZ SUM = "<<shapeZ.sum()<<endl;
+			//cout<<"SHAPEX SUM = "<<shapeX.sum()<<endl;
+			//cout<<"SHAPEY SUM = "<<shapeY.sum()<<endl;
+			//cout<<"SHAPEZ SUM = "<<shapeZ.sum()<<endl;
 
-			cout<<"TEMPX SUM = "<<tempx.sum()<<endl;
-			cout<<"TEMPY SUM = "<<tempy.sum()<<endl;
-			cout<<"TEMPZ SUM = "<<tempz.sum()<<endl;
+			//cout<<"TEMPX SUM = "<<tempx.sum()<<endl;
+			//cout<<"TEMPY SUM = "<<tempy.sum()<<endl;
+			//cout<<"TEMPZ SUM = "<<tempz.sum()<<endl;
 
 			for(int i = 0; i < x_sample; i++){
 				for(int j = 0; j < y_sample; j++){
@@ -418,17 +432,17 @@ class Shape
 		//cout<<"dzdyb2 SUM "<<dzdyb2.sum()<<endl;
 		//cout<<"dzdzb2 SUM "<<dzdzb2.sum()<<endl;
 
-		cout<<"dxidx SUM: " << dxidx.sum()<<endl;
-		cout<<"dxidy SUM: " << dxidy.sum()<<endl;
-		cout<<"dxidz SUM: " << dxidz.sum()<<endl;
+		//cout<<"dxidx SUM: " << dxidx.sum()<<endl;
+		//cout<<"dxidy SUM: " << dxidy.sum()<<endl;
+		//cout<<"dxidz SUM: " << dxidz.sum()<<endl;
 
-		cout<<"detadx SUM: " << detadx.sum()<<endl;
-		cout<<"detady SUM: " << detady.sum()<<endl;
-		cout<<"detadz SUM: " << detadz.sum()<<endl;
+		//cout<<"detadx SUM: " << detadx.sum()<<endl;
+		//cout<<"detady SUM: " << detady.sum()<<endl;
+		//cout<<"detadz SUM: " << detadz.sum()<<endl;
 
-		cout<<"dzetadx SUM: " << dzetadx.sum()<<endl;
-		cout<<"dzetady SUM: " << dzetady.sum()<<endl;
-		cout<<"dzetadz SUM: " << dzetadz.sum()<<endl;
+		//cout<<"dzetadx SUM: " << dzetadx.sum()<<endl;
+		//cout<<"dzetady SUM: " << dzetady.sum()<<endl;
+		//cout<<"dzetadz SUM: " << dzetadz.sum()<<endl;
 
 //		cout<<"jac SUM: "<< jac.sum() <<endl;	
 			//Vector mapping
@@ -714,7 +728,11 @@ class FGM
 					np[i][j] = shapes[i].spaces[j].no_points;
 				}
 
+				cout<<"problem "<<i<<endl<<endl<<endl;
+
+
 				JAC[i] = shapes[i].jac;
+				cout<<"jac "<< JAC[i].sum() << endl;
 				nxyz[i] = np[i][0] * np[i][1] * np[i][2];
 				nnxyz += nxyz[i];
 				mu[i] = Tensor<double, 3>(np[i][0], np[i][1], np[i][2]);
@@ -787,7 +805,11 @@ class FGM
 				M[i].setZero();
 				K[i] = MatrixXd(3 * nxyz[i], 3 * nxyz[i]);
 				K[i].setZero();
-				FG_var_MT_CNT(i);
+				if(i != 1)
+					FG_var_MT_CNT(i);
+				else
+					FG_var_MT_honeycomb(i);
+
 				//FG_var_MT(i);
 				// cout << rho[i](0, 0, 0) << endl;
 				// cout << rho[i](0, 0, 1) << endl;
@@ -813,7 +835,10 @@ class FGM
 				// cout << lame[i](0, 0, 4) << endl;
 				// cout << lame[i](0, 0, 5) << endl;
 				// cout << lame[i](0, 0, 6) << endl;
-				inner_product(i);
+				if(i != 1)
+					inner_product(i);
+				else
+					inner_product_honeycomb(i);
 				// cout << "VD_mu" << i << " Sum: " << VD_mu[i].sum() << " Max: " << VD_mu[i].maxCoeff() << " Min: " << VD_mu[i].minCoeff() << endl;
 				// cout << "VD_lame" << i << " Sum: " << VD_lame[i].sum() << " Max: " << VD_lame[i].maxCoeff() << " Min: " << VD_lame[i].minCoeff() << endl;
 				// cout << "VD_rho" << i << " Sum: " << VD_rho[i].sum() << " Max: " << VD_rho[i].maxCoeff() << " Min: " << VD_rho[i].minCoeff() << endl;
@@ -952,6 +977,68 @@ class FGM
 		}
 #endif
 
+
+		void T1_system_matrices_honeycomb_CPU(unsigned int l)
+		{
+			int ub = 0;
+			int ue = nxyz[l] - 1;
+			int vb = nxyz[l];
+			int ve = 2 * nxyz[l] - 1;
+			int wb = 2 * nxyz[l];
+			int we = 3 * nxyz[l] - 1;
+
+			M[l](seq(ub, ue), seq(ub, ue)) = VD_ro[l];
+			M[l](seq(vb, ve), seq(vb, ve)) = VD_ro[l];
+			M[l](seq(wb, we), seq(wb, we)) = VD_ro[l];
+
+			MatrixXd epx = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+			epx(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDx;
+			MatrixXd epy = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+			epy(seq(0, nxyz[l] - 1), seq(vb, ve)) = shapes[l].QDy;
+			MatrixXd epz = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+			epz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDz;
+
+			MatrixXd gammaxy = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+			gammaxy(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDy;
+			gammaxy(seq(0, nxyz[l] - 1), seq(vb, ve)) = shapes[l].QDx;
+			MatrixXd gammayz = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+			gammayz(seq(0, nxyz[l] - 1), seq(vb, ve)) = shapes[l].QDz;
+			gammayz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDy;
+			MatrixXd gammaxz = MatrixXd::Zero(nxyz[l], 3 * nxyz[l]);
+			gammaxz(seq(0, nxyz[l] - 1), seq(ub, ue)) = shapes[l].QDz;
+			gammaxz(seq(0, nxyz[l] - 1), seq(wb, we)) = shapes[l].QDx;
+
+			//MatrixXd epxyz = epx + epy + epz;
+
+			MatrixXd sigx = (VD_lame11[l] * epx) + (VD_lame12[l] * epy) + (VD_lame13[l] * epz);
+			MatrixXd sigy = (VD_lame12[l] * epx) + (VD_lame22[l] * epy) + (VD_lame23[l] * epz);
+			MatrixXd sigz = (VD_lame13[l] * epx) + (VD_lame23[l] * epy) + (VD_lame33[l] * epz);
+			MatrixXd tauxy = (VD_lame44[l] * gammaxy); 
+			MatrixXd tauyz = (VD_lame55[l] * gammayz);
+			MatrixXd tauxz = (VD_lame66[l] * gammaxz);
+			/*
+			cout<< " QDX " << shapes[l].QDx.sum() << endl;
+			cout<< " QDY " << shapes[l].QDy.sum() << endl;
+			cout<< " QDZ " << shapes[l].QDz.sum() << endl;
+			cout<< " SIGx "<< sigx.sum() << "MAX: "<< sigx.maxCoeff()<<endl;
+			cout<< " SIGy "<< sigy.sum() << "MAX: "<< sigy.maxCoeff()<<endl;
+			cout<< " SIGz "<< sigz.sum() <<	"MAX: "<< sigz.maxCoeff()<<endl;
+			cout<< " tauxy "<< tauxy.sum() << "MAX: "<< tauxy.maxCoeff()<<endl;
+			cout<< " tauyz "<< tauyz.sum() << "MAX: "<< tauyz.maxCoeff()<<endl;
+			cout<< " tauxz "<< tauxz.sum() << "MAX: "<< tauxz.maxCoeff()<<endl;
+		        cout<< " epx " << epx.sum() << endl;
+			cout<< " epy " << epy.sum() << endl;
+			cout<< " epz " << epz.sum() << endl;
+			cout<< " gammaxy " << gammaxy.sum() << endl;	
+			*/
+			K[l]= (epx.transpose() * sigx) + (epy.transpose() * sigy) + (epz.transpose() * sigz) + (gammaxy.transpose() * tauxy) + (gammaxz.transpose() * tauxz) + (gammayz.transpose() * tauyz);
+
+			cout<< "honeycomb K " << K[l].sum() << " MAX: "<< K[l].maxCoeff()<<" MIN: " << K[l].minCoeff()<<endl;
+			stringstream sstm;
+			sstm<<"k"<<l<<".txt";
+			string fileName = sstm.str();
+			outputMatrix(fileName,K[l]);
+		}
 		void T1_system_matrices_CPU(unsigned int l)
 		{
 			int ub = 0;
@@ -990,33 +1077,28 @@ class FGM
 			MatrixXd tauxy = (VD_lame44[l] * gammaxy) + (VD_lame14[l] * epx) + (VD_lame24[l] * epy) + (VD_lame34[l] * epz);
 			MatrixXd tauyz = (VD_lame55[l] * gammayz) + (VD_lame56[l] * gammaxz);
 			MatrixXd tauxz = (VD_lame66[l] * gammaxz) + (VD_lame56[l] * gammayz);
-			cout<< " QDX " << shapes[l].QDx.sum() << endl;
-			cout<< " QDY " << shapes[l].QDy.sum() << endl;
-			cout<< " QDZ " << shapes[l].QDz.sum() << endl;
+			//cout<< " QDX " << shapes[l].QDx.sum() << endl;
+			//cout<< " QDY " << shapes[l].QDy.sum() << endl;
+			//cout<< " QDZ " << shapes[l].QDz.sum() << endl;
 			cout<< " SIGx "<< sigx.sum() << "MAX: "<< sigx.maxCoeff()<<endl;
 			cout<< " SIGy "<< sigy.sum() << "MAX: "<< sigy.maxCoeff()<<endl;
 			cout<< " SIGz "<< sigz.sum() <<	"MAX: "<< sigz.maxCoeff()<<endl;
 			cout<< " tauxy "<< tauxy.sum() << "MAX: "<< tauxy.maxCoeff()<<endl;
 			cout<< " tauyz "<< tauyz.sum() << "MAX: "<< tauyz.maxCoeff()<<endl;
 			cout<< " tauxz "<< tauxz.sum() << "MAX: "<< tauxz.maxCoeff()<<endl;
-		        cout<< " epx " << epx.sum() << endl;
-			cout<< " epy " << epy.sum() << endl;
-			cout<< " epz " << epz.sum() << endl;
-			cout<< " gammaxy " << gammaxy.sum() << endl;	
+		        cout<< " epx " << epx.sum() << " MAX: "<<epx.maxCoeff()<<endl;
+			cout<< " epy " << epy.sum() << " MAX: "<<epy.maxCoeff()<<endl;
+			cout<< " epz " << epz.sum() << " MAX: "<<epz.maxCoeff()<<endl;
+			cout<< " gammaxy " << gammaxy.sum()<<" MAX: "<<gammaxy.maxCoeff()<<endl;	
+			
+			K[l]= (epx.transpose() * sigx) + (epy.transpose() * sigy) + (epz.transpose() * sigz) + (gammaxy.transpose() * tauxy) + (gammaxz.transpose() * tauxz) + (gammayz.transpose() * tauyz);
 
-			K[l] = (epx.transpose() * sigx) + (epy.transpose() * sigy) + (epz.transpose() * sigz) + (gammaxy.transpose() * tauxy) + (gammaxz.transpose() * tauxz) + (gammayz.transpose() * tauyz);
-
-			cout<< "K " << K[l].sum() << " MAX: "<< K[l].maxCoeff()<<endl;
-
-//			K[l] = (epxyz.transpose() * (VD_lame[l] * epxyz)) +
-//				2 * ((epx.transpose() * (VD_mu[l] * epx)) +
-//						(epy.transpose() * (VD_mu[l] * epy)) +
-//						(epz.transpose() * (VD_mu[l] * epz))) +
-//				(gammaxy.transpose() * (VD_mu[l] * gammaxy)) +
-//				(gammaxz.transpose() * (VD_mu[l] * gammaxz)) +
-//				(gammayz.transpose() * (VD_mu[l] * gammayz));
+			cout<< "K " << K[l].sum() << " MAX: "<< K[l].maxCoeff()<<" MIN: " << K[l].minCoeff()<<endl;
+			stringstream sstm;
+			sstm<<"k"<<l<<".txt";
+			string fileName = sstm.str();
+			outputMatrix(fileName,K[l]);
 		}
-
 		bool T1_system_matrices(unsigned int l)
 		{
 #ifdef SMART
@@ -1063,8 +1145,13 @@ class FGM
 #elif defined GPU
 			T1_system_matrices_GPU(l);
 			return true;
+
 #else
-			T1_system_matrices_CPU(l);
+			if(l != 1)
+				T1_system_matrices_CPU(l);
+			else
+				T1_system_matrices_honeycomb_CPU(l);
+
 			return false;
 #endif
 		}
@@ -1350,6 +1437,7 @@ class FGM
 
 		void T4_eigen(MatrixXd &a0, int &nconv, double &small_eig)
 		{
+			cout<<"a0 "<<a0.sum()<<endl;
 			MatrixXd MMM = a0;
 			DenseGenRealShiftSolve<double> op(MMM);
 			GenEigsRealShiftSolver<DenseGenRealShiftSolve<double>> eigs(op, 10, 50, 0);
@@ -1651,6 +1739,7 @@ class FGM
 				ccosts[1] = cost;
 			}
 #endif
+
 			MatrixXd P = V(seq(0, V.rows() - 1), seq(BC.rows(), BC.cols() - 1));
 			MatrixXd a0(P.cols(), P.cols());
 			double t3t = omp_get_wtime();
@@ -1805,25 +1894,25 @@ class FGM
 			double ro_cnt = 1400; //This will be removed added for testing.
 			double ro_m = 1150; //This will be removed added for testing.
 
-			double h = 0.15; //w_over_h1 this will be removed added for testing.
+			double h = shapes[l].dim[2]; //w_over_h1 this will be removed added for testing.
 
-			double nu12_cnt = 0.175; //This will be removed added for testing.
-			double nu13_cnt = 0.175; //This will be removed added for testing.
-			double nu23_cnt = 0.175; //This will be removed added for testing.
-			double nu_m = 0.34; //This will be removed added for testing.
+			double nu12_cnt = shapes[l].material.poissons[0]; 
+			double nu13_cnt = shapes[l].material.poissons[1]; 
+			double nu23_cnt = shapes[l].material.poissons[2]; 
+			double nu_m = shapes[l].material.poisson_ratio; 
 
 			double eta_star_1 = 0.15; //This will be removed added for testing.
 			double eta_star_2 = 0.941; //This will be removed added for testing.
 			double eta_star_3 = 0.941; //This will be removed added for testing.
-			double E11_cnt = 7.08e+12; //This will be removed added for testing.
-			double E22_cnt = 7.08e+12; //This will be removed added for testing.
-			double E33_cnt = 7.08e+12; //This will be removed added for testing.
-			double E_m = 2.1e+9; //This will be removed added for testing.
+			double E11_cnt = shapes[l].material.elasticity[0]; 
+			double E22_cnt = shapes[l].material.elasticity[1];
+			double E33_cnt = shapes[l].material.elasticity[2]; 
+			double E_m = shapes[l].material.mod_elasticity;
 
 
-			double G12_cnt = 1.9445e+12; //This will be removed added for testing.
-			double G13_cnt = 1.9445e+12; //This will be removed added for testing.
-			double G23_cnt = 3.0128e+12; //This will be removed added for testing.
+			double G12_cnt = shapes[l].material.sheer_elasticity[0]; 
+			double G13_cnt = shapes[l].material.sheer_elasticity[1]; 
+			double G23_cnt = shapes[l].material.sheer_elasticity[2]; 
 			double G_m = 7.8358e+8; //This will be removed added for testing.
 
 
@@ -1950,43 +2039,121 @@ class FGM
 
 				
 			Q11T[l]=Q11*pow(cos(theta),4)+2*(Q12+2*Q44)*(pow(cos(theta),2)*pow(sin(theta),2))+Q22*pow(sin(theta),4);
-			//cout<< " Q11T "<< Q11T[l].sum() <<endl;
+			cout<< " Q11T "<< Q11T[l].sum() <<endl;
 			
 			Q12T[l]=Q12*pow(cos(theta),4)+(Q11+Q22-4*Q44)*(pow(cos(theta),2)*pow(sin(theta),2))+Q12*pow(sin(theta),4);
-			//cout<< " Q12T "<< Q12T[l].sum() << endl;
+			cout<< " Q12T "<< Q12T[l].sum() << endl;
 			
 			Q13T[l]=Q13*pow(cos(theta),2)+Q23*pow(sin(theta),2);
-			//cout<< " Q13T "<< Q13T[l].sum() << endl;
+			cout<< " Q13T "<< Q13T[l].sum() << endl;
 
 			Q14T[l]=(Q11-Q12-2*Q44)*(pow(cos(theta),3)*sin(theta))+(2*Q44+Q12-Q22)*(cos(theta)*pow(sin(theta),3));
-			//cout<< " Q14T "<< Q14T[l].sum() << endl;
+			cout<< " Q14T "<< Q14T[l].sum() << endl;
 
 			Q22T[l]=Q22*pow(cos(theta),4)+2*(Q12+2*Q44)*(pow(cos(theta),2)*pow(sin(theta),2))+Q11*pow(sin(theta),4);
-			//cout<< " Q22T "<< Q22T[l].sum() << endl;
+			cout<< " Q22T "<< Q22T[l].sum() << endl;
 
 			Q23T[l]=Q23*pow(cos(theta),2)+Q13*pow(sin(theta),2);
-			//cout<< " Q23T "<< Q23T[l].sum() << endl;
+			cout<< " Q23T "<< Q23T[l].sum() << endl;
 
 			Q24T[l]=(Q12-Q22+2*Q44)*(pow(cos(theta),3)*sin(theta))+(Q11-Q12-2*Q44)*(cos(theta)*pow(sin(theta),3));
-			//cout<< " Q24T "<< Q24T[l].sum() << endl;
+			cout<< " Q24T "<< Q24T[l].sum() << endl;
 
 			Q33T[l]=Q33;
-			//cout<< " Q33T "<< Q33T[l].sum() << endl;
+			cout<< " Q33T "<< Q33T[l].sum() << endl;
 
 			Q34T[l]=(Q13-Q23)*(cos(theta)*sin(theta));
-			//cout<< " Q34T "<< Q34T[l].sum() << endl;
+			cout<< " Q34T "<< Q34T[l].sum() << endl;
 
 			Q44T[l]=(Q11+Q22-2*Q12-2*Q44)*(pow(cos(theta),2)*pow(sin(theta),2))+Q44*(pow(cos(theta),4)+pow(sin(theta),4));
-			//cout<< " Q44T "<< Q44T[l].sum() << endl;
+			cout<< " Q44T "<< Q44T[l].sum() << endl;
 
 			Q55T[l]=Q55*pow(cos(theta),2)+Q66*pow(sin(theta),2);
-			//cout<< " Q55T "<< Q55T[l].sum() << endl;
+			cout<< " Q55T "<< Q55T[l].sum() << endl;
 
 			Q56T[l]=(Q66-Q55)*cos(theta)*sin(theta);
-			//cout<< " Q56T "<< Q56T[l].sum() << endl;
+			cout<< " Q56T "<< Q56T[l].sum() << endl;
 
 			Q66T[l]=Q66*pow(cos(theta),2)+Q55*pow(sin(theta),2);
-			//cout<< " Q66T "<< Q66T[l].sum() << endl;
+			cout<< " Q66T "<< Q66T[l].sum() << endl;
+
+		}
+
+		void FG_var_MT_honeycomb(unsigned int l) 
+		{
+			VectorXd &x = shapes[l].spaces[0].s;
+			VectorXd &y = shapes[l].spaces[1].s;
+			VectorXd &z = shapes[l].spaces[2].s;
+			
+			double nu12 = shapes[l].material.poissons[0]; 
+			double nu23 = shapes[l].material.poissons[1]; 
+			double nu13 = shapes[l].material.poissons[2];
+
+			double e11 = shapes[l].material.elasticity[0];	
+			double e22 = shapes[l].material.elasticity[1];	
+			double e33 = shapes[l].material.elasticity[2];	
+			
+			double g12 = shapes[l].material.sheer_elasticity[0];	
+			double g13 = shapes[l].material.sheer_elasticity[1];	
+			double g23 = shapes[l].material.sheer_elasticity[2];	
+
+
+			double nu21 = nu12 * e22 / e11;
+			double nu32 = nu23 * e33 / e22;
+			double nu31 = nu13 * e33 / e11;
+
+			double delta = (1-nu12*nu21-nu23*nu32-nu31*nu13-2*nu21*nu32*nu13)/e11/e22/e33;
+			
+			double ro_h = 2700;
+
+			Tensor<double,3> Q11 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q11.setZero();
+			Tensor<double,3> Q12 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q12.setZero();
+			Tensor<double,3> Q13 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q13.setZero();
+			Tensor<double,3> Q22 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q22.setZero();
+			Tensor<double,3> Q23 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q23.setZero();
+			Tensor<double,3> Q33 = Tensor<double,3>(x.size(), y.size(), z.size());
+		        Q33.setZero();
+			Tensor<double,3> Q44 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q44.setZero();
+			Tensor<double,3> Q55 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q55.setZero();
+			Tensor<double,3> Q66 = Tensor<double,3>(x.size(), y.size(), z.size());
+			Q66.setZero();
+
+			for(int i = 0; i<x.size(); i++){
+				for(int j = 0; j<y.size(); j++){
+					for(int k=0; k<z.size(); k++){
+						Q11T[l](i,j,k) = (1-nu23*nu32)/e22/e33/delta;
+						Q22T[l](i,j,k) = (1-nu13*nu31)/e11/e33/delta;
+						Q33T[l](i,j,k) = (1-nu12*nu21)/e22/e11/delta;
+						Q12T[l](i,j,k) = (nu21+nu31*nu23)/e22/e33/delta;
+						Q13T[l](i,j,k) = (nu31+nu21*nu32)/e22/e33/delta;
+						Q23T[l](i,j,k) = (nu32+nu12*nu31)/e11/e33/delta;
+						Q44T[l](i,j,k) = g12;
+						Q55T[l](i,j,k) = g23;
+						Q66T[l](i,j,k) = g13;
+						rho[l](i,j,k) = ro_h;
+					}
+				}
+			}
+			cout<<"q11 : "<<Q11T[l](0,0,0)<<endl;
+			cout<<"q22 : "<<Q22T[l](0,0,0)<<endl;
+			cout<<"q33 : "<<Q33T[l](0,0,0)<<endl;
+			cout<<"q12 : "<<Q12T[l](0,0,0)<<endl;
+			cout<<"q13 : "<<Q13T[l](0,0,0)<<endl;
+			cout<<"q23 : "<<Q23T[l](0,0,0)<<endl;
+			cout<<"q44 : "<<Q44T[l](0,0,0)<<endl;
+			cout<<"q55 : "<<Q55T[l](0,0,0)<<endl;
+			cout<<"q66 : "<<Q66T[l](0,0,0)<<endl;
+
+			//nu12 nu23 nu13 tensor create
+			//e11 e22 e33 tensor create
+			//
 
 		}
 
@@ -2143,6 +2310,100 @@ class FGM
 		}
 
 
+		void inner_product_honeycomb(unsigned int l)
+		{
+			MatrixXd IFT[3][3][2];
+			for (int i = 0; i < 3; i++)
+			{ //xyz loop
+				for (int j = 0; j < 3; j++)
+				{ //123 loop
+					int sz = (j + 1) * np[l][i];
+					IFT[i][j][0] = MatrixXd::Zero(sz, sz);
+					IFT[i][j][1] = MatrixXd::Zero(sz, sz);
+					cheb(sz, IFT[i][j][0], IFT[i][j][1]);
+				}
+			}
+
+			VectorXd v_d3N[3];
+			for (int i = 0; i < 3; i++)
+			{
+				VectorXd temp = cheb_int(shapes[l].spaces[i].start, shapes[l].spaces[i].end, 3 * np[l][i]);
+				v_d3N[i] = (temp.transpose() * IFT[i][2][1]).transpose();
+			}
+
+			MatrixXd Ss[3];
+			for (int i = 0; i < 3; i++)
+			{
+				MatrixXd I = MatrixXd::Identity(np[l][i], np[l][i]);
+				MatrixXd Z = MatrixXd::Zero(np[l][i], np[l][i]);
+				MatrixXd C(3 * np[l][i], np[l][i]);
+				C << I, Z, Z;
+				Ss[i] = IFT[i][2][0] * C * IFT[i][0][1];
+			}
+
+			Tensor<double, 3> Xadl(np[l][0], np[l][0], np[l][0]);
+			Xadl.setZero();
+			tensor3(v_d3N[0], Ss[0], np[l][0], Xadl);
+			Tensor<double, 3> Ybem(np[l][1], np[l][1], np[l][1]);
+			Ybem.setZero();
+			tensor3(v_d3N[1], Ss[1], np[l][1], Ybem);
+			Tensor<double, 3> Zcfn(np[l][2], np[l][2], np[l][2]);
+			Zcfn.setZero();
+			tensor3(v_d3N[2], Ss[2], np[l][2], Zcfn);
+			// cout << "Ybem" << " Sum: " << Ybem.sum() << " Max: " << Ybem.maximum() << " Min: " << Ybem.minimum() << endl;
+			// cout << "Zcfn" << " Sum: " << Zcfn.sum() << " Max: " << Zcfn.maximum() << " Min: " << Zcfn.minimum() << endl;
+			cout<< "JAC "<<JAC[l].sum()<<endl;
+			cout<<"here"<<endl;
+			Tensor<double,3> p11 = Q11T[l] * JAC[l];
+			inner_helper(p11, Xadl, Ybem, Zcfn, VD_lame11[l], l);
+			
+			Tensor<double,3> p12 = Q12T[l] * JAC[l];
+			inner_helper(p12, Xadl, Ybem, Zcfn, VD_lame12[l], l);
+			cout<<"here2"<<endl;
+
+			Tensor<double,3> p13 = Q13T[l] * JAC[l];
+			inner_helper(p13, Xadl, Ybem, Zcfn, VD_lame13[l], l);
+			cout<<"here2"<<endl;
+
+			Tensor<double,3> p22 = Q22T[l] * JAC[l];
+			inner_helper(p22, Xadl, Ybem, Zcfn, VD_lame22[l], l);
+			cout<<"here2"<<endl;
+
+			Tensor<double,3> p33 = Q33T[l] * JAC[l];
+			inner_helper(p33, Xadl, Ybem, Zcfn, VD_lame33[l], l);
+			cout<<"here2"<<endl;
+			
+			Tensor<double,3> p23 = Q23T[l] * JAC[l];
+			inner_helper(p23, Xadl, Ybem, Zcfn, VD_lame23[l], l);
+			cout<<"here2"<<endl;
+
+			Tensor<double,3> p44 = Q44T[l] * JAC[l];
+			inner_helper(p44, Xadl, Ybem, Zcfn, VD_lame44[l], l);
+			cout<<"here2"<<endl;
+
+			Tensor<double,3> p55 = Q55T[l] * JAC[l];
+			inner_helper(p55, Xadl, Ybem, Zcfn, VD_lame55[l], l);
+			cout<<"here2"<<endl;
+
+			Tensor<double,3> p66 = Q66T[l] * JAC[l];
+			inner_helper(p66, Xadl, Ybem, Zcfn, VD_lame66[l], l);
+			cout<<"here2"<<endl;
+
+			Tensor<double,3> prho = rho[l] * JAC[l];
+			inner_helper(prho, Xadl, Ybem, Zcfn, VD_ro[l], l);	
+
+			cout<< "VD_lame11" <<l<<" "<< VD_lame11[l].sum()<<endl;
+			cout<< "VD_lame12" <<l<<" "<<VD_lame12[l].sum()<<endl;
+			cout<< "VD_lame13" <<l<<" "<<VD_lame13[l].sum()<<endl;
+			cout<< "VD_lame22" <<l<<" "<<VD_lame22[l].sum()<<endl;
+			cout<< "VD_lame33" <<l<<" "<<VD_lame33[l].sum()<<endl;
+			cout<< "VD_lame23" <<l<<" "<<VD_lame23[l].sum()<<endl;
+			cout<< "VD_lame44" <<l<<" "<<VD_lame44[l].sum()<<endl;
+			cout<< "VD_lame55" <<l<<" "<<VD_lame55[l].sum()<<endl;
+			cout<< "VD_lame66" <<l<<" "<<VD_lame66[l].sum()<<endl;
+			cout<< "VD_ro"     <<l<<" "<<VD_ro[l].sum()<<endl;
+
+		}
 		void inner_product(unsigned int l)
 		{
 			MatrixXd IFT[3][3][2];
@@ -2183,66 +2444,73 @@ class FGM
 			Tensor<double, 3> Zcfn(np[l][2], np[l][2], np[l][2]);
 			Zcfn.setZero();
 			tensor3(v_d3N[2], Ss[2], np[l][2], Zcfn);
-			// cout << "Xadl" << " Sum: " << Xadl.sum() << " Max: " << Xadl.maximum() << " Min: " << Xadl.minimum() << endl;
 			// cout << "Ybem" << " Sum: " << Ybem.sum() << " Max: " << Ybem.maximum() << " Min: " << Ybem.minimum() << endl;
 			// cout << "Zcfn" << " Sum: " << Zcfn.sum() << " Max: " << Zcfn.maximum() << " Min: " << Zcfn.minimum() << endl;
+			cout<<"here"<<endl;
 			Tensor<double,3> p11 = Q11T[l] * JAC[l];
 			inner_helper(p11, Xadl, Ybem, Zcfn, VD_lame11[l], l);
 			
 			Tensor<double,3> p12 = Q12T[l] * JAC[l];
 			inner_helper(p12, Xadl, Ybem, Zcfn, VD_lame12[l], l);
+			cout<<"here2"<<endl;
 
 			Tensor<double,3> p13 = Q13T[l] * JAC[l];
 			inner_helper(p13, Xadl, Ybem, Zcfn, VD_lame13[l], l);
+			cout<<"here2"<<endl;
 
 			Tensor<double,3> p22 = Q22T[l] * JAC[l];
 			inner_helper(p22, Xadl, Ybem, Zcfn, VD_lame22[l], l);
+			cout<<"here2"<<endl;
 
 			Tensor<double,3> p33 = Q33T[l] * JAC[l];
 			inner_helper(p33, Xadl, Ybem, Zcfn, VD_lame33[l], l);
+			cout<<"here2"<<endl;
 			
 			Tensor<double,3> p23 = Q23T[l] * JAC[l];
 			inner_helper(p23, Xadl, Ybem, Zcfn, VD_lame23[l], l);
+			cout<<"here2"<<endl;
 
 			Tensor<double,3> p44 = Q44T[l] * JAC[l];
 			inner_helper(p44, Xadl, Ybem, Zcfn, VD_lame44[l], l);
+			cout<<"here2"<<endl;
 
 			Tensor<double,3> p55 = Q55T[l] * JAC[l];
 			inner_helper(p55, Xadl, Ybem, Zcfn, VD_lame55[l], l);
+			cout<<"here2"<<endl;
 
 			Tensor<double,3> p66 = Q66T[l] * JAC[l];
 			inner_helper(p66, Xadl, Ybem, Zcfn, VD_lame66[l], l);
+			cout<<"here2"<<endl;
 
+			
 			Tensor<double,3> p14 = Q14T[l] * JAC[l];
 			inner_helper(p14, Xadl, Ybem, Zcfn, VD_lame14[l], l);
-			
 			Tensor<double,3> p24 = Q24T[l] * JAC[l];
 			inner_helper(p24, Xadl, Ybem, Zcfn, VD_lame24[l], l);
-
 			Tensor<double,3> p34 = Q34T[l] * JAC[l];
 			inner_helper(p34, Xadl, Ybem, Zcfn, VD_lame34[l], l);
-
 			Tensor<double,3> p56 = Q56T[l] * JAC[l];
 			inner_helper(p56, Xadl, Ybem, Zcfn, VD_lame56[l], l);
-			
-			Tensor<double,3> prho = rho[l] * JAC[l];
-			inner_helper(prho, Xadl, Ybem, Zcfn, VD_ro[l], l);
-/*
-			cout<< "VD_lame11 " << VD_lame11[l].sum()<<endl;
-			cout<< "VD_lame12 " << VD_lame12[l].sum()<<endl;
-			cout<< "VD_lame13 " << VD_lame13[l].sum()<<endl;
-			cout<< "VD_lame22 " << VD_lame22[l].sum()<<endl;
-			cout<< "VD_lame33 " << VD_lame33[l].sum()<<endl;
-			cout<< "VD_lame23 " << VD_lame23[l].sum()<<endl;
-			cout<< "VD_lame44 " << VD_lame44[l].sum()<<endl;
-			cout<< "VD_lame55 " << VD_lame55[l].sum()<<endl;
-			cout<< "VD_lame66 " << VD_lame66[l].sum()<<endl;
 			cout<< "VD_lame14 " << VD_lame14[l].sum()<<endl;
 			cout<< "VD_lame24 " << VD_lame24[l].sum()<<endl;
 			cout<< "VD_lame34 " << VD_lame34[l].sum()<<endl;
 			cout<< "VD_lame56 " << VD_lame56[l].sum()<<endl;
-			cout<< "VD_rho " << VD_rho[l].sum()<<endl;
-*/
+			
+
+			Tensor<double,3> prho = rho[l] * JAC[l];
+			inner_helper(prho, Xadl, Ybem, Zcfn, VD_ro[l], l);	
+
+			cout<< "VD_lame11" <<l<<" "<< VD_lame11[l].sum()<<endl;
+			cout<< "VD_lame12" <<l<<" "<<VD_lame12[l].sum()<<endl;
+			cout<< "VD_lame13" <<l<<" "<<VD_lame13[l].sum()<<endl;
+			cout<< "VD_lame22" <<l<<" "<<VD_lame22[l].sum()<<endl;
+			cout<< "VD_lame33" <<l<<" "<<VD_lame33[l].sum()<<endl;
+			cout<< "VD_lame23" <<l<<" "<<VD_lame23[l].sum()<<endl;
+			cout<< "VD_lame44" <<l<<" "<<VD_lame44[l].sum()<<endl;
+			cout<< "VD_lame55" <<l<<" "<<VD_lame55[l].sum()<<endl;
+			cout<< "VD_lame66" <<l<<" "<<VD_lame66[l].sum()<<endl;
+			cout<< "VD_ro"     <<l<<" "<<VD_ro[l].sum()<<endl;
+
 		}
 
 		MatrixXd boundary_condition_3d(int xyz, int ol, unsigned int l)
@@ -2421,14 +2689,15 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 // 	unsigned int eta1 = 4, eta2 = 4, eta3 = 4;
 // 	unsigned int zeta1 = 5, zeta2 = 4, zeta3 = 5;
 	//temp vars for cost calculation
-	Material tfirst(1, 0.3, 1);
-	Material tsecond(200.0 / 70.0, 0.3, 5700.0 / 2702.0);
+	Material tfirst(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 3.0128e+12,0.175,0.175,0.175);
+	Material tsecond(2.1e+9, 0.34, 7.0e+10, 7.0e+10, 7.0e+10, 7.0e+10, 2.6119e+10, 2.6119e+10, 2.6119e+10,0.34,0.34,0.34);
+	Material tthird(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 2.6119e+10, 2.6119e+10, 3.0128e+12,0.175,0.175,0.175);
 	Shape * shps = new Shape[num_layers];
 	Shape tshape1(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0);
 	shps[0] = tshape1;
-	Shape tshape2(3, 3, 0.15, xi1, eta1, zeta1, tsecond, 0, 0);
+	Shape tshape2(3, 3, 0.15, xi1, eta1, zeta1, tsecond, 0, 0,0,0,0.15);
 	shps[1] = tshape2;
-	Shape tshape3(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0);
+	Shape tshape3(3, 3, 0.15, xi1, eta1, zeta1, tthird, 0.1, 0,0,0,0.45);
 	shps[2] = tshape3;
 	//set CPU costs for each task
 	FGM tfgm(num_layers, shps);
@@ -2511,8 +2780,9 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 #endif
 
 
-	Material first(70000000000.0, 0.33, 2700);
-	Material second(200000000000.0, 0.33, 5700.0);
+	Material first(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 3.0128e+12,0.175,0.175,0.175);
+	Material second(2.1e+9, 0.34, 7.0e+10, 7.0e+10, 7.0e+10, 7.0e+10, 2.6119e+10, 2.6119e+10, 2.6119e+10,0.34,0.34,0.34);
+	Material third(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 2.6119e+10, 2.6119e+10, 3.0128e+12,0.175,0.175,0.175);
 
 	//geometric properties
 	double asp_Rat1 = 3;
@@ -2536,11 +2806,11 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 //					shapes[0] = Shape(Lr1, asp_Rat1, w_over_h1, xi1, eta1, zeta1, first, cy, 0);
 //					shapes[1] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second, 0, 0);
 //					shapes[2] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first, cz, 0);
-        			 	Shape tshape1(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0);
+        			 	Shape tshape1(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0,-0.5, 0);
        					shapes[0] = tshape1;
-	       	 			Shape tshape2(3, 3, 0.15, xi1, eta1, zeta1, tsecond, 0, 0);
+	       	 			Shape tshape2(3, 3, 0.3, xi2, eta2, zeta2, second, 0, 0,-0.5,0,0.15);
 		       		 	shapes[1] = tshape2;
-			        	Shape tshape3(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0);
+			        	Shape tshape3(3, 3, 0.15, xi3, eta3, zeta3, third, 0.1, 0,-0.5,0,0.45);
 				        shapes[2] = tshape3;
 					problems.push_back(FGM(num_layers, shapes));
 					//break;

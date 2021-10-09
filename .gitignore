@@ -1,6 +1,12 @@
 # Prerequisites
 *.d
 
+#all txt files
+*.txt
+
+#swap files
+*.swp
+
 # Compiled Object files
 *.slo
 *.lo

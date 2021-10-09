@@ -9,10 +9,21 @@
 #include <Eigen/SVD>
 #include <math.h>
 #include "consts.h"
+#include <fstream>
 
 using namespace Eigen;
 using namespace Spectra;
 using namespace std;
+
+typedef Eigen::Matrix< long double, Eigen::Dynamic, Eigen::Dynamic > MatrixLD;
+
+void outputMatrix(string& fileName,MatrixXd &matrixToOutput){
+	ofstream matrixFile;
+	matrixFile.open(fileName);
+	//matrixFile<<matrixOutput.rows()<<"\n"<<matrixOutput.cols()<<"\n";
+	matrixFile<<matrixToOutput;
+	matrixFile.close();	
+}
 
 void alloc4D(dtype**** &ptr, int n1, int n2, int n3, int n4) {
   ptr = new dtype***[n1];
