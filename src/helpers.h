@@ -10,17 +10,17 @@
 #include <math.h>
 #include "consts.h"
 #include <fstream>
+#include <iomanip> 
 
 using namespace Eigen;
 using namespace Spectra;
 using namespace std;
 
-typedef Eigen::Matrix< long double, Eigen::Dynamic, Eigen::Dynamic > MatrixLD;
 
 void outputMatrix(string& fileName,MatrixXd &matrixToOutput){
 	ofstream matrixFile;
 	matrixFile.open(fileName);
-	//matrixFile<<matrixOutput.rows()<<"\n"<<matrixOutput.cols()<<"\n";
+	matrixFile<<matrixToOutput.rows()<<"\n"<<matrixToOutput.cols()<<"\n";
 	matrixFile<<matrixToOutput;
 	matrixFile.close();	
 }
@@ -107,8 +107,8 @@ void cheb(int N,
     } 
   }  
   FT = IT.inverse();
-}
 
+}
 void derivative(dtype start, dtype end, int N,
 		MatrixXd& D) {
   dtype scale = (end - start) / 2;
@@ -121,6 +121,7 @@ void derivative(dtype start, dtype end, int N,
     D(0, 2*i + 1) = 2*i + 1;
   }
   
+
   for(int i = 2; i <= N; i++) {
     if(i % 2 == 0) {
       for(int j = 1; j < DN + odd; j++) { //SOR burada odd gerekli mi, bu caseler birbirinin ayni mi yoksa
@@ -145,7 +146,6 @@ void derivative(dtype start, dtype end, int N,
       D(i,j) /= scale;
     }
   }
-
   //  D = D.triangularView<Eigen::Upper>() / scale;
 }
 
