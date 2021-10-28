@@ -1496,7 +1496,7 @@ class FGM
 l_6x4.setThreshold(1e-14);
 l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 		  */
-		  JacobiSVD<MatrixXd> svd;
+		  BDCSVD<MatrixXd> svd;
 		  //svd.setThreshold(1e-16);
 		  svd.compute(BC, Eigen::ComputeFullV);
 		  V = svd.matrixV();
