@@ -53,21 +53,27 @@ struct rinfo
 {
 	double *gpu_mem = nullptr;
 	int gpu_id;
-	int no_elements, no_bytes;
+	unsigned long no_bytes;
+	unsigned int no_elements;
 
 	rinfo(int gpu_id, int x1, int y1, int z1, int x2, int y2, int z2, int x3, int y3, int z3)  : gpu_id(gpu_id)
 	{
 		
 		int nnxyz = (3 * x1 * y1 * z1) + (3 * x2 * y2 * z2) + (3 * x3 * y3 * z3);
-	//	no_elements = 10 * nnxyz * nnxyz;
+		no_elements = 10 * nnxyz * nnxyz;
 		
-		//int xyzxyz1 = (x1 * y1 * z1) * (x1 * y1 * z1);
-		//int xyzxyz2 = (x2 * y2 * z2) * (x2 * y2 * z2);
-		//int xyzxyz3 = (x3 * y3 * z3) * (x3 * y3 * z3);
-/*
-		no_elements = 48*xyzxyz1 + 48*xyzxyz2 + 48*xyzxyz3;
-*/ 
-		no_bytes = no_elements * sizeof(double);		
+		//cout<<no_elements<<endl;
+
+
+		//int xyzxyz1 = 40 * (x1 * y1 * z1) * (x1 * y1 * z1);
+		//int xyzxyz2 = 40 * (x2 * y2 * z2) * (x2 * y2 * z2);
+		//int xyzxyz3 = 40 * (x3 * y3 * z3) * (x3 * y3 * z3);
+
+		//no_elements = xyzxyz1 + xyzxyz2 + xyzxyz3;
+ 
+		no_bytes = no_elements * sizeof(double);
+		//no_bytes = 3768582144;
+		cout<<"no_bytes "<<no_bytes<<endl;
 		gpuErrchk(cudaMalloc((void**)&gpu_mem, no_bytes));
 	}
 
@@ -142,32 +148,83 @@ struct Space
 class Material
 {
 	public:
-		Material(): mod_elasticity(0), poisson_ratio(0), density(0), elasticity{0,0,0},sheer_elasticity{0,0,0}, poissons{0,0,0} {}
+		enum class CNT_TYPE {UD, FGV, FGO, FGX};
+		enum class POROUS_TYPE {AA, BB, CC};
+
+		Material(): mod_elasticity(0), poisson_ratio(0), mod_sheer_elasticity(0), 
+			    elasticity{0,0,0},sheer_elasticity{0,0,0}, poissons{0,0,0},
+		            CNT_type(CNT_TYPE::UD), POROUS_type(POROUS_TYPE::AA) {}
 		Material(dtype _mod_elasticity,
 				dtype _poisson_ratio,
-				dtype _density, dtype _elasticity_0, dtype _elasticity_1, dtype _elasticity_2, dtype _sh_elasticity_0, dtype _sh_elasticity_1, dtype _sh_elasticity_2, dtype _poisson_0, dtype _poisson_1, dtype _poisson_2)
+				dtype _mod_sheer_elasticity, 
+				dtype _elasticity_0,dtype _elasticity_1,dtype _elasticity_2,
+			       	dtype _sh_elasticity_0, dtype _sh_elasticity_1, dtype _sh_elasticity_2,
+			       	dtype _poisson_0, dtype _poisson_1, dtype _poisson_2,
+				CNT_TYPE cnt_type,
+				POROUS_TYPE porous_type,
+				dtype _v_str_cnt = 0.11,
+				dtype _ro_cnt = 1400,
+				dtype _ro_m = 1150,
+				dtype _eta_star_1 = 0.149,
+				dtype _eta_star_2 = 0.934,
+				dtype _eta_star_3 = 0.934,
+				dtype _alpha = 0.6733,
+				dtype _e = 0.1
+			)
 			: mod_elasticity(_mod_elasticity),
 			poisson_ratio(_poisson_ratio),
-			density(_density), elasticity{_elasticity_0, _elasticity_1, _elasticity_2}, sheer_elasticity{_sh_elasticity_0, _sh_elasticity_1, _sh_elasticity_2}, poissons{_poisson_0, _poisson_1, _poisson_2} {}
+			mod_sheer_elasticity(_mod_sheer_elasticity), 
+			elasticity{_elasticity_0, _elasticity_1, _elasticity_2}, 
+			sheer_elasticity{_sh_elasticity_0, _sh_elasticity_1, _sh_elasticity_2}, 
+			poissons{_poisson_0, _poisson_1, _poisson_2},
+			CNT_type(cnt_type), 
+			POROUS_type(porous_type),
+		        v_str_cnt(_v_str_cnt),
+			ro_cnt(_ro_cnt),
+			mod_ro(_ro_m),
+			eta_star_1(_eta_star_1),
+			eta_star_2(_eta_star_2),
+			eta_star_3(_eta_star_3),
+			alpha(_alpha),
+			e(_e)	{}
 
 		void operator=(const Material& s){
 			mod_elasticity = s.mod_elasticity;
 			poisson_ratio = s.poisson_ratio;
-			density = s.density;
+			mod_sheer_elasticity = s.mod_sheer_elasticity;
 			for(int i = 0; i<3; i++){
 				elasticity[i] = s.elasticity[i];
 				sheer_elasticity[i] = s.sheer_elasticity[i];
 				poissons[i] = s.poissons[i];
 			}
+			CNT_type = s.CNT_type;
+			POROUS_type = s.POROUS_type;
+			v_str_cnt = s.v_str_cnt;
+			ro_cnt = s.ro_cnt;
+			mod_ro = s.mod_ro;
+			eta_star_1 = s.eta_star_1;
+			eta_star_2 = s.eta_star_2;
+			eta_star_3 = s.eta_star_3;
+			alpha = s.alpha;
+			e = s.e;
 		}
 		//member variables
 		dtype mod_elasticity; //E_m
 		dtype elasticity[3]; // E_11 || E_22 || E_33 
 		dtype poisson_ratio; //nu_m
 		dtype poissons[3]; // nu12 || nu13 || nu23
-		dtype density; // ro
 		dtype mod_sheer_elasticity; // G_m
 		dtype sheer_elasticity[3]; // G_11 || G_22 || G_33
+		CNT_TYPE CNT_type; //TODO(kaya) : Convert this into enum
+		POROUS_TYPE POROUS_type; //TODO(kaya) : Convert this into enum
+		dtype v_str_cnt;
+		dtype ro_cnt;
+		dtype mod_ro;
+		dtype eta_star_1;
+		dtype eta_star_2;
+		dtype eta_star_3;
+		dtype alpha;
+		dtype e;
 };
 
 class Shape
@@ -200,18 +257,19 @@ class Shape
 		Tensor<double,3> shapeZ;
 
 		Tensor<double,3> jac;
+		double theta;
 
-		Shape() : dim{0, 0, 0}, is_curved(false), curve{0, 0}, xyz(0),zeta_add(0) {}
+		Shape() : dim{0, 0, 0}, is_curved(false), curve{0, 0}, xyz(0),zeta_add(0), theta(0) {}
 		Shape(dtype x_dim, dtype y_dim, dtype z_dim,
 				int x_sample, int y_sample, int z_sample, 
-				Material mat, double ctrl_y, double ctrl_z,
+				Material mat, double ctrl_y, double ctrl_z,double _theta, 
 				dtype xcurve = 0, dtype ycurve = 0,double zeta_add=0) : dim{x_dim, y_dim, z_dim}, curve{xcurve, ycurve},
 			is_curved(~(xcurve == 0 && ycurve == 0)),
 			spaces{Space(-x_dim / 2, x_dim / 2, x_sample), Space(-y_dim / 2, y_dim / 2, y_sample), Space(0, z_dim, z_sample)},
 			xyz(x_sample * y_sample * z_sample),
 			VD(xyz, xyz),
 			QDx(xyz, xyz), QDy(xyz, xyz), QDz(xyz, xyz), material(mat), 
-			ctrl_y(ctrl_y), ctrl_z(ctrl_z),zeta_add(zeta_add)
+			ctrl_y(ctrl_y), ctrl_z(ctrl_z),zeta_add(zeta_add), theta(_theta)
 			{
 				QDx.setZero();
 				QDy.setZero();
@@ -230,6 +288,9 @@ class Shape
 				//double beta = 0;
 				double alpha = curve[0]*2*pi/dim[0];
 				double beta = curve[1]*2*pi/dim[1];
+				cout<< " alp " << alpha << endl;
+				cout<< " beta "<< beta << endl;
+				cout<< " theta "<< theta << endl;
 				vector_map_jac_curvature(alpha,beta);				
 				// cout << "VD" << " Sum: " << VD.sum() << " Max: " << VD.maxCoeff() << " Min: " << VD.minCoeff() << endl;
 				// cout << "QDx" << " Sum: " << QDx.sum() << " Max: " << QDx.maxCoeff() << " Min: " << QDx.minCoeff() << endl;
@@ -366,9 +427,9 @@ class Shape
 			Tensor<double,3> dzetadz = Tensor<double,3>(x_sample,y_sample,z_sample);
 			dzetadz.setZero();
 
-			//cout<<"SHAPEX SUM = "<<shapeX.sum()<<endl;
-			//cout<<"SHAPEY SUM = "<<shapeY.sum()<<endl;
-			//cout<<"SHAPEZ SUM = "<<shapeZ.sum()<<endl;
+			cout<<"SHAPEX SUM = "<<shapeX.sum()<<endl;
+			cout<<"SHAPEY SUM = "<<shapeY.sum()<<endl;
+			cout<<"SHAPEZ SUM = "<<shapeZ.sum()<<endl;
 
 			//cout<<"TEMPX SUM = "<<tempx.sum()<<endl;
 			//cout<<"TEMPY SUM = "<<tempy.sum()<<endl;
@@ -534,9 +595,9 @@ class Shape
 			QDz = (QDxi_dxidz+QDeta_detadz+QDzeta_dzetadz);
 
 			//cout<<QDxi_dxidx<<endl;
-		//	cout<<"QDx MAX: " << QDx.maxCoeff() << " SUM: "<< QDx.sum()<<endl;
-		//	cout<<"QDy MAX: " << QDy.maxCoeff() << " SUM: "<< QDy.sum()<<endl;
-		//	cout<<"QDz MAX: " << QDz.maxCoeff() << " SUM: "<< QDz.sum()<<endl;
+			cout<<"QDx MAX: " << QDx.maxCoeff() << " SUM: "<< QDx.sum()<<endl;
+			cout<<"QDy MAX: " << QDy.maxCoeff() << " SUM: "<< QDy.sum()<<endl;
+			cout<<"QDz MAX: " << QDz.maxCoeff() << " SUM: "<< QDz.sum()<<endl;
 
 //			cout<<"Q1xi MAX: " << spaces[0].Q1.maxCoeff() << " SUM: "<< spaces[0].Q1.sum()<<endl;
 //			cout<<"Q2xi MAX: " << spaces[1].Q1.maxCoeff() << " SUM: "<< spaces[1].Q1.sum()<<endl;
@@ -565,6 +626,7 @@ class Shape
 			material = s.material;
 			ctrl_y = s.ctrl_y;
 			ctrl_z = s.ctrl_z;
+			theta = s.theta;
 		}
 
 		void vector_map_nojac()
@@ -1105,6 +1167,8 @@ class FGM
 			d_temp_K = d_gammayz + gammayz.size();        //9
 			d_K = d_temp_K + (nc * nc);             //9
 			d_temp = d_K + (nc * nc);               //3
+			long double memory_required = ((d_temp+(nc * nc) - d_VD_lame11) * 8)/(1024*1024);
+			cout<<memory_required << " MiB is required for T1\n"<<endl;
 
 			cudaMemcpy(d_VD_lame11, VD_lame11[l].data(), VD_lame11[l].size() * sizeof(double), cudaMemcpyHostToDevice);
 			cudaMemcpy(d_VD_lame22, VD_lame22[l].data(), VD_lame22[l].size() * sizeof(double), cudaMemcpyHostToDevice);
@@ -1276,6 +1340,7 @@ class FGM
 			MatrixXd tauxy = (VD_lame44[l] * gammaxy); 
 			MatrixXd tauyz = (VD_lame55[l] * gammayz);
 			MatrixXd tauxz = (VD_lame66[l] * gammaxz);
+			
 			/*
 			cout<< " QDX " << shapes[l].QDx.sum() << endl;
 			cout<< " QDY " << shapes[l].QDy.sum() << endl;
@@ -1290,7 +1355,7 @@ class FGM
 			cout<< " epy " << epy.sum() << endl;
 			cout<< " epz " << epz.sum() << endl;
 			cout<< " gammaxy " << gammaxy.sum() << endl;	
-			*/
+			*/	
 			K[l]= (epx.transpose() * sigx) + (epy.transpose() * sigy) + (epz.transpose() * sigz) + (gammaxy.transpose() * tauxy) + (gammaxz.transpose() * tauxz) + (gammayz.transpose() * tauyz);
 
 		}
@@ -1332,7 +1397,7 @@ class FGM
 			MatrixXd tauxy = (VD_lame44[l] * gammaxy) + (VD_lame14[l] * epx) + (VD_lame24[l] * epy) + (VD_lame34[l] * epz);
 			MatrixXd tauyz = (VD_lame55[l] * gammayz) + (VD_lame56[l] * gammaxz);
 			MatrixXd tauxz = (VD_lame66[l] * gammaxz) + (VD_lame56[l] * gammayz);
-			/*
+			/*	
 			cout<< " QDX " << shapes[l].QDx.sum() << endl;
 			cout<< " QDY " << shapes[l].QDy.sum() << endl;
 			cout<< " QDZ " << shapes[l].QDz.sum() << endl;
@@ -1345,7 +1410,8 @@ class FGM
 		        cout<< " epx " << epx.sum() << " MAX: "<<epx.maxCoeff()<<endl;
 			cout<< " epy " << epy.sum() << " MAX: "<<epy.maxCoeff()<<endl;
 			cout<< " epz " << epz.sum() << " MAX: "<<epz.maxCoeff()<<endl;
-			cout<< " gammaxy " << gammaxy.sum()<<" MAX: "<<gammaxy.maxCoeff()<<endl;			*/
+			cout<< " gammaxy " << gammaxy.sum()<<" MAX: "<<gammaxy.maxCoeff()<<endl;
+			*/
 			K[l]= (epx.transpose() * sigx) + (epy.transpose() * sigy) + (epz.transpose() * sigz) + (gammaxy.transpose() * tauxy) + (gammaxz.transpose() * tauxz) + (gammayz.transpose() * tauyz);
 
 		}
@@ -1414,12 +1480,43 @@ class FGM
 
 		void T2_svd_CPU(MatrixXd &BC, MatrixXd &V)
 		{
-			JacobiSVD<MatrixXd> svd(BC, ComputeFullV);
-			//cout<< "COMPUTE FULLY  " << ComputeFullV <<endl;
-			V = svd.matrixV();
-			//cout<< " V "<< V.sum() << " MAX " << V.maxCoeff() << " MIN "<< V.minCoeff()<<endl;
+
+		  //const static IOFormat CSVFormat(FullPrecision, DontAlignCols, ", ", "\n");
+		  
+		   /*xsofstream file("bc.txt");
+		  if (file.is_open())
+		    {
+		      file << BC.format(CSVFormat);
+		      file.close();
+		    }
+		  */
+
+
+		  /*Eigen::JacobiSVD<Eigen::MatrixXd> l_6x4;
+l_6x4.setThreshold(1e-14);
+l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
+		  */
+		  JacobiSVD<MatrixXd> svd;
+		  //svd.setThreshold(1e-16);
+		  svd.compute(BC, Eigen::ComputeFullV);
+		  V = svd.matrixV();
+		  //			svd.compute(BC, Eigen::ComputeFullV);
+		  //	V = svd.solve(Rho);    
 			
-		}
+			//cout<< "COMPUTE FULLY  " << ComputeFullV <<endl;
+			//V = svd.matrixV();
+		  // cout<< " V "<< V.rows() << " " << V.cols() << " " << V.sum() << " MAX " << V.maxCoeff() << " MIN "<< V.minCoeff()<<endl;
+
+
+		  //cout << svd.singularValues() << endl;
+		  /*
+		       	ofstream file2("s.txt");
+		  if (file2.is_open())
+		    {
+		      file2 << S.format(CSVFormat);
+		      file2.close();
+		      }*/
+		    }
 
 #ifdef GPU
 		void T2_svd_GPU(MatrixXd &BC, MatrixXd &V)
@@ -1452,6 +1549,7 @@ class FGM
 			int *d_info = (int *)(d_V + n * n);
 			int lwork = 0;
 			double *d_work = (double *)(d_info + n);
+
 			int info = 0;
 			
 			// gesvdj configuration
@@ -1459,7 +1557,6 @@ class FGM
 			const int max_sweeps = 15;
 			const cusolverEigMode_t jobz = CUSOLVER_EIG_MODE_VECTOR;
 			const int econ = 0;
-
 			//numerical results of gesvdj
 			double residual = 0;
 			int executed_sweeps = 0;
@@ -1506,7 +1603,13 @@ class FGM
 			status = cusolverDnDgesvdj_bufferSize(dnhandle[ttt], jobz, econ, m, n, d_A, m, d_S, d_U, m, d_V, n, &lwork, gesvdj_params);
 			assert(CUSOLVER_STATUS_SUCCESS == status);
 
+			long double memory_required = ((d_work - d_A) * 8)/(1024*1024);
+			cout<<"d_work "<< d_work<<endl;
 			cudaStat1 = cudaMalloc((void**)&d_work, sizeof(double)*lwork);
+			cout<<"Lwork "<< lwork<<endl;
+			cout<<"d_work "<< d_work<<endl;
+			cout<<memory_required << " MiB is required for T2\n"<<endl;
+			
 			assert(cudaSuccess == cudaStat1);
 			
 			//Step 5: compute SVD
@@ -1599,6 +1702,7 @@ class FGM
 			double *d_K, *d_M, *d_P, *d_K_phy, *d_M_phy, *d_a0, *d_temp, *d_M_phy_i, *d_work;
 			int *d_pivot, *d_info, Lwork;
 
+			cout<<"KK rows" << KK.rows() << " MM rows "<< MM.rows()<<" "<<P.cols()<<endl;
 			int nc = P.cols();
 			d_K = gpu_mem;                            //9
 			//d_M = d_K + (9 * nnxyz * nnxyz);            //9
@@ -1612,6 +1716,7 @@ class FGM
 			d_temp = d_a0 + (nc * nc);                //max 9
 			//d_M_phy_i = d_temp + (3 * nnxyz * nc);     //max 9
 			d_M_phy_i = d_temp + (3 * KK.rows() * nc);     //max 9
+			//d_M_phy_i = d_temp + (MM.rows() * MM.cols());     //max 9
 			d_pivot = (int *)(d_M_phy_i + (nc * nc)); //max 1
 			d_info = d_pivot + nc;                    //max 1
 			d_work = (double *)(d_info + nc);         //max 1.
@@ -1622,16 +1727,29 @@ class FGM
 			MatrixXd Id = MatrixXd::Identity(nc, nc);
 			cudaMemcpy(d_M_phy_i, Id.data(), Id.size() * sizeof(double), cudaMemcpyHostToDevice);
 
+			cout<<"d_K size " << KK.size()*sizeof(double)/(1024*1024)<<endl;
+			cout<<"d_M size " << MM.size()*sizeof(double)/(1024*1024)<<endl;
+			cout<<"d_P size " << P.size()*sizeof(double)/(1024*1024)<<endl;
+			cout<<"d_M_phy_i size " << Id.size()*sizeof(double)/(1024*1024)<<endl;
+
 			cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, KK.rows(), nc, KK.cols(), &van, d_K, KK.rows(), d_P, P.rows(), &ziro, d_temp, KK.rows()); //alpha * K * P + beta * K
 			cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, P.rows(), &van, d_P, P.rows(), d_temp, KK.rows(), &ziro, d_K_phy, P.cols());   //Pt * K * P
 			cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, MM.rows(), nc, MM.cols(), &van, d_M, MM.rows(), d_P, P.rows(), &ziro, d_temp, MM.rows()); //M * P
 			cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, P.rows(), &van, d_P, P.rows(), d_temp, MM.rows(), &ziro, d_M_phy, P.cols());   //Pt * M * P
+			
+
+
 			cusolverDnDgetrf_bufferSize(dnhandle[ttt], nc, nc, d_M_phy, nc, &Lwork);
 			cusolverDnDgetrf(dnhandle[ttt], nc, nc, d_M_phy, nc, d_work, d_pivot, d_info);
 			cusolverDnDgetrs(dnhandle[ttt], CUBLAS_OP_N, nc, nc, d_M_phy, nc, d_pivot, d_M_phy_i, nc, d_info);
+
+
+			cout<<"Lwork "<< Lwork<<endl;
+			long double memory_required = ((d_work+Lwork - d_K) * 8)/(1024*1024);
+			cout<<memory_required << " MiB is required for T3\n"<<endl;
+
 			cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, nc, &van, d_M_phy_i, nc, d_K_phy, nc, &ziro, d_a0, nc); //M_phy_i * K_phy
 			cudaStreamSynchronize(stream[ttt]);
-
 			//MatrixXd at(nc, nc);
 			//a0 = at;
 			cudaMemcpy(a0.data(), d_a0, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
@@ -1695,7 +1813,7 @@ class FGM
 
 		void T4_eigen(MatrixXd &a0, int &nconv, double &small_eig)
 		{
-			//cout<<"a0 "<<a0.sum()<<endl;
+			cout<<"a0 "<<a0.sum()<<endl;
 			MatrixXd MMM = a0;
 			DenseGenRealShiftSolve<double> op(MMM);
 			GenEigsRealShiftSolver<DenseGenRealShiftSolve<double>> eigs(op, 10, 50, 0);
@@ -2149,21 +2267,21 @@ class FGM
 			delta.setZero();
 	
 
-			int current_selection = 3; //This will be removed added for testing switch in the matlab code
-			double V_star_cnt = 0.14; //This will be removed added for testing.
-			double ro_cnt = 1400; // density of cnt This will be removed added for testing.
-			double ro_m = 1150; // density of the matrix This will be removed added for testing.
+	
+			double V_star_cnt = shapes[l].material.v_str_cnt; 
+			double ro_cnt = shapes[l].material.ro_cnt; 
+			double ro_m = shapes[l].material.mod_ro; 
 
-			double h = shapes[l].dim[2]; //w_over_h1 this will be removed added for testing.
+			double h = shapes[l].dim[2]; 
 
 			double nu12_cnt = shapes[l].material.poissons[0]; 
 			double nu13_cnt = shapes[l].material.poissons[1]; 
 			double nu23_cnt = shapes[l].material.poissons[2]; 
 			double nu_m = shapes[l].material.poisson_ratio; 
 
-			double eta_star_1 = 0.15; //This will be removed added for testing.
-			double eta_star_2 = 0.941; //This will be removed added for testing.
-			double eta_star_3 = 0.941; //This will be removed added for testing.
+			double eta_star_1 = shapes[l].material.eta_star_1; 
+			double eta_star_2 = shapes[l].material.eta_star_2; 
+			double eta_star_3 = shapes[l].material.eta_star_3;
 			double E11_cnt = shapes[l].material.elasticity[0]; 
 			double E22_cnt = shapes[l].material.elasticity[1];
 			double E33_cnt = shapes[l].material.elasticity[2]; 
@@ -2173,36 +2291,64 @@ class FGM
 			double G12_cnt = shapes[l].material.sheer_elasticity[0]; 
 			double G13_cnt = shapes[l].material.sheer_elasticity[1]; 
 			double G23_cnt = shapes[l].material.sheer_elasticity[2]; 
-			double G_m = 7.8358e+8; //This will be removed added for testing.
+			double G_m = shapes[l].material.mod_sheer_elasticity; 
 
 
-			int current_selection2 = 0;
-			double e0 = 0.3; //This will be removed added for testing.
-			double em = 0.1633; //This will be removed added for testing.	
+			double e0 = shapes[l].material.e; 
+			double em = 1-sqrt(1-e0); 	
 
-			double alpha = 0.6733; //This will be removed added for testing.
-			double alpha_prime = 0.8205; //This will be removed added for testing.
-			double theta = 0; //This will be removed added for testing. 
+			double alpha = shapes[l].material.alpha; //This will be removed added for testing.
+			double alpha_prime = sqrt(alpha); //This will be removed added for testing.
+			double theta = shapes[l].theta; //This will be removed added for testing. 
+
+
+			cout<<"V_star_cnt " << V_star_cnt << endl;
+			cout<<"ro_cnt "<< ro_cnt<<endl;
+			cout<<"ro_m " <<ro_m<<endl;
+			cout<<"h "<< h <<endl;
+			cout<<"nu12_cnt "<< nu12_cnt << endl;
+			cout<<"nu13_cnt "<< nu13_cnt << endl;
+			cout<<"nu23_cnt "<< nu23_cnt << endl;
+			cout<<"nu_m "<< nu_m << endl;
+			cout<<"eta_star_1 "<< eta_star_1 << endl;
+			cout<<"eta_star_2 "<< eta_star_2 << endl;
+			cout<<"eta_star_3 "<< eta_star_3 << endl;
+			cout<<"E11_cnt "<< E11_cnt << endl;
+			cout<<"E22_cnt "<< E22_cnt << endl;
+			cout<<"E33_cnt "<< E33_cnt << endl;
+			cout<<"E_m "<< E_m << endl;
+			cout<<"G12_cnt "<< G12_cnt << endl;
+			cout<<"G12_cnt "<< G12_cnt << endl;
+			cout<<"G13_cnt "<< G13_cnt << endl;
+			cout<<"G_m "<< G_m << endl;
+			cout<<"e0 "<< e0 << endl;
+			cout<<"em "<< em << endl;
+			cout<<"alpha "<< alpha << endl;
+			cout<<"alpha prime "<< alpha_prime << endl;
+			cout<<"theta "<< theta << endl;
+
+			cout<<endl<<endl;
+
 
 			for(int i = 0; i < x.size(); i++){
 				for(int j = 0; j < y.size(); j++){
 					for(int k = 0; k < z.size(); k++){
-						switch (current_selection)
+						switch (shapes[l].material.CNT_type)
 						{
-							case 0:
+							case Material::CNT_TYPE::UD:
 								{
 									V_cnt(i,j,k) =V_star_cnt; 		
 								}break;
 
-							case 1:
+							case Material::CNT_TYPE::FGV:
 								{
 									V_cnt(i,j,k) = (1 + 2 * (z(k) - h/2)/h)*V_star_cnt;
 								}break;
-							case 2:
+							case Material::CNT_TYPE::FGO:
 								{
-									V_cnt(i,j,k) = (1 - 2 * (z(k) - h/2)/h)*V_star_cnt;
+									V_cnt(i,j,k) = 2 * (1 - 2 * abs(z(k) - h/2)/h)*V_star_cnt;
 								}break;
-							case 3:
+							case Material::CNT_TYPE::FGX:
 								{
 									V_cnt(i,j,k) = (4 * abs(z(k) - h/2)/h) * V_star_cnt;
 								}break;
@@ -2222,9 +2368,9 @@ class FGM
 						nu31(i,j,k) = nu13(i,j,k) * E_star_33(i,j,k) / E_star_11(i,j,k);	
 						nu32(i,j,k) = nu23(i,j,k) * E_star_33(i,j,k) / E_star_22(i,j,k);	
 
-						switch(current_selection2)
+						switch(shapes[l].material.POROUS_type)
 						{
-							case 0: 
+							case Material::POROUS_TYPE::AA: 
 								{
 									G12(i,j,k)= G12_star(i,j,k) *(1-e0*cos(pi*(z(k)-h/2)/h));
 									G23(i,j,k)= G23_star(i,j,k) *(1-e0*cos(pi*(z(k)-h/2)/h));
@@ -2235,7 +2381,7 @@ class FGM
 									E33(i,j,k)= E_star_33(i,j,k)*(1-e0*cos(pi*(z(k)-h/2)/h));
 
 								}break;
-							case 1:
+							case Material::POROUS_TYPE::BB:
 								{
 									G12(i,j,k)= G12_star(i,j,k) *(1-e0*cos(pi*z(k)/(2*h)+pi/4));
                     							G23(i,j,k)= G23_star(i,j,k) *(1-e0*cos(pi*z(k)/(2*h)+pi/4));
@@ -2245,7 +2391,7 @@ class FGM
                    							E22(i,j,k)= E_star_22(i,j,k)*(1-e0*cos(pi*z(k)/(2*h)+pi/4));
                     							E33(i,j,k)= E_star_33(i,j,k)*(1-e0*cos(pi*z(k)/(2*h)+pi/4));
 								}break;
-							case 2:
+							case Material::POROUS_TYPE::CC:
 								{
                     							G12(i,j,k)= G12_star(i,j,k) *alpha;
 		                        				G23(i,j,k)= G13_star(i,j,k) *alpha;
@@ -2271,7 +2417,7 @@ class FGM
 					}
 				}
 			}
-			/*
+		/*	
 			cout<< " V_cnt "<< V_cnt.sum() << endl;
 
 			cout<< " nu12 " << nu12.sum() << endl;
@@ -2295,7 +2441,7 @@ class FGM
 			cout << " Q44 "<< Q44.sum() << endl;
 			cout << " Q55 "<< Q55.sum() << endl;
 			cout << " Q66 "<< Q66.sum() << endl;
-			*/
+		*/	
 
 				
 			Q11T[l]=Q11*pow(cos(theta),4)+2*(Q12+2*Q44)*(pow(cos(theta),2)*pow(sin(theta),2))+Q22*pow(sin(theta),4);
@@ -2364,7 +2510,7 @@ class FGM
 
 			double delta = (1-nu12*nu21-nu23*nu32-nu31*nu13-2*nu21*nu32*nu13)/e11/e22/e33;
 			
-			double ro_h = 2700;
+			double ro_h = 24.94;
 
 			Tensor<double,3> Q11 = Tensor<double,3>(x.size(), y.size(), z.size());
 			Q11.setZero();
@@ -2401,7 +2547,7 @@ class FGM
 					}
 				}
 			}
-			/*
+			
 			cout<<"q11 : "<<Q11T[l](0,0,0)<<endl;
 			cout<<"q22 : "<<Q22T[l](0,0,0)<<endl;
 			cout<<"q33 : "<<Q33T[l](0,0,0)<<endl;
@@ -2411,57 +2557,11 @@ class FGM
 			cout<<"q44 : "<<Q44T[l](0,0,0)<<endl;
 			cout<<"q55 : "<<Q55T[l](0,0,0)<<endl;
 			cout<<"q66 : "<<Q66T[l](0,0,0)<<endl;
-			*/
+			
 			//nu12 nu23 nu13 tensor create
 			//e11 e22 e33 tensor create
 			//
 
-		}
-
-		void FG_var_MT(unsigned int l) //problem
-		{
-			VectorXd &x = shapes[l].spaces[0].s;
-			VectorXd &y = shapes[l].spaces[1].s;
-			VectorXd &z = shapes[l].spaces[2].s;
-
-			double K_m = (shapes[0].material.mod_elasticity / 3) / (1 - 2 * shapes[0].material.poisson_ratio);
-			double G_m = (shapes[0].material.mod_elasticity / 2) / (1 + shapes[0].material.poisson_ratio);
-
-			double K_c = (shapes[1].material.mod_elasticity / 3) / (1 - 2 * shapes[1].material.poisson_ratio);
-			double G_c = (shapes[1].material.mod_elasticity / 2) / (1 + shapes[1].material.poisson_ratio);
-
-			double V_min = 0;
-			double V_max = 1;
-
-			//for matlab conversion - can be removed later
-			double c = shapes[l].dim[2];
-			double b = shapes[l].dim[1];
-			double p = shapes[l].ctrl_y;
-			double q = shapes[l].ctrl_z;
-			double rho_m = shapes[0].material.density;
-			double rho_c = shapes[1].material.density;
-
-			for (int j = 0; j < np[l][1]; j++)
-			{
-				for (int k = 0; k < np[l][2]; k++)
-				{
-					//bu satirda funtion pointer olabilir
-					//double vcijk = V_min + (V_max-V_min) * pow((z(k)/c), p) * pow((0.5+y(j)/b), q);
-					double vcijk = V_min + (V_max - V_min) * pow(1 - (z(k) / c), p) * pow(1 - (z(k) / c), q);
-					double vmijk = 1 - vcijk;
-					double rhotemp = (rho_c * vcijk) + (rho_m * vmijk);
-					//double K = K_m + (K_c - K_m) * vcijk / (1 + (1 - vcijk) * (3 * (K_c - K_m) / (3*K_m + 4*G_m)));
-					//double f1 = G_m*(9*K_m+8*G_m)/(6*(K_m+2*G_m));
-					//double G = G_m + (G_c-G_m) * vcijk/(1 + (1- vcijk)*( (G_c-G_m)/(G_m+f1)));
-					//double eijk = 9*K*G/(3*K+G);
-					//double poisijk = (3*K-2*G)/(2*(3*K+G));
-					double eijk = (shapes[1].material.mod_elasticity * vcijk) + (shapes[0].material.mod_elasticity * vmijk);
-					double poisijk = (shapes[1].material.poisson_ratio * vcijk) + (shapes[0].material.poisson_ratio * vmijk);
-					double mutemp = eijk / (2 * (1 + poisijk));
-					double lametemp = (2 * mutemp * poisijk) / (1 - 2 * poisijk);
-
-				}
-			}
 		}
 
 		void tensor3(VectorXd &v_d3Nt, MatrixXd &Sst, int n,
@@ -2744,7 +2844,7 @@ class FGM
 
 // -ostream &operator<<(ostream &os, const Space &spc)
 // -{
-// -  os << spc.start << "\t" << spc.end << "\t" << spc.no_points;
+// -  os << spc.start << "\t" << spc.end << "\t" <  spc.no_points;
 // -  return os;
 // -}
 // -
@@ -2908,20 +3008,20 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 // 	unsigned int zeta1 = 5, zeta2 = 4, zeta3 = 5;
 	//temp vars for cost calculation
 	cout<<"here 2"<<endl;
-	Material tfirst(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 3.0128e+12,0.175,0.175,0.175);
-	Material tsecond(2.1e+9, 0.34, 7.0e+10, 7.0e+10, 7.0e+10, 7.0e+10, 2.6119e+10, 2.6119e+10, 2.6119e+10,0.34,0.34,0.34);
-	Material tthird(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 2.6119e+10, 2.6119e+10, 3.0128e+12,0.175,0.175,0.175);
+	Material tfirst(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 3.0128e+12,0.175,0.175,0.175,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA);
+	Material tsecond(2.1e+9, 0.34, 7.0e+10, 7.0e+10, 7.0e+10, 7.0e+10, 2.6119e+10, 2.6119e+10, 2.6119e+10,0.34,0.34,0.34,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA);
+	Material tthird(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 2.6119e+10, 2.6119e+10, 3.0128e+12,0.175,0.175,0.175,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA);
 	Shape * shps = new Shape[num_layers];
 	cout<<num_layers<<endl;
 	cout<<"here 2"<<endl;
-        Shape tshape1(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0,-0.5, 0);
+        Shape tshape1(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0,0.5236,-0.25,0, 0);
 //	return 0;
 	shps[0] = tshape1;
 	cout<<"here 3"<<endl;
-	Shape tshape2(3, 3, 0.15, xi2, eta2, zeta2, tsecond, 0, 0,0,0,0.15);
+	Shape tshape2(3, 3, 0.15, xi2, eta2, zeta2, tsecond, 0, 0,0,0,0,0.15);
 	cout<<"here 3"<<endl;
 	shps[1] = tshape2;
-	Shape tshape3(3, 3, 0.15, xi3, eta3, zeta3, tthird, 0.1, 0,0,0,0.45);
+	Shape tshape3(3, 3, 0.15, xi3, eta3, zeta3, tthird, 0.1, 0,1.0472,-0.25,0,0.45);
 	cout<<"here 3"<<endl;
 	shps[2] = tshape3;
 	cout<<"here 3"<<endl;
@@ -2941,8 +3041,10 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 #endif
 
 #ifdef GPU
+
+	
 	rinfos = new rinfo *[nthreads];
-	cout<<"here"<<endl;
+	cout<<"here "<< nthreads<<endl;
 
 	int no_gpus = atoi(argv[2]);
 
@@ -2952,13 +3054,20 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 		ttt = omp_get_thread_num();
 #pragma omp critical
 		{
-			gpuErrchk(cudaSetDevice((ttt % no_gpus)));
+			gpuErrchk(cudaSetDevice(0));
+			size_t l_free = 0;
+			size_t l_Total = 0;
+			cudaError_t error_id = cudaMemGetInfo(&l_free, &l_Total);
+
+			//cout<<l_Total << " free in gpu "<< (ttt%no_gpus)<<endl;
+			//l_Total = (l_Total/(size_t)((nthreads/no_gpus))) * 0.8;
+			//cout<<"size of " << (ttt % no_gpus) << " = "<<l_Total<<endl; 
 			//cudaSetDeviceFlags(cudaDeviceScheduleYield);
 			cudaFree(0);
 
 			int deviceID;
 			cudaGetDevice(&deviceID);
-			if (deviceID != (ttt % no_gpus))
+			if (deviceID !=  0)
 			{
 				cout << "device ID is not equal to the given one " << endl;
 				failed = true;
@@ -3008,9 +3117,9 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 #endif
 
 
-	Material first(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 3.0128e+12,0.175,0.175,0.175);
-	Material second(2.1e+9, 0.34, 7.0e+10, 7.0e+10, 7.0e+10, 7.0e+10, 2.6119e+10, 2.6119e+10, 2.6119e+10,0.34,0.34,0.34);
-	Material third(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 2.6119e+10, 2.6119e+10, 3.0128e+12,0.175,0.175,0.175);
+	Material first(2.1e+9, 0.34, 7.8358e+8, 5.6466e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 2.9030e+12,0.175,0.175,0.2194,Material::CNT_TYPE::FGO,Material::POROUS_TYPE::AA);
+	Material second(0, 0, 0, 0.0354e+6, 0.0354e+6, 655.87e+6, 0.0266e+6, 92.463e+6, 141.12e+6,0.999856,0,0,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA);
+	Material third(2.1e+9, 0.34, 7.8358e+8, 5.6466e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 2.9030e+12,0.175,0.175,0.2194,Material::CNT_TYPE::FGO,Material::POROUS_TYPE::AA);
 
 	//geometric properties
 	double asp_Rat1 = 3;
@@ -3034,11 +3143,11 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 //					shapes[0] = Shape(Lr1, asp_Rat1, w_over_h1, xi1, eta1, zeta1, first, cy, 0);
 //					shapes[1] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second, 0, 0);
 //					shapes[2] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first, cz, 0);
-        			 	Shape tshape1(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0,-0.5, 0);
+        			 	Shape tshape1(1, 1, 0.05, xi1, eta1, zeta1, first, 0.1, 0,0.5236,-0.25, 0,0);
        					shapes[0] = tshape1;
-	       	 			Shape tshape2(3, 3, 0.3, xi2, eta2, zeta2, second, 0, 0,-0.5,0,0.15);
+	       	 			Shape tshape2(1, 1, 0.1, xi2, eta2, zeta2, second, 0, 0,0,-0.25,0,0.05);
 		       		 	shapes[1] = tshape2;
-			        	Shape tshape3(3, 3, 0.15, xi3, eta3, zeta3, third, 0.1, 0,-0.5,0,0.45);
+			        	Shape tshape3(1, 1, 0.05, xi3, eta3, zeta3, third, 0.1, 0,1.0472,-0.25,0,0.15);
 				        shapes[2] = tshape3;
 					problems.push_back(FGM(num_layers, shapes));
 					//break;
