@@ -3117,11 +3117,15 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 #endif
 
 
-	Material first(2.1e+9, 0.34, 7.8358e+8, 5.6466e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 2.9030e+12,0.175,0.175,0.2194,Material::CNT_TYPE::FGO,Material::POROUS_TYPE::AA);
-	Material second(0, 0, 0, 0.0354e+6, 0.0354e+6, 655.87e+6, 0.0266e+6, 92.463e+6, 141.12e+6,0.999856,0,0,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA);
-	Material third(2.1e+9, 0.34, 7.8358e+8, 5.6466e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 2.9030e+12,0.175,0.175,0.2194,Material::CNT_TYPE::FGO,Material::POROUS_TYPE::AA);
+	Material first(2.1e+9, 0.34, 7.8358e+8, 5.6466e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 2.9030e+12,0.175,0.175,0.2194,Material::CNT_TYPE::FGO,Material::POROUS_TYPE::AA, 0.11, 1400, 1150, 0.149, 0.934, 0.934, 0.6733, 0.3);
+	Material second(0, 0, 0, 0.0354e+6, 0.0354e+6, 655.87e+6, 0.0266e+6, 92.463e+6, 141.12e+6,0.999856,0,0,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA,0.11,1400,1150,0.149,0.934,0.934,0.6733,0.3);
+	Material third(2.1e+9, 0.34, 7.8358e+8, 5.6466e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 2.9030e+12,0.175,0.175,0.2194,Material::CNT_TYPE::FGO,Material::POROUS_TYPE::AA,0.11,1400,1150,0.149,0.934,0.934,0.6733,0.3);
 
 	//geometric properties
+	double thickness = 0.4;
+	double curvature = 0;
+	double theta1 = 30;
+	double theta2 = 30;
 	double asp_Rat1 = 3;
 	double Lr1 = 3;
 
@@ -3143,11 +3147,11 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 //					shapes[0] = Shape(Lr1, asp_Rat1, w_over_h1, xi1, eta1, zeta1, first, cy, 0);
 //					shapes[1] = Shape(Lr1, asp_Rat1, w_over_h2, xi2, eta2, zeta2, second, 0, 0);
 //					shapes[2] = Shape(Lr1, asp_Rat1, w_over_h3, xi3, eta3, zeta3, first, cz, 0);
-        			 	Shape tshape1(1, 1, 0.05, xi1, eta1, zeta1, first, 0.1, 0,0.5236,-0.25, 0,0);
+        			 	Shape tshape1(1, 1, thickness/4, xi1, eta1, zeta1, first, 0.1, 0,theta1*pi/180,curvature, 0,0);
        					shapes[0] = tshape1;
-	       	 			Shape tshape2(1, 1, 0.1, xi2, eta2, zeta2, second, 0, 0,0,-0.25,0,0.05);
+	       	 			Shape tshape2(1, 1, thickness/2, xi2, eta2, zeta2, second, 0, 0,0,curvature,0,thickness/4);
 		       		 	shapes[1] = tshape2;
-			        	Shape tshape3(1, 1, 0.05, xi3, eta3, zeta3, third, 0.1, 0,1.0472,-0.25,0,0.15);
+			        	Shape tshape3(1, 1, thickness/4, xi3, eta3, zeta3, third, 0.1, 0,theta2*pi/180,curvature,0,3*thickness/4);
 				        shapes[2] = tshape3;
 					problems.push_back(FGM(num_layers, shapes));
 					//break;
