@@ -9,6 +9,7 @@
 #include "helpers.h"
 #include "mkl.h"
 
+
 void debug() {};
 void printMatrix(const Ref<const Matrix3d> t){
 	cout << "rows: " << t.rows() << " cols: " << t.cols() << endl;
@@ -45,7 +46,85 @@ double ccosts[MAX_TASKS] = {4.32, 0.95, 5.35, 0.52}; //can also be extended to c
 cublasHandle_t handle[MAX_THREADS_NO];
 cudaStream_t stream[MAX_THREADS_NO];
 cusolverDnHandle_t dnhandle[MAX_THREADS_NO];
+static const char *_cudaGetErrorEnum(cusolverStatus_t error)
+{
+    switch (error)
+    {
+        case CUSOLVER_STATUS_SUCCESS:
+            return "CUSOLVER_SUCCESS";
 
+        case CUSOLVER_STATUS_NOT_INITIALIZED:
+            return "CUSOLVER_STATUS_NOT_INITIALIZED";
+
+        case CUSOLVER_STATUS_ALLOC_FAILED:
+            return "CUSOLVER_STATUS_ALLOC_FAILED";
+
+        case CUSOLVER_STATUS_INVALID_VALUE:
+            return "CUSOLVER_STATUS_INVALID_VALUE";
+
+        case CUSOLVER_STATUS_ARCH_MISMATCH:
+            return "CUSOLVER_STATUS_ARCH_MISMATCH";
+
+        case CUSOLVER_STATUS_EXECUTION_FAILED:
+            return "CUSOLVER_STATUS_EXECUTION_FAILED";
+
+        case CUSOLVER_STATUS_INTERNAL_ERROR:
+            return "CUSOLVER_STATUS_INTERNAL_ERROR";
+
+        case CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
+            return "CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED";
+
+    }
+
+    return "<unknown>";
+}
+
+
+inline void __cusolveSafeCall(cusolverStatus_t err, const char *file, const int line)
+{
+    if(CUSOLVER_STATUS_SUCCESS != err) {
+        fprintf(stderr, "CUSOLVE error in file '%s', line %d\n\nerror %d: %s\nterminating!\n",__FILE__, __LINE__,err, \
+                                _cudaGetErrorEnum(err)); \
+        cudaDeviceReset(); assert(0); \
+    }
+}
+void cusolveSafeCall(cusolverStatus_t err) { __cusolveSafeCall(err, __FILE__, __LINE__); }
+
+#ifdef CUBLAS_API_H_
+//cuBLAS API errors
+static const char *_cudaGetErrorEnum(cublasStatus_t error)
+{
+	switch (error)
+	{
+                 case CUBLAS_STATUS_SUCCESS:
+                             return "CUBLAS_STATUS_SUCCESS";
+
+                                     case CUBLAS_STATUS_NOT_INITIALIZED:
+                                                 return "CUBLAS_STATUS_NOT_INITIALIZED";
+
+                                                         case CUBLAS_STATUS_ALLOC_FAILED:
+                                                                    return "CUBLAS_STATUS_ALLOC_FAILED";
+
+                                                                             case CUBLAS_STATUS_INVALID_VALUE:
+                                                                                         return "CUBLAS_STATUS_INVALID_VALUE";
+
+                                                                                                 case CUBLAS_STATUS_ARCH_MISMATCH:
+                                                                                                             return "CUBLAS_STATUS_ARCH_MISMATCH";
+
+                                                                                                                     case CUBLAS_STATUS_MAPPING_ERROR:
+                                                                                                                                 return "CUBLAS_STATUS_MAPPING_ERROR";
+
+                                                                                                                                         case CUBLAS_STATUS_EXECUTION_FAILED:
+                                                                                                                                                     return "CUBLAS_STATUS_EXECUTION_FAILED";
+
+                                                                                                                                                             case CUBLAS_STATUS_INTERNAL_ERROR:
+                                                                                                                                                                         return "CUBLAS_STATUS_INTERNAL_ERROR";
+                                                                                                                                                                             }
+
+                                                                                                                                                                                 return "<unknown>";
+                                                                                                                                                                                 }
+                                                                                                                                                                                 #endif
+                                                                                                                                                                                 
 int ttt;
 #pragma omp threadprivate(ttt)
 
@@ -71,7 +150,7 @@ struct rinfo
 
 		//no_elements = xyzxyz1 + xyzxyz2 + xyzxyz3;
  
-		no_bytes = no_elements * sizeof(double);
+		no_bytes =  no_elements * sizeof(double);
 		//no_bytes = 3768582144;
 		cout<<"no_bytes "<<no_bytes<<endl;
 		gpuErrchk(cudaMalloc((void**)&gpu_mem, no_bytes));
@@ -288,9 +367,9 @@ class Shape
 				//double beta = 0;
 				double alpha = curve[0]*2*pi/dim[0];
 				double beta = curve[1]*2*pi/dim[1];
-				cout<< " alp " << alpha << endl;
-				cout<< " beta "<< beta << endl;
-				cout<< " theta "<< theta << endl;
+				//cout<< " alp " << alpha << endl;
+				//cout<< " beta "<< beta << endl;
+				//cout<< " theta "<< theta << endl;
 				vector_map_jac_curvature(alpha,beta);				
 				// cout << "VD" << " Sum: " << VD.sum() << " Max: " << VD.maxCoeff() << " Min: " << VD.minCoeff() << endl;
 				// cout << "QDx" << " Sum: " << QDx.sum() << " Max: " << QDx.maxCoeff() << " Min: " << QDx.minCoeff() << endl;
@@ -427,9 +506,9 @@ class Shape
 			Tensor<double,3> dzetadz = Tensor<double,3>(x_sample,y_sample,z_sample);
 			dzetadz.setZero();
 
-			cout<<"SHAPEX SUM = "<<shapeX.sum()<<endl;
-			cout<<"SHAPEY SUM = "<<shapeY.sum()<<endl;
-			cout<<"SHAPEZ SUM = "<<shapeZ.sum()<<endl;
+			//cout<<"SHAPEX SUM = "<<shapeX.sum()<<endl;
+			//cout<<"SHAPEY SUM = "<<shapeY.sum()<<endl;
+			//cout<<"SHAPEZ SUM = "<<shapeZ.sum()<<endl;
 
 			//cout<<"TEMPX SUM = "<<tempx.sum()<<endl;
 			//cout<<"TEMPY SUM = "<<tempy.sum()<<endl;
@@ -595,9 +674,9 @@ class Shape
 			QDz = (QDxi_dxidz+QDeta_detadz+QDzeta_dzetadz);
 
 			//cout<<QDxi_dxidx<<endl;
-			cout<<"QDx MAX: " << QDx.maxCoeff() << " SUM: "<< QDx.sum()<<endl;
-			cout<<"QDy MAX: " << QDy.maxCoeff() << " SUM: "<< QDy.sum()<<endl;
-			cout<<"QDz MAX: " << QDz.maxCoeff() << " SUM: "<< QDz.sum()<<endl;
+			//cout<<"QDx MAX: " << QDx.maxCoeff() << " SUM: "<< QDx.sum()<<endl;
+			//cout<<"QDy MAX: " << QDy.maxCoeff() << " SUM: "<< QDy.sum()<<endl;
+			//cout<<"QDz MAX: " << QDz.maxCoeff() << " SUM: "<< QDz.sum()<<endl;
 
 //			cout<<"Q1xi MAX: " << spaces[0].Q1.maxCoeff() << " SUM: "<< spaces[0].Q1.sum()<<endl;
 //			cout<<"Q2xi MAX: " << spaces[1].Q1.maxCoeff() << " SUM: "<< spaces[1].Q1.sum()<<endl;
@@ -745,7 +824,7 @@ class FGM
 		int num_shapes;
 
 		//FGM(): ctrl_y(0), ctrl_z(0){}
-		FGM(unsigned int n_shapes, Shape * shps) 
+		FGM(unsigned int n_shapes, Shape* shps) 
 		{
 			num_shapes = n_shapes;
 			shapes = shps;
@@ -790,7 +869,6 @@ class FGM
 
 			M = new MatrixXd[num_shapes];
 			K = new MatrixXd[num_shapes];
-			cout<<"here 4"<<endl;
 			//jac = shps.jac;
 			for(unsigned int i = 0; i < n_shapes; i++){
 				np[i] = new unsigned int[3];
@@ -940,7 +1018,6 @@ class FGM
 		//   M.setZero();
 		//   K.setZero();
 		//   FG_var_MT()n
-		//   inner_product();
 		// }
 #ifdef GPU
 		void T1_system_matrices_honeycomb_GPU(unsigned int l)
@@ -1105,6 +1182,7 @@ class FGM
 			cudaMemcpy(K[l].data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
 			cudaMemset(d_K,0, (nc * nc) * sizeof(double));
 			cout<<"K SUM " <<K[l].sum()<<" MAX "<< K[l].maxCoeff()<<endl;
+			cudaMemset(gpu_mem, 0, (d_temp+(nc*nc*sizeof(double)) - gpu_mem));
 		}
 		void T1_system_matrices_GPU(unsigned int l)
 		{
@@ -1167,8 +1245,7 @@ class FGM
 			d_temp_K = d_gammayz + gammayz.size();        //9
 			d_K = d_temp_K + (nc * nc);             //9
 			d_temp = d_K + (nc * nc);               //3
-			long double memory_required = ((d_temp+(nc * nc) - d_VD_lame11) * 8)/(1024*1024);
-			cout<<memory_required << " MiB is required for T1\n"<<endl;
+			
 
 			cudaMemcpy(d_VD_lame11, VD_lame11[l].data(), VD_lame11[l].size() * sizeof(double), cudaMemcpyHostToDevice);
 			cudaMemcpy(d_VD_lame22, VD_lame22[l].data(), VD_lame22[l].size() * sizeof(double), cudaMemcpyHostToDevice);
@@ -1297,7 +1374,8 @@ class FGM
 			K[l] = MatrixXd::Zero(nc, nc);
 			cudaMemcpy(K[l].data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
 			cudaMemset(d_K,0, (nc * nc) * sizeof(double));
-			cout<<"K SUM " <<K[l].sum()<<" MAX "<< K[l].maxCoeff()<<endl;
+			cudaMemset(gpu_mem, 0, (d_temp+(nc*nc*sizeof(double)) - gpu_mem));
+			
 		}
 #endif
 
@@ -1603,14 +1681,13 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			status = cusolverDnDgesvdj_bufferSize(dnhandle[ttt], jobz, econ, m, n, d_A, m, d_S, d_U, m, d_V, n, &lwork, gesvdj_params);
 			assert(CUSOLVER_STATUS_SUCCESS == status);
 
-			long double memory_required = ((d_work - d_A) * 8)/(1024*1024);
-			cout<<"d_work "<< d_work<<endl;
-			cudaStat1 = cudaMalloc((void**)&d_work, sizeof(double)*lwork);
-			cout<<"Lwork "<< lwork<<endl;
-			cout<<"d_work "<< d_work<<endl;
-			cout<<memory_required << " MiB is required for T2\n"<<endl;
 			
-			assert(cudaSuccess == cudaStat1);
+		
+
+			cudaStat1 = cudaMalloc((void**)&d_work, sizeof(double)*lwork);
+
+			
+			//assert(cudaSuccess == cudaStat1);
 			
 			//Step 5: compute SVD
 			status = cusolverDnDgesvdj(dnhandle[ttt], jobz, econ, m, n, d_A, m, d_S, d_U, m, d_V, n, d_work, lwork, d_info, gesvdj_params);
@@ -1638,7 +1715,8 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			//if(d_U) cudaFree(d_U);
 			//if(d_V) cudaFree(d_V);
 			//if(d_info) cudaFree(d_info);
-			//if(d_work) cudaFree(d_work);
+			cudaMemset(gpu_mem, 0, (d_work+(lwork*sizeof(double)) - gpu_mem));
+			if(d_work) cudaFree(d_work);
 			//
 		}
 #endif
@@ -1702,8 +1780,9 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			double *d_K, *d_M, *d_P, *d_K_phy, *d_M_phy, *d_a0, *d_temp, *d_M_phy_i, *d_work;
 			int *d_pivot, *d_info, Lwork;
 
-			cout<<"KK rows" << KK.rows() << " MM rows "<< MM.rows()<<" "<<P.cols()<<endl;
 			int nc = P.cols();
+			int tid = omp_get_thread_num();
+			int gid = rinfos[tid]->gpu_id;
 			d_K = gpu_mem;                            //9
 			//d_M = d_K + (9 * nnxyz * nnxyz);            //9
 			d_M = d_K + (KK.rows()*KK.cols());            //9
@@ -1727,32 +1806,27 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			MatrixXd Id = MatrixXd::Identity(nc, nc);
 			cudaMemcpy(d_M_phy_i, Id.data(), Id.size() * sizeof(double), cudaMemcpyHostToDevice);
 
-			cout<<"d_K size " << KK.size()*sizeof(double)/(1024*1024)<<endl;
-			cout<<"d_M size " << MM.size()*sizeof(double)/(1024*1024)<<endl;
-			cout<<"d_P size " << P.size()*sizeof(double)/(1024*1024)<<endl;
-			cout<<"d_M_phy_i size " << Id.size()*sizeof(double)/(1024*1024)<<endl;
 
 			cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, KK.rows(), nc, KK.cols(), &van, d_K, KK.rows(), d_P, P.rows(), &ziro, d_temp, KK.rows()); //alpha * K * P + beta * K
 			cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, P.rows(), &van, d_P, P.rows(), d_temp, KK.rows(), &ziro, d_K_phy, P.cols());   //Pt * K * P
 			cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, MM.rows(), nc, MM.cols(), &van, d_M, MM.rows(), d_P, P.rows(), &ziro, d_temp, MM.rows()); //M * P
 			cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, P.rows(), &van, d_P, P.rows(), d_temp, MM.rows(), &ziro, d_M_phy, P.cols());   //Pt * M * P
 			
+			
+			cusolveSafeCall(cusolverDnDgetrf_bufferSize(dnhandle[ttt], nc, nc, d_M_phy, nc, &Lwork));
+			cudaMalloc((void**)&d_work, sizeof(double)*Lwork);
 
-
-			cusolverDnDgetrf_bufferSize(dnhandle[ttt], nc, nc, d_M_phy, nc, &Lwork);
-			cusolverDnDgetrf(dnhandle[ttt], nc, nc, d_M_phy, nc, d_work, d_pivot, d_info);
-			cusolverDnDgetrs(dnhandle[ttt], CUBLAS_OP_N, nc, nc, d_M_phy, nc, d_pivot, d_M_phy_i, nc, d_info);
-
-
-			cout<<"Lwork "<< Lwork<<endl;
-			long double memory_required = ((d_work+Lwork - d_K) * 8)/(1024*1024);
-			cout<<memory_required << " MiB is required for T3\n"<<endl;
+			cusolveSafeCall(cusolverDnDgetrf(dnhandle[ttt], nc, nc, d_M_phy, nc, d_work, d_pivot, d_info));
+			cusolveSafeCall(cusolverDnDgetrs(dnhandle[ttt], CUBLAS_OP_N, nc, nc, d_M_phy, nc, d_pivot, d_M_phy_i, nc, d_info));
 
 			cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, nc, &van, d_M_phy_i, nc, d_K_phy, nc, &ziro, d_a0, nc); //M_phy_i * K_phy
 			cudaStreamSynchronize(stream[ttt]);
 			//MatrixXd at(nc, nc);
 			//a0 = at;
+
 			cudaMemcpy(a0.data(), d_a0, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
+			cudaMemset(gpu_mem, 0, ((double*)(d_info+(nc*sizeof(int))) - gpu_mem));
+			if(d_work) cudaFree(d_work);
 		}
 #endif
 
@@ -1813,13 +1887,17 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
 		void T4_eigen(MatrixXd &a0, int &nconv, double &small_eig)
 		{
-			cout<<"a0 "<<a0.sum()<<endl;
+			//MatrixXd MMM = a0+(0.001 * MatrixXd::Identity(a0.cols(), a0.cols()));
 			MatrixXd MMM = a0;
+			cout<<"a0 "<< a0.sum()<<endl<<endl;
 			DenseGenRealShiftSolve<double> op(MMM);
-			GenEigsRealShiftSolver<DenseGenRealShiftSolve<double>> eigs(op, 10, 50, 0);
+			GenEigsRealShiftSolver<DenseGenRealShiftSolve<double>> eigs(op, 10, 50, 0.001);
+
 
 			eigs.init();
+			{
 			nconv = eigs.compute();
+			}
 
 			Eigen::VectorXcd evalues;
 			if (eigs.info() == CompInfo::Successful)
@@ -1827,6 +1905,9 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 				evalues = eigs.eigenvalues();
 				small_eig = evalues(nconv - 1).real();
 			}
+		}
+		void T4_eigen_GPU(MatrixXd &a0, int &nconv, double &small_eig){
+			
 		}
 
 		void compute_gpu_costs(const int noeigs, const int ncv, int &nconv, double &small_eig, const double shift = 0.01, const int max_iter = -1, const double tol = -1, int g_id = 0, int sample_size = 1)
@@ -1959,14 +2040,16 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 				if(i < 3*np[l][0]-1){
 					mat(seq((i+1)*np[l][1], (i+1)*np[l][1]), seq(0, mat.cols()-1)).setZero(); 
 				}
-				mat(seq((i+1)*np[l][1]-1, (i+1)*np[l][1]-1), seq(0, mat.cols()-1)).setZero(); 
+				//mat(seq((i+1)*np[l][1]-1, (i+1)*np[l][1]-1), seq(0, mat.cols()-1)).setZero(); 
 			}
+			/*
 			mat(seq(0, np[l][1]-1), seq(0, mat.cols()-1)).setZero();
 			mat(seq(np[l][1]*(np[l][0]-1), np[l][1]*np[l][0]-1), seq(0, mat.cols()-1)).setZero();
 			mat(seq(np[l][1]*np[l][0], np[l][1]*(np[l][0]+1)-1), seq(0, mat.cols()-1)).setZero();
 			mat(seq(np[l][1]*(np[l][0]+np[l][1]-1),np[l][1]*(np[l][0]+np[l][1])-1), seq(0, mat.cols()-1)).setZero();	
 			mat(seq(np[l][1]*(np[l][0]+np[l][1]-1), np[l][1]*(np[l][0]+np[l][1]+1)-1), seq(0, mat.cols()-1)).setZero();
 			mat(seq(np[l][1]*(np[l][0]+np[l][1]+np[l][1]-1), np[l][1]*(np[l][0]+np[l][1]+np[l][1])-1), seq(0, mat.cols()-1)).setZero();
+			*/
 		}
 		void compute(const int noeigs, const int ncv, int &nconv, double &small_eig,
 				const double shift = 0.01, const int max_iter = -1, const double tol = -1)
@@ -2054,6 +2137,7 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 // cout << "r: " << BC_VIII13.rows() << " c: " << BC_VIII13.cols() << " s: " << BC_VIII13.sum() << endl;
 // cout << "r: " << BC_VIII2.rows() << " c: " << BC_VIII2.cols() << " s: " << BC_VIII2.sum() << endl;
 //
+/*
 			MatrixXd BC(BC_I_U.rows() + BC_III_U.rows() + BC_VII13.rows() + BC_VII2.rows() + BC_VII13.rows() + BC_VIII13.rows() + BC_VIII2.rows() + BC_VIII13.rows() + BC_V13.rows() + BC_V2.rows() + BC_V13.rows() + BC_VI13.rows() + BC_VI2.rows() + BC_VI13.rows(), MM.cols());
 			BC.setZero();
 			int rowStart = 0;
@@ -2099,8 +2183,27 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			rowStart += BC_VI2.rows();
 			BC(seq(rowStart, rowStart + BC_VI13.rows()-1), seq(BC.cols()-BC_VI13.cols(), BC.cols()-1)) = BC_VI13;
 			removeDuplicateRows(BC);
-
+*/
 		
+			MatrixXd BC(BC_I_U.rows() + BC_III_U.rows() + BC_VII13.rows() + BC_VII2.rows() + BC_VII13.rows(), MM.cols());
+			BC.setZero();
+			int rowStart = 0;
+			BC(seq(0, BC_I_U.rows()-1), seq(0, BC_I_U.cols()-1)) = BC_I_U;
+			BC(seq(0, BC_II_B.rows()-1), seq(BC_I_U.cols(), BC_I_U.cols() + BC_II_B.cols()-1)) = -1*BC_II_B;
+			
+			rowStart = BC_I_U.rows();
+			BC(seq(rowStart, rowStart+BC_III_U.rows()-1), seq(BC.cols()-BC_IV_B.cols()-BC_III_U.cols(), BC.cols()-BC_IV_B.cols()-1)) = BC_III_U;
+			BC(seq(rowStart, rowStart + BC_IV_B.rows()-1), seq(BC.cols()-BC_IV_B.cols(), BC.cols()-1)) = -1*BC_IV_B;
+			
+			rowStart += BC_III_U.rows();
+			BC(seq(rowStart, rowStart + BC_VII13.rows()-1), seq(0, BC_VII13.cols()-1)) = BC_VII13;
+				
+			rowStart += BC_VII13.rows();
+			BC(seq(rowStart, rowStart + BC_VII2.rows()-1), seq(np[0][0] * np[0][1] * np[0][2] * 3, np[0][0] * np[0][1] * np[0][2] * 3 - 1 + BC_VII2.cols())) = BC_VII2;
+
+			rowStart += BC_VII2.rows();
+			BC(seq(rowStart, rowStart + BC_VII13.rows()-1), seq(BC.cols() - BC_VII13.cols(), BC.cols()-1)) = BC_VII13;
+
 			MatrixXd V(BC.cols(), BC.cols());
 			double t2t = omp_get_wtime();
 			bool ranOnGPU = T2_svd(BC, V);
@@ -2301,7 +2404,7 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			double alpha_prime = sqrt(alpha); //This will be removed added for testing.
 			double theta = shapes[l].theta; //This will be removed added for testing. 
 
-
+/*
 			cout<<"V_star_cnt " << V_star_cnt << endl;
 			cout<<"ro_cnt "<< ro_cnt<<endl;
 			cout<<"ro_m " <<ro_m<<endl;
@@ -2328,7 +2431,7 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			cout<<"theta "<< theta << endl;
 
 			cout<<endl<<endl;
-
+*/
 
 			for(int i = 0; i < x.size(); i++){
 				for(int j = 0; j < y.size(); j++){
@@ -2547,7 +2650,7 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 					}
 				}
 			}
-			
+			/*	
 			cout<<"q11 : "<<Q11T[l](0,0,0)<<endl;
 			cout<<"q22 : "<<Q22T[l](0,0,0)<<endl;
 			cout<<"q33 : "<<Q33T[l](0,0,0)<<endl;
@@ -2557,7 +2660,7 @@ l_6x4.compute(L_6x4, Eigen::ComputeFullU | Eigen::ComputeFullV);
 			cout<<"q44 : "<<Q44T[l](0,0,0)<<endl;
 			cout<<"q55 : "<<Q55T[l](0,0,0)<<endl;
 			cout<<"q66 : "<<Q66T[l](0,0,0)<<endl;
-			
+			*/
 			//nu12 nu23 nu13 tensor create
 			//e11 e22 e33 tensor create
 			//
@@ -2886,6 +2989,18 @@ class LCO
 {
 };
 
+struct DesignParameters
+{
+	double theta1 = -1;
+	double theta2 = -1;
+	DesignParameters(double _theta, double _theta2)
+	{
+		theta1 = _theta;
+		theta2 = _theta2;
+	}
+};
+
+
 int main(int argc, char **argv)
 {	
 
@@ -2900,23 +3015,14 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 		return 0;
 	}else{
 		xi1 = atoi(argv[3]);
-		cout<<"xi1"<<xi1<<endl; 
 		xi2 = atoi(argv[4]);
-		cout<<"xi2"<<xi2<<endl; 
 		xi3 = atoi(argv[5]);
-		cout<<"xi3"<<xi3<<endl; 
 		eta1 = atoi(argv[6]);
-		cout<<"eta1"<<eta1<<endl; 
 		eta2 = atoi(argv[7]);
-		cout<<"eta2"<<eta2<<endl; 
 		eta3 = atoi(argv[8]);
-		cout<<"eta3"<<eta3<<endl; 
 		zeta1 = atoi(argv[9]);
-		cout<<"zeta1"<<zeta1<<endl; 
 		zeta2 = atoi(argv[10]);
-		cout<<"zeta2"<<zeta2<<endl; 
 		zeta3 = atoi(argv[11]);
-		cout<<"zeta3 "<<zeta3<<endl; 
 	}
 #else
 	if (argc < 11)
@@ -2925,23 +3031,14 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 		return 0;
 	}else{	
 		xi1 = atoi(argv[2]);
-		cout << xi1 << endl;
 		xi2 = atoi(argv[3]);
-		cout << xi2 << endl;
 		xi3 = atoi(argv[4]);
-		cout << xi3 << endl;
 		eta1 = atoi(argv[5]);
-		cout << eta1 << endl;
 		eta2 = atoi(argv[6]);
-		cout << eta2 << endl;
 		eta3 = atoi(argv[7]);
-		cout << eta3 << endl;
 		zeta1 = atoi(argv[8]);
-		cout << zeta1 << endl;
 		zeta2 = atoi(argv[9]);
-		cout << zeta2 << endl;
 		zeta3 = atoi(argv[10]);
-		cout << zeta3 << endl;
 	}
 #endif
 /*
@@ -2964,10 +3061,11 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 	cout << "Starting Preproccesing..." << endl;
 	double pstart = omp_get_wtime();
 	Eigen::setNbThreads(1);
-
 	mkl_set_num_threads_local(1);
+//	mkl_set_dynamic(0);
+	//mkl_set_num_threads(1);
+//	omp_set_nested(1);
 
-	cout<<"here"<<endl;
 //	int xdim = atoi(argv[1]);
 //	int ydim = atoi(argv[2]);
 //	int zdim = atoi(argv[3]);
@@ -3007,29 +3105,23 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 // 	unsigned int eta1 = 4, eta2 = 4, eta3 = 4;
 // 	unsigned int zeta1 = 5, zeta2 = 4, zeta3 = 5;
 	//temp vars for cost calculation
-	cout<<"here 2"<<endl;
 	Material tfirst(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 3.0128e+12,0.175,0.175,0.175,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA);
 	Material tsecond(2.1e+9, 0.34, 7.0e+10, 7.0e+10, 7.0e+10, 7.0e+10, 2.6119e+10, 2.6119e+10, 2.6119e+10,0.34,0.34,0.34,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA);
 	Material tthird(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 2.6119e+10, 2.6119e+10, 3.0128e+12,0.175,0.175,0.175,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA);
-	Shape * shps = new Shape[num_layers];
+	Shape *shps = new Shape[num_layers];
 	cout<<num_layers<<endl;
-	cout<<"here 2"<<endl;
-        Shape tshape1(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0,0.5236,-0.25,0, 0);
+//        Shape tshape1(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0,0.5236,-0.25,0, 0);
 //	return 0;
-	shps[0] = tshape1;
-	cout<<"here 3"<<endl;
-	Shape tshape2(3, 3, 0.15, xi2, eta2, zeta2, tsecond, 0, 0,0,0,0,0.15);
-	cout<<"here 3"<<endl;
-	shps[1] = tshape2;
-	Shape tshape3(3, 3, 0.15, xi3, eta3, zeta3, tthird, 0.1, 0,1.0472,-0.25,0,0.45);
-	cout<<"here 3"<<endl;
-	shps[2] = tshape3;
-	cout<<"here 3"<<endl;
+	shps[0] = Shape(3,3,0.15,xi1,eta1,zeta1,tfirst, 0.1, 0, 0.5236,-0.25,0,0);
+
+//	Shape tshape2(3, 3, 0.15, xi2, eta2, zeta2, tsecond, 0, 0,0,0,0,0.15);
+	shps[1] = Shape (3, 3, 0.15, xi2, eta2, zeta2, tsecond, 0, 0,0,0,0,0.15);
+	//Shape tshape3(3, 3, 0.15, xi3, eta3, zeta3, tthird, 0.1, 0,1.0472,-0.25,0,0.45);
+	shps[2] = Shape (3, 3, 0.15, xi3, eta3, zeta3, tthird, 0.1, 0,1.0472,-0.25,0,0.45);
 	//set CPU costs for each task
 	FGM tfgm(num_layers, shps);
 	int tnconv;
 	double tmineig;
-	cout<<"here 2"<<endl;
 	//tfgm.compute_cpu_costs(10, 60, tnconv, tmineig, 0.01, 100, 0.01, SAMPLE_SIZE);
 	//
 #ifdef SMART
@@ -3044,7 +3136,6 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 
 	
 	rinfos = new rinfo *[nthreads];
-	cout<<"here "<< nthreads<<endl;
 
 	int no_gpus = atoi(argv[2]);
 
@@ -3054,10 +3145,7 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 		ttt = omp_get_thread_num();
 #pragma omp critical
 		{
-			gpuErrchk(cudaSetDevice(0));
-			size_t l_free = 0;
-			size_t l_Total = 0;
-			cudaError_t error_id = cudaMemGetInfo(&l_free, &l_Total);
+			gpuErrchk(cudaSetDevice((ttt % no_gpus)));
 
 			//cout<<l_Total << " free in gpu "<< (ttt%no_gpus)<<endl;
 			//l_Total = (l_Total/(size_t)((nthreads/no_gpus))) * 0.8;
@@ -3067,7 +3155,7 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 
 			int deviceID;
 			cudaGetDevice(&deviceID);
-			if (deviceID !=  0)
+			if (deviceID !=  (ttt % no_gpus))
 			{
 				cout << "device ID is not equal to the given one " << endl;
 				failed = true;
@@ -3117,21 +3205,48 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 #endif
 
 
-	Material first(2.1e+9, 0.34, 7.8358e+8, 5.6466e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 2.9030e+12,0.175,0.175,0.2194,Material::CNT_TYPE::FGO,Material::POROUS_TYPE::AA, 0.11, 1400, 1150, 0.149, 0.934, 0.934, 0.6733, 0.3);
-	Material second(0, 0, 0, 0.0354e+6, 0.0354e+6, 655.87e+6, 0.0266e+6, 92.463e+6, 141.12e+6,0.999856,0,0,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA,0.11,1400,1150,0.149,0.934,0.934,0.6733,0.3);
-	Material third(2.1e+9, 0.34, 7.8358e+8, 5.6466e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 2.9030e+12,0.175,0.175,0.2194,Material::CNT_TYPE::FGO,Material::POROUS_TYPE::AA,0.11,1400,1150,0.149,0.934,0.934,0.6733,0.3);
+	Material first(2.1e+9, 0.34, 7.8358e+8, 5.6466e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 2.9030e+12,0.175,0.175,0.2194,Material::CNT_TYPE::FGO,Material::POROUS_TYPE::AA, 0.17, 1400, 1150, 0.149, 1.381, 1.381, 0.6733, 0.3);
+	Material second(0, 0, 0, 0.0354e+6, 0.0354e+6, 655.87e+6, 0.0266e+6, 92.463e+6, 141.12e+6,0.999856,0,0,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA,0.17,1400,1150,0.149,1.381,1.381,0.6733,0.3);
+	Material third(2.1e+9, 0.34, 7.8358e+8, 5.6466e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 2.9030e+12,0.175,0.175,0.2194,Material::CNT_TYPE::FGO,Material::POROUS_TYPE::AA,0.17,1400,1150,0.149,1.381,1.381,0.6733,0.3);
 
 	//geometric properties
-	double thickness = 0.4;
-	double curvature = 0;
-	double theta1 = 30;
-	double theta2 = 30;
-	double asp_Rat1 = 3;
-	double Lr1 = 3;
+	double thickness = 0.1;
+	double curvature = 0.0;
+	double asp_Rat1 = 2;
+	double Lr1 = 1;
 
-	double min_ctrl_y = 0.1, max_ctrl_y = 0.10, min_ctrl_z = 0.1, max_ctrl_z = 0.10;
-	double interval = 0.1;
-	vector<FGM > problems;
+	int count = 0;
+	vector<DesignParameters> problems;
+	//vector<FGM> problems;	
+	//TODO(kaya) : create the design parameter arrays here not the FGMS!
+	
+	for(double theta = -90; theta<=90; theta+=10)
+	{
+		for(double theta2 = -90; theta2<=90; theta2+=10)
+		{
+	//		Shape *shapes = new Shape[num_layers];
+			
+	//		shapes[0] = (Shape(Lr1, asp_Rat1, thickness/4, xi1, eta1, zeta1, first, 0.1, 0,theta*pi/180,curvature, 0,0));
+     	 //		shapes[1] = (Shape(Lr1, asp_Rat1, thickness/2, xi2, eta2, zeta2, second, 0, 0,0,curvature,0,thickness/4));
+	//		shapes[2] = (Shape(Lr1, asp_Rat1, thickness/4, xi3, eta3, zeta3, third, 0.1, 0,theta2*pi/180,curvature,0,3*thickness/4));
+	//		FGM fgm(num_layers, shapes);
+	//		problems.push_back(fgm);
+//			problems.push_back(DesignParameters(theta * pi/180 ,theta2*pi/180));
+		//	problems.push_back(DesignParameters(theta2*pi/180, -60*pi/180));
+		}
+	}
+
+
+//	problems.push_back(DesignParameters(-70*pi/180, -60*pi/180));
+	problems.push_back(DesignParameters(-60*pi/180, -60*pi/180));
+//	problems.push_back(DesignParameters(-50*pi/180, -60*pi/180));
+//	problems.push_back(DesignParameters(-40*pi/180, -60*pi/180));
+//	problems.push_back(DesignParameters(-30*pi/180, -60*pi/180));
+//	problems.push_back(DesignParameters(-20*pi/180, -60*pi/180));
+	//problems.push_back(DesignParameters(-10*pi/180, -60*pi/180));
+//	problems.push_back(DesignParameters(-0*pi/180, -60*pi/180));
+
+/*
 	for (double cy = min_ctrl_y; cy <= max_ctrl_y; cy += interval)
 	{
 		for (double cz = min_ctrl_z; cz <= max_ctrl_z; cz += interval)
@@ -3162,7 +3277,7 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 		}
 		//break;
 	}
-
+*/
 	cout << "Preprocessing ended." << endl;
 	cout << "Time spent for preprocessing is " << omp_get_wtime() - pstart << endl;
 	cout << "*******************************************************************" << endl;
@@ -3176,18 +3291,27 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 	cout << "No problems: " << problems.size() << endl;
 
 	double smallest_mineig = std::numeric_limits<double>::max();
-	double best_y = -1, best_z = -1;
+	double best_theta1 = -1, best_theta2 = -1;
 	double ostart = omp_get_wtime();
 
-#pragma omp parallel for schedule(dynamic, 1) num_threads(nthreads)
-	//{
+#pragma omp parallel for schedule(dynamic,1) num_threads(nthreads) 
 	for (int i = 0; i < problems.size(); i++)
 	{
+		Shape *shapes = new Shape[num_layers];
 		double start = omp_get_wtime();
 		// FGM fgm(shape, first, second, problems[i].first, problems[i].second);
-		int nconv;
-		double mineig;
-		FGM fgm = problems[i];
+		int nconv = 0;
+		double mineig = 0;
+		//shapes.push_back(Shape(Lr1, asp_Rat1, thickness/4, xi1, eta1, zeta1, first, 0.1, 0,problems[i].theta1,curvature, 0,0));
+        	Shape shape1(Lr1, asp_Rat1, thickness/4, xi1, eta1, zeta1, first, 0.1, 0,problems[i].theta1,curvature, 0,0);
+        	shapes[0] = shape1;	
+     	 	Shape shape2(Lr1, asp_Rat1, thickness/2, xi2, eta2, zeta2, second, 0, 0,0,curvature,0,thickness/4);
+		shapes[1] = shape2;
+		//shapes.push_back(Shape(Lr1, asp_Rat1, thickness/4, xi3, eta3, zeta3, third, 0.1, 0,problems[i].theta2,curvature,0,3*thickness/4));
+		Shape shape3(Lr1, asp_Rat1, thickness/4, xi3, eta3, zeta3, third, 0.1, 0,problems[i].theta2,curvature,0,3*thickness/4);
+		shapes[2] = shape3;
+		FGM fgm = FGM(num_layers, shapes);
+	//	FGM fgm = problems[i];
 		fgm.compute(10, 60, nconv, mineig, 0.01, 100, 0.01);
 		double end = omp_get_wtime();
 
@@ -3195,23 +3319,27 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 {
 		if (nconv > 0)
 		{
-			cout << i << " " << fgm.shapes[0].ctrl_y << " " << fgm.shapes[0].ctrl_z << " " << mineig << " " << end - start << endl;
+			cout << i << " " << fgm.shapes[0].theta << " " << fgm.shapes[2].theta << " " << mineig << " " << end - start << endl;
 			if (mineig < smallest_mineig)
 			{
 				smallest_mineig = mineig;
-				best_y = fgm.shapes[0].ctrl_y;
-				best_z = fgm.shapes[0].ctrl_z;
+				best_theta1 = fgm.shapes[0].theta;
+				best_theta2 = fgm.shapes[2].theta;
 			}
 		}
 		else
 		{
 			cout << "No eigen: " << fgm.shapes[0].ctrl_y << " " << fgm.shapes[0].ctrl_z << " " << end - start << endl;
 		}
+		delete [] shapes;
 }
 	}
+	
+	double shift = 0.001;
+	double nat_freq = sqrt(smallest_mineig-shift)/2/pi;
 	cout << endl
 		<< "Result:" << endl;
-	cout << "Smallest eig: " << smallest_mineig << " - (" << best_y << ", " << best_z << ")" << endl;
+	cout << "Smallest eig: " << smallest_mineig << " nat freq "<< nat_freq<<" - (" << best_theta1 << ", " << best_theta2 << ")" << endl;
 	double oend = omp_get_wtime();
 	cout << "Time spent on computation: " << oend - ostart << endl;
 	cout << "*******************************************************************" << endl;
