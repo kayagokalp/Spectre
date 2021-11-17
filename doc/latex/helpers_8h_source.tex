@@ -1,0 +1,273 @@
+\hypertarget{helpers_8h_source}{}\doxysection{helpers.\+h}
+\label{helpers_8h_source}\index{src/helpers.h@{src/helpers.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#ifndef \_\_HELPERS\_H\_\_}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#define \_\_HELPERS\_H\_\_}}
+\DoxyCodeLine{3 \textcolor{preprocessor}{\#include <iostream>}}
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#define EIGEN\_USE\_MKL\_ALL}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#include <unsupported/Eigen/CXX11/Tensor>}}
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#include <Eigen/Core>}}
+\DoxyCodeLine{7 \textcolor{preprocessor}{\#include <Eigen/Dense>}}
+\DoxyCodeLine{8 \textcolor{preprocessor}{\#include <Spectra/GenEigsRealShiftSolver.h>}}
+\DoxyCodeLine{9 \textcolor{preprocessor}{\#include <Spectra/MatOp/DenseGenRealShiftSolve.h>}}
+\DoxyCodeLine{10 \textcolor{preprocessor}{\#include <Eigen/SVD>}}
+\DoxyCodeLine{11 \textcolor{preprocessor}{\#include <math.h>}}
+\DoxyCodeLine{12 \textcolor{preprocessor}{\#include "{}consts.h"{}}}
+\DoxyCodeLine{13 \textcolor{preprocessor}{\#include <fstream>}}
+\DoxyCodeLine{14 \textcolor{preprocessor}{\#include <iomanip>} }
+\DoxyCodeLine{15 }
+\DoxyCodeLine{16 \textcolor{keyword}{using namespace }Eigen;}
+\DoxyCodeLine{17 \textcolor{keyword}{using namespace }Spectra;}
+\DoxyCodeLine{18 \textcolor{keyword}{using namespace }std;}
+\DoxyCodeLine{19 }
+\DoxyCodeLine{20 \textcolor{preprocessor}{\#ifdef GPU}}
+\DoxyCodeLine{21 \textcolor{preprocessor}{\#define MAX\_THREADS\_NO 128}}
+\DoxyCodeLine{22 \textcolor{keyword}{extern} cublasHandle\_t handle[MAX\_THREADS\_NO];}
+\DoxyCodeLine{23 \textcolor{keyword}{extern} cudaStream\_t stream[MAX\_THREADS\_NO];}
+\DoxyCodeLine{24 \textcolor{keyword}{extern} cusolverDnHandle\_t dnhandle[MAX\_THREADS\_NO];}
+\DoxyCodeLine{25 \textcolor{keyword}{struct }rinfo}
+\DoxyCodeLine{26 \{}
+\DoxyCodeLine{27     \textcolor{keywordtype}{double} *gpu\_mem = \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{28     \textcolor{keywordtype}{int} gpu\_id;}
+\DoxyCodeLine{29     \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{long} no\_bytes;}
+\DoxyCodeLine{30     \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} no\_elements;}
+\DoxyCodeLine{31 }
+\DoxyCodeLine{32     rinfo(\textcolor{keywordtype}{int} gpu\_id, \textcolor{keywordtype}{int} x1, \textcolor{keywordtype}{int} y1, \textcolor{keywordtype}{int} z1, \textcolor{keywordtype}{int} x2, \textcolor{keywordtype}{int} y2, \textcolor{keywordtype}{int} z2, \textcolor{keywordtype}{int} x3, \textcolor{keywordtype}{int} y3, \textcolor{keywordtype}{int} z3)  : gpu\_id(gpu\_id)}
+\DoxyCodeLine{33     \{}
+\DoxyCodeLine{34         }
+\DoxyCodeLine{35         \textcolor{keywordtype}{int} nnxyz = (3 * x1 * y1 * z1) + (3 * x2 * y2 * z2) + (3 * x3 * y3 * z3);}
+\DoxyCodeLine{36         no\_elements = 10 * nnxyz * nnxyz;}
+\DoxyCodeLine{37         }
+\DoxyCodeLine{38 }
+\DoxyCodeLine{39 }
+\DoxyCodeLine{40 }
+\DoxyCodeLine{41  }
+\DoxyCodeLine{42         no\_bytes =  no\_elements * \textcolor{keyword}{sizeof}(double);}
+\DoxyCodeLine{43         cout<<\textcolor{stringliteral}{"{}no\_bytes "{}}<<no\_bytes<<endl;}
+\DoxyCodeLine{44         gpuErrchk(cudaMalloc((\textcolor{keywordtype}{void}**)\&gpu\_mem, no\_bytes));}
+\DoxyCodeLine{45     \}}
+\DoxyCodeLine{46 }
+\DoxyCodeLine{47 \};}
+\DoxyCodeLine{48 }
+\DoxyCodeLine{49 \textcolor{keyword}{extern} \textcolor{keywordtype}{int} ttt;}
+\DoxyCodeLine{50 \textcolor{preprocessor}{\#pragma omp threadprivate(ttt)}}
+\DoxyCodeLine{51 }
+\DoxyCodeLine{52 \textcolor{keyword}{inline} \textcolor{keyword}{static} \textcolor{keyword}{const} \textcolor{keywordtype}{char} *\_cudaGetErrorEnum(cusolverStatus\_t error)}
+\DoxyCodeLine{53 \{}
+\DoxyCodeLine{54     \textcolor{keywordflow}{switch} (error)}
+\DoxyCodeLine{55     \{}
+\DoxyCodeLine{56         \textcolor{keywordflow}{case} CUSOLVER\_STATUS\_SUCCESS:}
+\DoxyCodeLine{57             \textcolor{keywordflow}{return} \textcolor{stringliteral}{"{}CUSOLVER\_SUCCESS"{}};}
+\DoxyCodeLine{58 }
+\DoxyCodeLine{59         \textcolor{keywordflow}{case} CUSOLVER\_STATUS\_NOT\_INITIALIZED:}
+\DoxyCodeLine{60             \textcolor{keywordflow}{return} \textcolor{stringliteral}{"{}CUSOLVER\_STATUS\_NOT\_INITIALIZED"{}};}
+\DoxyCodeLine{61 }
+\DoxyCodeLine{62         \textcolor{keywordflow}{case} CUSOLVER\_STATUS\_ALLOC\_FAILED:}
+\DoxyCodeLine{63             \textcolor{keywordflow}{return} \textcolor{stringliteral}{"{}CUSOLVER\_STATUS\_ALLOC\_FAILED"{}};}
+\DoxyCodeLine{64 }
+\DoxyCodeLine{65         \textcolor{keywordflow}{case} CUSOLVER\_STATUS\_INVALID\_VALUE:}
+\DoxyCodeLine{66             \textcolor{keywordflow}{return} \textcolor{stringliteral}{"{}CUSOLVER\_STATUS\_INVALID\_VALUE"{}};}
+\DoxyCodeLine{67 }
+\DoxyCodeLine{68         \textcolor{keywordflow}{case} CUSOLVER\_STATUS\_ARCH\_MISMATCH:}
+\DoxyCodeLine{69             \textcolor{keywordflow}{return} \textcolor{stringliteral}{"{}CUSOLVER\_STATUS\_ARCH\_MISMATCH"{}};}
+\DoxyCodeLine{70 }
+\DoxyCodeLine{71         \textcolor{keywordflow}{case} CUSOLVER\_STATUS\_EXECUTION\_FAILED:}
+\DoxyCodeLine{72             \textcolor{keywordflow}{return} \textcolor{stringliteral}{"{}CUSOLVER\_STATUS\_EXECUTION\_FAILED"{}};}
+\DoxyCodeLine{73 }
+\DoxyCodeLine{74         \textcolor{keywordflow}{case} CUSOLVER\_STATUS\_INTERNAL\_ERROR:}
+\DoxyCodeLine{75             \textcolor{keywordflow}{return} \textcolor{stringliteral}{"{}CUSOLVER\_STATUS\_INTERNAL\_ERROR"{}};}
+\DoxyCodeLine{76 }
+\DoxyCodeLine{77         \textcolor{keywordflow}{case} CUSOLVER\_STATUS\_MATRIX\_TYPE\_NOT\_SUPPORTED:}
+\DoxyCodeLine{78             \textcolor{keywordflow}{return} \textcolor{stringliteral}{"{}CUSOLVER\_STATUS\_MATRIX\_TYPE\_NOT\_SUPPORTED"{}};}
+\DoxyCodeLine{79 }
+\DoxyCodeLine{80     \}}
+\DoxyCodeLine{81 }
+\DoxyCodeLine{82     \textcolor{keywordflow}{return} \textcolor{stringliteral}{"{}<unknown>"{}};}
+\DoxyCodeLine{83 \}}
+\DoxyCodeLine{84 }
+\DoxyCodeLine{85 }
+\DoxyCodeLine{86 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} \_\_cusolveSafeCall(cusolverStatus\_t err, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *file, \textcolor{keyword}{const} \textcolor{keywordtype}{int} line)}
+\DoxyCodeLine{87 \{}
+\DoxyCodeLine{88     \textcolor{keywordflow}{if}(CUSOLVER\_STATUS\_SUCCESS != err) \{}
+\DoxyCodeLine{89         fprintf(stderr, \textcolor{stringliteral}{"{}CUSOLVE error in file '\%s', line \%d\(\backslash\)n\(\backslash\)nerror \%d: \%s\(\backslash\)nterminating!\(\backslash\)n"{}},\_\_FILE\_\_, \_\_LINE\_\_,err, \(\backslash\)}
+\DoxyCodeLine{90                                 \_cudaGetErrorEnum(err)); \(\backslash\)}
+\DoxyCodeLine{91         cudaDeviceReset(); assert(0); \(\backslash\)}
+\DoxyCodeLine{92     \}}
+\DoxyCodeLine{93 \}}
+\DoxyCodeLine{94 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} cusolveSafeCall(cusolverStatus\_t err) \{ \_\_cusolveSafeCall(err, \_\_FILE\_\_, \_\_LINE\_\_); \}}
+\DoxyCodeLine{95 }
+\DoxyCodeLine{96 \textcolor{keyword}{extern} rinfo **rinfos;}
+\DoxyCodeLine{97 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{98 }
+\DoxyCodeLine{99 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} outputMatrix(\textcolor{keywordtype}{string}\& fileName,MatrixXd \&matrixToOutput)\{}
+\DoxyCodeLine{100     ofstream matrixFile;}
+\DoxyCodeLine{101     matrixFile.open(fileName);}
+\DoxyCodeLine{102     matrixFile<<matrixToOutput.rows()<<\textcolor{stringliteral}{"{}\(\backslash\)n"{}}<<matrixToOutput.cols()<<\textcolor{stringliteral}{"{}\(\backslash\)n"{}};}
+\DoxyCodeLine{103     matrixFile<<matrixToOutput;}
+\DoxyCodeLine{104     matrixFile.close(); }
+\DoxyCodeLine{105 \}}
+\DoxyCodeLine{106 }
+\DoxyCodeLine{107 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} alloc4D(dtype**** \&ptr, \textcolor{keywordtype}{int} n1, \textcolor{keywordtype}{int} n2, \textcolor{keywordtype}{int} n3, \textcolor{keywordtype}{int} n4) \{}
+\DoxyCodeLine{108   ptr = \textcolor{keyword}{new} dtype***[n1];}
+\DoxyCodeLine{109   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 0; i < n1; i++) \{}
+\DoxyCodeLine{110     ptr[i] = \textcolor{keyword}{new} dtype**[n2];}
+\DoxyCodeLine{111     \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} j = 0; j < n2; j++) \{}
+\DoxyCodeLine{112       ptr[i][j] = \textcolor{keyword}{new} dtype*[n3];}
+\DoxyCodeLine{113       \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} k = 0; k < n3; k++) \{}
+\DoxyCodeLine{114     ptr[i][j][k] = \textcolor{keyword}{new} dtype[n4];}
+\DoxyCodeLine{115       \}}
+\DoxyCodeLine{116     \}}
+\DoxyCodeLine{117   \}}
+\DoxyCodeLine{118 \}}
+\DoxyCodeLine{119 }
+\DoxyCodeLine{120 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} free4D(dtype**** \&ptr, \textcolor{keywordtype}{int} n1, \textcolor{keywordtype}{int} n2, \textcolor{keywordtype}{int} n3, \textcolor{keywordtype}{int} n4) \{}
+\DoxyCodeLine{121   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 0; i < n1; i++) \{}
+\DoxyCodeLine{122     \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} j = 0; j < n2; j++) \{}
+\DoxyCodeLine{123       \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} k = 0; k < n3; k++) \{}
+\DoxyCodeLine{124         \textcolor{keyword}{delete} [] ptr[i][j][k];}
+\DoxyCodeLine{125       \}}
+\DoxyCodeLine{126       \textcolor{keyword}{delete} [] ptr[i][j];}
+\DoxyCodeLine{127     \}}
+\DoxyCodeLine{128     \textcolor{keyword}{delete} [] ptr[i];}
+\DoxyCodeLine{129   \}}
+\DoxyCodeLine{130   \textcolor{keyword}{delete} [] ptr;}
+\DoxyCodeLine{131 \}}
+\DoxyCodeLine{132 }
+\DoxyCodeLine{133 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} alloc5D(dtype***** \&ptr, \textcolor{keywordtype}{int} n1, \textcolor{keywordtype}{int} n2, \textcolor{keywordtype}{int} n3, \textcolor{keywordtype}{int} n4, \textcolor{keywordtype}{int} n5) \{}
+\DoxyCodeLine{134   ptr = \textcolor{keyword}{new} dtype****[n1];}
+\DoxyCodeLine{135   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 0; i < n1; i++) \{}
+\DoxyCodeLine{136     alloc4D(ptr[i], n2, n3, n4, n5);}
+\DoxyCodeLine{137   \}}
+\DoxyCodeLine{138 \}}
+\DoxyCodeLine{139 }
+\DoxyCodeLine{140 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} free5D(dtype***** \&ptr, \textcolor{keywordtype}{int} n1, \textcolor{keywordtype}{int} n2, \textcolor{keywordtype}{int} n3, \textcolor{keywordtype}{int} n4, \textcolor{keywordtype}{int} n5) \{}
+\DoxyCodeLine{141   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 0; i < n1; i++) \{}
+\DoxyCodeLine{142     free4D(ptr[i], n2, n3, n4, n5);}
+\DoxyCodeLine{143   \}}
+\DoxyCodeLine{144   \textcolor{keyword}{delete} [] ptr;}
+\DoxyCodeLine{145 \}}
+\DoxyCodeLine{146 }
+\DoxyCodeLine{147 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} alloc6D(dtype****** \&ptr, \textcolor{keywordtype}{int} n1, \textcolor{keywordtype}{int} n2, \textcolor{keywordtype}{int} n3, \textcolor{keywordtype}{int} n4, \textcolor{keywordtype}{int} n5, \textcolor{keywordtype}{int} n6) \{}
+\DoxyCodeLine{148   ptr = \textcolor{keyword}{new} dtype*****[n1];}
+\DoxyCodeLine{149   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 0; i < n1; i++) \{}
+\DoxyCodeLine{150     alloc5D(ptr[i], n2, n3, n4, n5, n6);}
+\DoxyCodeLine{151   \}}
+\DoxyCodeLine{152 \}}
+\DoxyCodeLine{153 }
+\DoxyCodeLine{154 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} free6D(dtype****** \&ptr, \textcolor{keywordtype}{int} n1, \textcolor{keywordtype}{int} n2, \textcolor{keywordtype}{int} n3, \textcolor{keywordtype}{int} n4, \textcolor{keywordtype}{int} n5, \textcolor{keywordtype}{int} n6) \{}
+\DoxyCodeLine{155   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 0; i < n1; i++) \{}
+\DoxyCodeLine{156     free5D(ptr[i], n2, n3, n4, n5, n6);}
+\DoxyCodeLine{157   \}}
+\DoxyCodeLine{158   \textcolor{keyword}{delete} [] ptr;}
+\DoxyCodeLine{159 \}}
+\DoxyCodeLine{160 }
+\DoxyCodeLine{161 }
+\DoxyCodeLine{162 \textcolor{keyword}{inline} VectorXd cheb\_di(dtype start, dtype end, \textcolor{keywordtype}{int} N) \{}
+\DoxyCodeLine{163   VectorXd v\_di(N);}
+\DoxyCodeLine{164   v\_di.setZero();}
+\DoxyCodeLine{165   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 1; i <= N; i += 2) \{}
+\DoxyCodeLine{166     v\_di(i-\/1) = (end -\/ start) / (1.0 -\/ ((i-\/1) * (i-\/1)));}
+\DoxyCodeLine{167   \}}
+\DoxyCodeLine{168   \textcolor{keywordflow}{return} v\_di;}
+\DoxyCodeLine{169 \}}
+\DoxyCodeLine{170 }
+\DoxyCodeLine{171 \textcolor{keyword}{inline} VectorXd cheb\_int(dtype start, dtype end, \textcolor{keywordtype}{int} N) \{}
+\DoxyCodeLine{172   dtype scale = 2 / (end -\/ start);  }
+\DoxyCodeLine{173   VectorXd vecint(N);}
+\DoxyCodeLine{174   vecint.setZero();}
+\DoxyCodeLine{175   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} k = 0; k < N; k += 2) \{}
+\DoxyCodeLine{176     vecint(k) = 2 / ((1 -\/ (k * k)) * scale);}
+\DoxyCodeLine{177   \}}
+\DoxyCodeLine{178   \textcolor{keywordflow}{return} vecint;}
+\DoxyCodeLine{179 \}}
+\DoxyCodeLine{180 }
+\DoxyCodeLine{181 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} cheb(\textcolor{keywordtype}{int} N, }
+\DoxyCodeLine{182       MatrixXd \&IT, MatrixXd \&FT) \{}
+\DoxyCodeLine{183   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 1; i <= N; i++) \{}
+\DoxyCodeLine{184     \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} j = 1; j <= N; j++) \{}
+\DoxyCodeLine{185       IT(i-\/1,j-\/1) = cos((j-\/1) * pi * (N -\/ i)/(N -\/ 1));}
+\DoxyCodeLine{186     \} }
+\DoxyCodeLine{187   \}  }
+\DoxyCodeLine{188   FT = IT.inverse();}
+\DoxyCodeLine{189 }
+\DoxyCodeLine{190 \}}
+\DoxyCodeLine{191 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} derivative(dtype start, dtype end, \textcolor{keywordtype}{int} N,}
+\DoxyCodeLine{192         MatrixXd\& D) \{}
+\DoxyCodeLine{193   dtype scale = (end -\/ start) / 2;}
+\DoxyCodeLine{194   \textcolor{keywordtype}{int} odd = (N \% 2 == 1);}
+\DoxyCodeLine{195   }
+\DoxyCodeLine{196   \textcolor{keywordtype}{int} DN = N / 2;}
+\DoxyCodeLine{197 }
+\DoxyCodeLine{198   D.setZero();}
+\DoxyCodeLine{199   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 0; i < DN; i++) \{}
+\DoxyCodeLine{200     D(0, 2*i + 1) = 2*i + 1;}
+\DoxyCodeLine{201   \}}
+\DoxyCodeLine{202   }
+\DoxyCodeLine{203 }
+\DoxyCodeLine{204   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 2; i <= N; i++) \{}
+\DoxyCodeLine{205     \textcolor{keywordflow}{if}(i \% 2 == 0) \{}
+\DoxyCodeLine{206       \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} j = 1; j < DN + odd; j++) \{ }
+\DoxyCodeLine{207     D(i-\/1, 2*j) = 4 * j;}
+\DoxyCodeLine{208       \} }
+\DoxyCodeLine{209     \} \textcolor{keywordflow}{else} \{}
+\DoxyCodeLine{210       \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} j = 1; j < DN; j++) \{}
+\DoxyCodeLine{211     D(i-\/1, 2*j + 1) = 2 * (2*j + 1);}
+\DoxyCodeLine{212       \} }
+\DoxyCodeLine{213     \}}
+\DoxyCodeLine{214   \}}
+\DoxyCodeLine{215 }
+\DoxyCodeLine{216   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 1; i < D.rows(); i++) \{}
+\DoxyCodeLine{217     \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} j = 0; j < i; j++) \{}
+\DoxyCodeLine{218       D(i, j) = 0;}
+\DoxyCodeLine{219     \}}
+\DoxyCodeLine{220   \}}
+\DoxyCodeLine{221 }
+\DoxyCodeLine{222 }
+\DoxyCodeLine{223   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 0; i < D.rows(); i++) \{}
+\DoxyCodeLine{224     \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} j = i; j < D.cols(); j++) \{}
+\DoxyCodeLine{225       D(i,j) /= scale;}
+\DoxyCodeLine{226     \}}
+\DoxyCodeLine{227   \}}
+\DoxyCodeLine{228 \}}
+\DoxyCodeLine{229 }
+\DoxyCodeLine{230 \textcolor{keyword}{inline} VectorXd lobat(\textcolor{keywordtype}{int} N) \{}
+\DoxyCodeLine{231   VectorXd x(N);}
+\DoxyCodeLine{232   \textcolor{keywordtype}{int} nm1 = N -\/ 1;}
+\DoxyCodeLine{233   \textcolor{keywordflow}{for}(\textcolor{keywordtype}{int} i = 0; i < N; i++) \{}
+\DoxyCodeLine{234     x(i) = sin((pi * ((-\/1 * nm1) + (2.0 * i))) / (2.0 * nm1));}
+\DoxyCodeLine{235   \}}
+\DoxyCodeLine{236   \textcolor{keywordflow}{return} x;}
+\DoxyCodeLine{237 \}}
+\DoxyCodeLine{238 }
+\DoxyCodeLine{239 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} slobat(dtype start, dtype end, \textcolor{keywordtype}{int} N, }
+\DoxyCodeLine{240         VectorXd\& s) \{}
+\DoxyCodeLine{241   VectorXd lbt = lobat(N);}
+\DoxyCodeLine{242   dtype alpha = (end -\/ start) / 2;}
+\DoxyCodeLine{243   dtype beta = (end + start) / 2;}
+\DoxyCodeLine{244   VectorXd z = VectorXd::Constant(N, 1);; }
+\DoxyCodeLine{245   s  = alpha * lbt + beta * z;}
+\DoxyCodeLine{246 \}}
+\DoxyCodeLine{247 }
+\DoxyCodeLine{248 \textcolor{keyword}{inline} \textcolor{keywordtype}{void} inner\_product\_helper(dtype start, dtype end, \textcolor{keywordtype}{int} N,}
+\DoxyCodeLine{249               MatrixXd\& V) \{}
+\DoxyCodeLine{250   \textcolor{keywordtype}{int} np2 = 2 * N;}
+\DoxyCodeLine{251   MatrixXd IT2(np2, np2); IT2.setZero();}
+\DoxyCodeLine{252   MatrixXd FT2(np2, np2); FT2.setZero();}
+\DoxyCodeLine{253   cheb(np2, IT2, FT2);}
+\DoxyCodeLine{254 }
+\DoxyCodeLine{255   MatrixXd IT(N, N); IT.setZero();}
+\DoxyCodeLine{256   MatrixXd FT(N, N); FT.setZero();}
+\DoxyCodeLine{257   cheb(N, IT, FT);}
+\DoxyCodeLine{258 }
+\DoxyCodeLine{259   VectorXd v\_di = cheb\_di(start, end, np2);}
+\DoxyCodeLine{260   MatrixXd v\_d2N = (v\_di.transpose() * FT2).asDiagonal(); }
+\DoxyCodeLine{261 }
+\DoxyCodeLine{262   MatrixXd merged(2 * N, N);}
+\DoxyCodeLine{263   merged << MatrixXd::Identity(N,N), MatrixXd::Zero(N,N);}
+\DoxyCodeLine{264   MatrixXd S = IT2 * merged * FT;}
+\DoxyCodeLine{265   V = S.transpose() * v\_d2N * S;}
+\DoxyCodeLine{266 \}}
+\DoxyCodeLine{267 \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

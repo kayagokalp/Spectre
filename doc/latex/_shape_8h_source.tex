@@ -1,0 +1,62 @@
+\hypertarget{_shape_8h_source}{}\doxysection{Shape.\+h}
+\label{_shape_8h_source}\index{src/Shape.h@{src/Shape.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#include "{}helpers.h"{}}}
+\DoxyCodeLine{3 \textcolor{preprocessor}{\#include "{}Material.h"{}}}
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include "{}Space.h"{}}}
+\DoxyCodeLine{5 }
+\DoxyCodeLine{6 }
+\DoxyCodeLine{7 }
+\DoxyCodeLine{8 }
+\DoxyCodeLine{9 \textcolor{keyword}{class }\mbox{\hyperlink{class_shape}{Shape}}}
+\DoxyCodeLine{10 \{}
+\DoxyCodeLine{11     \textcolor{keyword}{public}:}
+\DoxyCodeLine{12 }
+\DoxyCodeLine{13         \textcolor{keywordtype}{bool} is\_curved;}
+\DoxyCodeLine{14         dtype curve[2];}
+\DoxyCodeLine{15         dtype dim[3];}
+\DoxyCodeLine{16         }
+\DoxyCodeLine{17         \textcolor{keywordtype}{int} debug\_count = 0;}
+\DoxyCodeLine{18 }
+\DoxyCodeLine{19         \mbox{\hyperlink{struct_space}{Space}} spaces[3];}
+\DoxyCodeLine{20         \mbox{\hyperlink{class_material}{Material}} material;}
+\DoxyCodeLine{21 }
+\DoxyCodeLine{22         \textcolor{keywordtype}{double} ctrl\_y;}
+\DoxyCodeLine{23         \textcolor{keywordtype}{double} ctrl\_z;}
+\DoxyCodeLine{24 }
+\DoxyCodeLine{25         \textcolor{keywordtype}{double} zeta\_add;}
+\DoxyCodeLine{26 }
+\DoxyCodeLine{27         \textcolor{keywordtype}{int} xyz;}
+\DoxyCodeLine{28         MatrixXd VD;}
+\DoxyCodeLine{29         MatrixXd QDx;}
+\DoxyCodeLine{30         MatrixXd QDy;}
+\DoxyCodeLine{31         MatrixXd QDz;}
+\DoxyCodeLine{32 }
+\DoxyCodeLine{33 }
+\DoxyCodeLine{34         Tensor<double,3> shapeX; }
+\DoxyCodeLine{35         Tensor<double,3> shapeY;}
+\DoxyCodeLine{36         Tensor<double,3> shapeZ;}
+\DoxyCodeLine{37 }
+\DoxyCodeLine{38         Tensor<double,3> jac;}
+\DoxyCodeLine{39         \textcolor{keywordtype}{double} theta;}
+\DoxyCodeLine{40 }
+\DoxyCodeLine{41         \mbox{\hyperlink{class_shape}{Shape}}() : dim\{0, 0, 0\}, is\_curved(\textcolor{keyword}{false}), curve\{0, 0\}, xyz(0),zeta\_add(0), theta(0) \{\}}
+\DoxyCodeLine{42         }
+\DoxyCodeLine{43         \mbox{\hyperlink{class_shape}{Shape}}(dtype x\_dim, dtype y\_dim, dtype z\_dim,}
+\DoxyCodeLine{44                 \textcolor{keywordtype}{int} x\_sample, \textcolor{keywordtype}{int} y\_sample, \textcolor{keywordtype}{int} z\_sample, }
+\DoxyCodeLine{45                 \mbox{\hyperlink{class_material}{Material}} mat, \textcolor{keywordtype}{double} ctrl\_y, \textcolor{keywordtype}{double} ctrl\_z,\textcolor{keywordtype}{double} \_theta, }
+\DoxyCodeLine{46                 dtype xcurve = 0, dtype ycurve = 0,\textcolor{keywordtype}{double} zeta\_add=0);}
+\DoxyCodeLine{47 }
+\DoxyCodeLine{48         \textcolor{keywordtype}{void} fillShapeTensors();}
+\DoxyCodeLine{49 }
+\DoxyCodeLine{50         \textcolor{keywordtype}{void} vector\_map\_jac\_curvature(\textcolor{keywordtype}{double} alpha, \textcolor{keywordtype}{double} beta);}
+\DoxyCodeLine{51 }
+\DoxyCodeLine{52         \textcolor{keywordtype}{void} operator=(\textcolor{keyword}{const} \mbox{\hyperlink{class_shape}{Shape}}\& s);}
+\DoxyCodeLine{53 }
+\DoxyCodeLine{54         \textcolor{keywordtype}{void} vector\_map\_nojac();}
+\DoxyCodeLine{55 \};}
+\DoxyCodeLine{56 }
+
+\end{DoxyCode}

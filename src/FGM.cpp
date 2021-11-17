@@ -1,6 +1,40 @@
 #include "FGM.h"
 
-
+FGM::~FGM(){
+	delete[] np;
+	delete[] nxyz;
+	delete[] rho; 
+	delete[] JAC; 
+	delete[] Q11T;
+	delete[] Q12T;
+	delete[] Q13T;
+	delete[] Q14T;
+	delete[] Q22T;
+	delete[] Q23T;
+	delete[] Q24T;
+	delete[] Q33T;
+	delete[] Q34T;
+	delete[] Q44T;
+	delete[] Q55T;
+	delete[] Q56T;
+	delete[] Q66T;
+	delete[] VD_lame11;
+	delete[] VD_lame22;
+	delete[] VD_lame33;
+	delete[] VD_lame12;
+	delete[] VD_lame13;
+	delete[] VD_lame23;
+	delete[] VD_lame44;
+	delete[] VD_lame55;
+	delete[] VD_lame66;
+	delete[] VD_lame14;
+	delete[] VD_lame24;
+	delete[] VD_lame34;
+	delete[] VD_lame56;
+	delete[] VD_ro;
+	delete[] M;
+	delete[] K;
+}
 FGM::FGM(unsigned int n_shapes, Shape* shps)
 {
   num_shapes = n_shapes;

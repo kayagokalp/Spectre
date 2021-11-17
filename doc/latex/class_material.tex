@@ -1,0 +1,84 @@
+\hypertarget{class_material}{}\doxysection{Material Class Reference}
+\label{class_material}\index{Material@{Material}}
+\doxysubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_material_a49da3adf00462b593b0f56bc0a3be911}\label{class_material_a49da3adf00462b593b0f56bc0a3be911}} 
+enum class {\bfseries CNT\+\_\+\+TYPE} \{ {\bfseries UD}
+, {\bfseries FGV}
+, {\bfseries FGO}
+, {\bfseries FGX}
+ \}
+\item 
+\mbox{\Hypertarget{class_material_ae1d739e2646f79309995c14e61ce052b}\label{class_material_ae1d739e2646f79309995c14e61ce052b}} 
+enum class {\bfseries POROUS\+\_\+\+TYPE} \{ {\bfseries AA}
+, {\bfseries BB}
+, {\bfseries CC}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_material_aa7f511df89058f2d6c454f3a871a2ea7}\label{class_material_aa7f511df89058f2d6c454f3a871a2ea7}} 
+{\bfseries Material} (dtype \+\_\+mod\+\_\+elasticity, dtype \+\_\+poisson\+\_\+ratio, dtype \+\_\+mod\+\_\+sheer\+\_\+elasticity, dtype \+\_\+elasticity\+\_\+0, dtype \+\_\+elasticity\+\_\+1, dtype \+\_\+elasticity\+\_\+2, dtype \+\_\+sh\+\_\+elasticity\+\_\+0, dtype \+\_\+sh\+\_\+elasticity\+\_\+1, dtype \+\_\+sh\+\_\+elasticity\+\_\+2, dtype \+\_\+poisson\+\_\+0, dtype \+\_\+poisson\+\_\+1, dtype \+\_\+poisson\+\_\+2, CNT\+\_\+\+TYPE cnt\+\_\+type, POROUS\+\_\+\+TYPE porous\+\_\+type, dtype \+\_\+v\+\_\+str\+\_\+cnt=0.\+11, dtype \+\_\+ro\+\_\+cnt=1400, dtype \+\_\+ro\+\_\+m=1150, dtype \+\_\+eta\+\_\+star\+\_\+1=0.\+149, dtype \+\_\+eta\+\_\+star\+\_\+2=0.\+934, dtype \+\_\+eta\+\_\+star\+\_\+3=0.\+934, dtype \+\_\+alpha=0.\+6733, dtype \+\_\+e=0.\+1)
+\item 
+\mbox{\Hypertarget{class_material_aa0a56ab85166f1101dbb3d040d08d123}\label{class_material_aa0a56ab85166f1101dbb3d040d08d123}} 
+void {\bfseries operator=} (const \mbox{\hyperlink{class_material}{Material}} \&s)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_material_ab5628200b9a691b389bc08daa9654810}\label{class_material_ab5628200b9a691b389bc08daa9654810}} 
+dtype {\bfseries mod\+\_\+elasticity}
+\item 
+\mbox{\Hypertarget{class_material_a65703e14689b90cf37f2b7f89130b44a}\label{class_material_a65703e14689b90cf37f2b7f89130b44a}} 
+dtype {\bfseries elasticity} \mbox{[}3\mbox{]}
+\item 
+\mbox{\Hypertarget{class_material_a7048019cfe51eff19c9d090178dd2113}\label{class_material_a7048019cfe51eff19c9d090178dd2113}} 
+dtype {\bfseries poisson\+\_\+ratio}
+\item 
+\mbox{\Hypertarget{class_material_a60b163821750bef9de2c28e977c14b12}\label{class_material_a60b163821750bef9de2c28e977c14b12}} 
+dtype {\bfseries poissons} \mbox{[}3\mbox{]}
+\item 
+\mbox{\Hypertarget{class_material_a18ef0964810edf76dc28fc28881a724c}\label{class_material_a18ef0964810edf76dc28fc28881a724c}} 
+dtype {\bfseries mod\+\_\+sheer\+\_\+elasticity}
+\item 
+\mbox{\Hypertarget{class_material_ab716d0586a14dc48aaae03402eb6420b}\label{class_material_ab716d0586a14dc48aaae03402eb6420b}} 
+dtype {\bfseries sheer\+\_\+elasticity} \mbox{[}3\mbox{]}
+\item 
+\mbox{\Hypertarget{class_material_a026bd3cd0c100e1cec3ef90e73ef935c}\label{class_material_a026bd3cd0c100e1cec3ef90e73ef935c}} 
+CNT\+\_\+\+TYPE {\bfseries CNT\+\_\+type}
+\item 
+\mbox{\Hypertarget{class_material_a088723be6cc25cc0c2dfadb662bcf3a4}\label{class_material_a088723be6cc25cc0c2dfadb662bcf3a4}} 
+POROUS\+\_\+\+TYPE {\bfseries POROUS\+\_\+type}
+\item 
+\mbox{\Hypertarget{class_material_ab4feae85a6f34b52c2a72a011833ac76}\label{class_material_ab4feae85a6f34b52c2a72a011833ac76}} 
+dtype {\bfseries v\+\_\+str\+\_\+cnt}
+\item 
+\mbox{\Hypertarget{class_material_a867d66284bc5483404382c7e24cad232}\label{class_material_a867d66284bc5483404382c7e24cad232}} 
+dtype {\bfseries ro\+\_\+cnt}
+\item 
+\mbox{\Hypertarget{class_material_ac693ab8dd63b9b1d626a1b3f828409d6}\label{class_material_ac693ab8dd63b9b1d626a1b3f828409d6}} 
+dtype {\bfseries mod\+\_\+ro}
+\item 
+\mbox{\Hypertarget{class_material_a32dd419ab989b82493e9d3247050f8ea}\label{class_material_a32dd419ab989b82493e9d3247050f8ea}} 
+dtype {\bfseries eta\+\_\+star\+\_\+1}
+\item 
+\mbox{\Hypertarget{class_material_a54ae0647f5cce9fac10e1bd8953ba726}\label{class_material_a54ae0647f5cce9fac10e1bd8953ba726}} 
+dtype {\bfseries eta\+\_\+star\+\_\+2}
+\item 
+\mbox{\Hypertarget{class_material_a8d23ddc1ee54c1c25329eda3a46d021e}\label{class_material_a8d23ddc1ee54c1c25329eda3a46d021e}} 
+dtype {\bfseries eta\+\_\+star\+\_\+3}
+\item 
+\mbox{\Hypertarget{class_material_af33e95a9bc22cef45cc2cf67d54d6dfa}\label{class_material_af33e95a9bc22cef45cc2cf67d54d6dfa}} 
+dtype {\bfseries alpha}
+\item 
+\mbox{\Hypertarget{class_material_aebed5f545d1f2c878293e553b4f9c0a4}\label{class_material_aebed5f545d1f2c878293e553b4f9c0a4}} 
+dtype {\bfseries e}
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+src/Material.\+h\item 
+src/Material.\+cpp\end{DoxyCompactItemize}

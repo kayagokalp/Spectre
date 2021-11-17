@@ -1,0 +1,30 @@
+\hypertarget{_space_8h_source}{}\doxysection{Space.\+h}
+\label{_space_8h_source}\index{src/Space.h@{src/Space.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#include "{}helpers.h"{}}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 }
+\DoxyCodeLine{5 }
+\DoxyCodeLine{6 \textcolor{keyword}{struct }\mbox{\hyperlink{struct_space}{Space}}}
+\DoxyCodeLine{7 \{}
+\DoxyCodeLine{8     \textcolor{keyword}{public}:}
+\DoxyCodeLine{9         dtype start;}
+\DoxyCodeLine{10         dtype end;}
+\DoxyCodeLine{11         \textcolor{keywordtype}{int} no\_points;}
+\DoxyCodeLine{12 }
+\DoxyCodeLine{13         MatrixXd IT;}
+\DoxyCodeLine{14         MatrixXd FT;}
+\DoxyCodeLine{15         MatrixXd D;}
+\DoxyCodeLine{16         VectorXd s;}
+\DoxyCodeLine{17         MatrixXd V;}
+\DoxyCodeLine{18         MatrixXd Q1;}
+\DoxyCodeLine{19 }
+\DoxyCodeLine{20         \mbox{\hyperlink{struct_space}{Space}}() \{\}}
+\DoxyCodeLine{21         \mbox{\hyperlink{struct_space}{Space}}(dtype start, dtype end, \textcolor{keywordtype}{int} no\_points);}
+\DoxyCodeLine{22 }
+\DoxyCodeLine{23         \textcolor{keywordtype}{void} discretize();}
+\DoxyCodeLine{24 \};}
+
+\end{DoxyCode}

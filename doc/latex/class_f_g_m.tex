@@ -1,0 +1,240 @@
+\hypertarget{class_f_g_m}{}\doxysection{FGM Class Reference}
+\label{class_f_g_m}\index{FGM@{FGM}}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_f_g_m_aeb580f4898abf2aa5cdf06601b17bc5c}\label{class_f_g_m_aeb580f4898abf2aa5cdf06601b17bc5c}} 
+{\bfseries FGM} (unsigned int n\+\_\+shapes, \mbox{\hyperlink{class_shape}{Shape}} $\ast$shps)
+\item 
+void \mbox{\hyperlink{class_f_g_m_a5e392cec0d7582a56afaa81db7bef88d}{T1\+\_\+system\+\_\+matrices\+\_\+honeycomb\+\_\+\+CPU}} (unsigned int l)
+\item 
+void \mbox{\hyperlink{class_f_g_m_a878c9eb78f4e4fe86138f54697c8e813}{T1\+\_\+system\+\_\+matrices\+\_\+\+CPU}} (unsigned int l)
+\item 
+bool \mbox{\hyperlink{class_f_g_m_a37ef79a2a602aea362506e8a653c9b4d}{T1\+\_\+system\+\_\+matrices}} (unsigned int l)
+\item 
+\mbox{\Hypertarget{class_f_g_m_a4bede914247b7d362d6fb0542843aa31}\label{class_f_g_m_a4bede914247b7d362d6fb0542843aa31}} 
+void {\bfseries T2\+\_\+svd\+\_\+\+CPU} (Matrix\+Xd \&BC, Matrix\+Xd \&V)
+\item 
+\mbox{\Hypertarget{class_f_g_m_ac86cb4fae604319cffda1379a309c26d}\label{class_f_g_m_ac86cb4fae604319cffda1379a309c26d}} 
+bool {\bfseries T2\+\_\+svd} (Matrix\+Xd \&BC, Matrix\+Xd \&V)
+\item 
+\mbox{\Hypertarget{class_f_g_m_a0ecfcdf4bed8053200ec1555ad082009}\label{class_f_g_m_a0ecfcdf4bed8053200ec1555ad082009}} 
+void {\bfseries T3\+\_\+mul\+\_\+inv\+\_\+\+CPU} (Matrix\+Xd \&a0, Matrix\+Xd \&P)
+\item 
+\mbox{\Hypertarget{class_f_g_m_a6df35c774e550695ed746b9ec7f3e7ab}\label{class_f_g_m_a6df35c774e550695ed746b9ec7f3e7ab}} 
+bool {\bfseries T3\+\_\+mul\+\_\+inv} (Matrix\+Xd \&a0, Matrix\+Xd \&P)
+\item 
+\mbox{\Hypertarget{class_f_g_m_a0b658fe253542d74992391561ee013f3}\label{class_f_g_m_a0b658fe253542d74992391561ee013f3}} 
+void {\bfseries T4\+\_\+eigen} (Matrix\+Xd \&a0, int \&nconv, double \&small\+\_\+eig)
+\item 
+\mbox{\Hypertarget{class_f_g_m_a28cd9a810bc775fca39d90c405642b8b}\label{class_f_g_m_a28cd9a810bc775fca39d90c405642b8b}} 
+void {\bfseries compute\+\_\+gpu\+\_\+costs} (const int noeigs, const int ncv, int \&nconv, double \&small\+\_\+eig, const double shift=0.\+01, const int max\+\_\+iter=-\/1, const double tol=-\/1, int g\+\_\+id=0, int sample\+\_\+size=1)
+\item 
+\mbox{\Hypertarget{class_f_g_m_aaaed6f794b24aa7dbf3a7336460f1f11}\label{class_f_g_m_aaaed6f794b24aa7dbf3a7336460f1f11}} 
+void {\bfseries compute\+\_\+cpu\+\_\+costs} (const int noeigs, const int ncv, int \&nconv, double \&small\+\_\+eig, const double shift=0.\+01, const int max\+\_\+iter=-\/1, const double tol=-\/1, const int sample\+\_\+size=1)
+\item 
+\mbox{\Hypertarget{class_f_g_m_a722572b428c817b7a169238f8bca01bc}\label{class_f_g_m_a722572b428c817b7a169238f8bca01bc}} 
+void {\bfseries remove\+Duplicate\+Rows} (Matrix\+Xd \&mat)
+\item 
+\mbox{\Hypertarget{class_f_g_m_aeaaea01a08d0e73e6d0f0ea4ddf216ea}\label{class_f_g_m_aeaaea01a08d0e73e6d0f0ea4ddf216ea}} 
+Matrix\+Xd {\bfseries remove\+Zero\+Rows} (Matrix\+Xd \&mat)
+\item 
+\mbox{\Hypertarget{class_f_g_m_ab6a2243eb57ff97dd89c11167ae26b3a}\label{class_f_g_m_ab6a2243eb57ff97dd89c11167ae26b3a}} 
+void {\bfseries prepare\+Boundary\+Condition} (Matrix\+Xd \&mat, unsigned int l)
+\item 
+\mbox{\Hypertarget{class_f_g_m_af056faf3acab3771b9a35e0ea2ac605e}\label{class_f_g_m_af056faf3acab3771b9a35e0ea2ac605e}} 
+void {\bfseries compute} (const int noeigs, const int ncv, int \&nconv, double \&small\+\_\+eig, const double shift=0.\+01, const int max\+\_\+iter=-\/1, const double tol=-\/1)
+\item 
+\mbox{\Hypertarget{class_f_g_m_a3c82a11205e0d5707ce34834a0263c71}\label{class_f_g_m_a3c82a11205e0d5707ce34834a0263c71}} 
+Matrix\+Xd {\bfseries beta\+\_\+matrix\+\_\+3d} (Matrix\+Xd \&BC\+\_\+3D, int xyz, unsigned int l)
+\item 
+\mbox{\Hypertarget{class_f_g_m_a545b5ecae6ee0201e70d5e6226151bdf}\label{class_f_g_m_a545b5ecae6ee0201e70d5e6226151bdf}} 
+void {\bfseries FG\+\_\+var\+\_\+\+MT\+\_\+\+CNT} (unsigned int l)
+\item 
+\mbox{\Hypertarget{class_f_g_m_acb57b3aab8c7626baceefa1905ebf476}\label{class_f_g_m_acb57b3aab8c7626baceefa1905ebf476}} 
+void {\bfseries FG\+\_\+var\+\_\+\+MT\+\_\+honeycomb} (unsigned int l)
+\item 
+\mbox{\Hypertarget{class_f_g_m_aab970e5cbfd1faabd27f0ad0f6f4299c}\label{class_f_g_m_aab970e5cbfd1faabd27f0ad0f6f4299c}} 
+void {\bfseries tensor3} (Vector\+Xd \&v\+\_\+d3\+Nt, Matrix\+Xd \&Sst, int n, Tensor$<$ double, 3 $>$ \&X)
+\item 
+\mbox{\Hypertarget{class_f_g_m_a452d1c098dad5ca21a6055e26293280d}\label{class_f_g_m_a452d1c098dad5ca21a6055e26293280d}} 
+void {\bfseries inner\+\_\+helper} (Tensor$<$ double, 3 $>$ \&Axyz, Tensor$<$ double, 3 $>$ \&Xadl, Tensor$<$ double, 3 $>$ \&Ybem, Tensor$<$ double, 3 $>$ \&Zcfn, Matrix\+Xd \&VD, unsigned int l)
+\item 
+\mbox{\Hypertarget{class_f_g_m_aba15b691f6dd9c13d33fd59305c2427a}\label{class_f_g_m_aba15b691f6dd9c13d33fd59305c2427a}} 
+void {\bfseries inner\+\_\+product\+\_\+honeycomb} (unsigned int l)
+\item 
+\mbox{\Hypertarget{class_f_g_m_a5fa1e24e2cf3f3c3dc4696114f922d46}\label{class_f_g_m_a5fa1e24e2cf3f3c3dc4696114f922d46}} 
+void {\bfseries inner\+\_\+product} (unsigned int l)
+\item 
+\mbox{\Hypertarget{class_f_g_m_ae23b195fa68a55a6f829af16ca7c6eef}\label{class_f_g_m_ae23b195fa68a55a6f829af16ca7c6eef}} 
+Matrix\+Xd {\bfseries boundary\+\_\+condition\+\_\+3d} (int xyz, int ol, unsigned int l)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a918500c12db957ac0fb73fc0de292add}\label{class_f_g_m_a918500c12db957ac0fb73fc0de292add}} 
+unsigned int $\ast$$\ast$ {\bfseries np}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a513033cabd543ee3e6b17cb5c4dff36c}\label{class_f_g_m_a513033cabd543ee3e6b17cb5c4dff36c}} 
+int $\ast$ {\bfseries nxyz}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a0b23b20b302fe36cf7724127034d289f}\label{class_f_g_m_a0b23b20b302fe36cf7724127034d289f}} 
+\mbox{\hyperlink{class_shape}{Shape}} $\ast$ {\bfseries shapes}
+\item 
+\mbox{\Hypertarget{class_f_g_m_ab594e0b8fe441c62ceabee9b1c6089d4}\label{class_f_g_m_ab594e0b8fe441c62ceabee9b1c6089d4}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries rho}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a22c1b8e7800f64e8a13e0df7a967c9b5}\label{class_f_g_m_a22c1b8e7800f64e8a13e0df7a967c9b5}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q11T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_ad57d98bc8a25965a7ec4b58d8c8cfc8f}\label{class_f_g_m_ad57d98bc8a25965a7ec4b58d8c8cfc8f}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q12T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a6df460627aea7ca315a03075f9ca9639}\label{class_f_g_m_a6df460627aea7ca315a03075f9ca9639}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q13T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_aec56de838981d075be266d426854db2f}\label{class_f_g_m_aec56de838981d075be266d426854db2f}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q14T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a98188e31e2136a872119912611ec96a6}\label{class_f_g_m_a98188e31e2136a872119912611ec96a6}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q22T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a170deb9a3e830f27ac4a268bad50b026}\label{class_f_g_m_a170deb9a3e830f27ac4a268bad50b026}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q23T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a749697e571dc4baf50d9ec781f6fca26}\label{class_f_g_m_a749697e571dc4baf50d9ec781f6fca26}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q24T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a9505bf2dbe2c22465e97ed0ddc16cc04}\label{class_f_g_m_a9505bf2dbe2c22465e97ed0ddc16cc04}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q33T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_af31b1f0dc5fcfd9080d51c5a0e3259a0}\label{class_f_g_m_af31b1f0dc5fcfd9080d51c5a0e3259a0}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q34T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a9c1ea9aab566c681adc7a56417841fc9}\label{class_f_g_m_a9c1ea9aab566c681adc7a56417841fc9}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q44T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a075e1fa67e0bef7bd3cc1e74d935c3b3}\label{class_f_g_m_a075e1fa67e0bef7bd3cc1e74d935c3b3}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q55T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a3448f209f52d0a5e50881c4d0882ee74}\label{class_f_g_m_a3448f209f52d0a5e50881c4d0882ee74}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q56T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_ad7464701ae0d78fcb376c80f6615cdf6}\label{class_f_g_m_ad7464701ae0d78fcb376c80f6615cdf6}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries Q66T}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a10931265bbd8ffe10cc90cafbdbf4eff}\label{class_f_g_m_a10931265bbd8ffe10cc90cafbdbf4eff}} 
+Tensor$<$ double, 3 $>$ $\ast$ {\bfseries JAC}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a303e37f3a54a5aa4c27d41afa6c0ca0e}\label{class_f_g_m_a303e37f3a54a5aa4c27d41afa6c0ca0e}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame11}
+\item 
+\mbox{\Hypertarget{class_f_g_m_afc0d8aeb60bbebb656a2ea10c3b27e3e}\label{class_f_g_m_afc0d8aeb60bbebb656a2ea10c3b27e3e}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame22}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a1f5f6864427a609dc5e5b9e6e203309c}\label{class_f_g_m_a1f5f6864427a609dc5e5b9e6e203309c}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame33}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a20dba00649e90d6480a369bc52ce9adb}\label{class_f_g_m_a20dba00649e90d6480a369bc52ce9adb}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame12}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a2109c50fe1cb635d67d0ce305315a37c}\label{class_f_g_m_a2109c50fe1cb635d67d0ce305315a37c}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame13}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a17b051d295a6485a7e57bc3f4ad32acc}\label{class_f_g_m_a17b051d295a6485a7e57bc3f4ad32acc}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame23}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a7371e1f23217fdd5f6755e4f433d0295}\label{class_f_g_m_a7371e1f23217fdd5f6755e4f433d0295}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame44}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a40ba1be4a7a818647dd07ebdbeae957f}\label{class_f_g_m_a40ba1be4a7a818647dd07ebdbeae957f}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame55}
+\item 
+\mbox{\Hypertarget{class_f_g_m_acc9051915a515bf76a368a4887433027}\label{class_f_g_m_acc9051915a515bf76a368a4887433027}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame66}
+\item 
+\mbox{\Hypertarget{class_f_g_m_ae332e337a27520077f4544a3f7e9fda9}\label{class_f_g_m_ae332e337a27520077f4544a3f7e9fda9}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame14}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a7b021959282a5da632e6cc068b1373bf}\label{class_f_g_m_a7b021959282a5da632e6cc068b1373bf}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame24}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a0083e3f153404f41422d51f955924097}\label{class_f_g_m_a0083e3f153404f41422d51f955924097}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame34}
+\item 
+\mbox{\Hypertarget{class_f_g_m_ab1a6d2b7eac5ecabd1e4bf455303154d}\label{class_f_g_m_ab1a6d2b7eac5ecabd1e4bf455303154d}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+lame56}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a3741edea0b0e34642a1e78daa0993472}\label{class_f_g_m_a3741edea0b0e34642a1e78daa0993472}} 
+Matrix\+Xd $\ast$ {\bfseries VD\+\_\+ro}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a10fe5ce71a313d2033584b2ed828062a}\label{class_f_g_m_a10fe5ce71a313d2033584b2ed828062a}} 
+Matrix\+Xd $\ast$ {\bfseries M}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a41b1b3ff207053491182daef1486add2}\label{class_f_g_m_a41b1b3ff207053491182daef1486add2}} 
+Matrix\+Xd $\ast$ {\bfseries K}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a1c4ece0dac6bfd21ec87d9920063dde2}\label{class_f_g_m_a1c4ece0dac6bfd21ec87d9920063dde2}} 
+Matrix\+Xd {\bfseries MM}
+\item 
+\mbox{\Hypertarget{class_f_g_m_a05645d902003f7aeea221d869fa5c6e7}\label{class_f_g_m_a05645d902003f7aeea221d869fa5c6e7}} 
+Matrix\+Xd {\bfseries KK}
+\item 
+\mbox{\Hypertarget{class_f_g_m_ab18d0575a9bc05da7c4366eab0b27e25}\label{class_f_g_m_ab18d0575a9bc05da7c4366eab0b27e25}} 
+int {\bfseries nnxyz}
+\item 
+\mbox{\Hypertarget{class_f_g_m_abc8d0ae68972f2159630370ed6108758}\label{class_f_g_m_abc8d0ae68972f2159630370ed6108758}} 
+int {\bfseries num\+\_\+shapes}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{class_f_g_m_a37ef79a2a602aea362506e8a653c9b4d}\label{class_f_g_m_a37ef79a2a602aea362506e8a653c9b4d}} 
+\index{FGM@{FGM}!T1\_system\_matrices@{T1\_system\_matrices}}
+\index{T1\_system\_matrices@{T1\_system\_matrices}!FGM@{FGM}}
+\doxysubsubsection{\texorpdfstring{T1\_system\_matrices()}{T1\_system\_matrices()}}
+{\footnotesize\ttfamily bool FGM\+::\+T1\+\_\+system\+\_\+matrices (\begin{DoxyParamCaption}\item[{unsigned int}]{l }\end{DoxyParamCaption})}
+
+\doxysubsection*{T1 -\/ System Matrices }
+
+T1 -\/ System Matrices selects the correct T1 function depending on the following\+: 
+\begin{DoxyItemize}
+\item If SMART version is used, using the pre-\/calculated costs faster option is selected.  
+\item If the layer that is being processed is a honeycombed layer (currently we are working on 3 layered FGMs in which the middle layer is always honeycomb) honeycomb version is called 
+\end{DoxyItemize}
+\begin{DoxyParams}{Parameters}
+{\em l} & -\/ id of the \mbox{\hyperlink{class_shape}{Shape}} \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{class_f_g_m_a878c9eb78f4e4fe86138f54697c8e813}\label{class_f_g_m_a878c9eb78f4e4fe86138f54697c8e813}} 
+\index{FGM@{FGM}!T1\_system\_matrices\_CPU@{T1\_system\_matrices\_CPU}}
+\index{T1\_system\_matrices\_CPU@{T1\_system\_matrices\_CPU}!FGM@{FGM}}
+\doxysubsubsection{\texorpdfstring{T1\_system\_matrices\_CPU()}{T1\_system\_matrices\_CPU()}}
+{\footnotesize\ttfamily void FGM\+::\+T1\+\_\+system\+\_\+matrices\+\_\+\+CPU (\begin{DoxyParamCaption}\item[{unsigned int}]{l }\end{DoxyParamCaption})}
+
+\doxysubsection*{T1 -\/ System Matrices CPU }
+
+T1 -\/ System Matrices CPU calculates K and M matrices for non-\/honeycomb layers in the \mbox{\hyperlink{class_f_g_m}{FGM}} using CPU. 
+\begin{DoxyParams}{Parameters}
+{\em l} & -\/ id of the \mbox{\hyperlink{class_shape}{Shape}} \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{class_f_g_m_a5e392cec0d7582a56afaa81db7bef88d}\label{class_f_g_m_a5e392cec0d7582a56afaa81db7bef88d}} 
+\index{FGM@{FGM}!T1\_system\_matrices\_honeycomb\_CPU@{T1\_system\_matrices\_honeycomb\_CPU}}
+\index{T1\_system\_matrices\_honeycomb\_CPU@{T1\_system\_matrices\_honeycomb\_CPU}!FGM@{FGM}}
+\doxysubsubsection{\texorpdfstring{T1\_system\_matrices\_honeycomb\_CPU()}{T1\_system\_matrices\_honeycomb\_CPU()}}
+{\footnotesize\ttfamily void FGM\+::\+T1\+\_\+system\+\_\+matrices\+\_\+honeycomb\+\_\+\+CPU (\begin{DoxyParamCaption}\item[{unsigned int}]{l }\end{DoxyParamCaption})}
+
+\doxysubsection*{T1 -\/ System Matrices Honeycomb CPU }
+
+T1 -\/ System Matrices Honeycomb CPU calculates K and M matrices for honeycomb layers in the \mbox{\hyperlink{class_f_g_m}{FGM}} using CPU. 
+\begin{DoxyParams}{Parameters}
+{\em l} & -\/ id of the \mbox{\hyperlink{class_shape}{Shape}} \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+src/\mbox{\hyperlink{_f_g_m_8h}{FGM.\+h}}\item 
+src/FGM.\+cpp\end{DoxyCompactItemize}

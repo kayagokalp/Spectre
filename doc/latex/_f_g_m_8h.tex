@@ -1,0 +1,25 @@
+\hypertarget{_f_g_m_8h}{}\doxysection{src/\+FGM.h File Reference}
+\label{_f_g_m_8h}\index{src/FGM.h@{src/FGM.h}}
+{\ttfamily \#include \char`\"{}helpers.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}Shape.\+h\char`\"{}}\newline
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{class_f_g_m}{FGM}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\doxysubsection*{\mbox{\hyperlink{class_f_g_m}{FGM}} }
+
+Functionally Graded \mbox{\hyperlink{class_material}{Material}}, represents a \mbox{\hyperlink{}{FGM\#num\+\_\+shapes}} layered composite structure. Calculations are done in 4 steps\+: 
+\begin{DoxyEnumerate}
+\item T1 -\/ System Matrices  
+\item T2 -\/ SVD decomposition  
+\item T3 -\/ Multiply and Inverse  
+\item T4 -\/ Eigen Decomposition  
+\end{DoxyEnumerate}
+
+\begin{DoxySeeAlso}{See also}
+\mbox{\hyperlink{class_shape}{Shape}} 
+\end{DoxySeeAlso}

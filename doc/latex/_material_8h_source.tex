@@ -1,0 +1,74 @@
+\hypertarget{_material_8h_source}{}\doxysection{Material.\+h}
+\label{_material_8h_source}\index{src/Material.h@{src/Material.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#include "{}helpers.h"{}}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 }
+\DoxyCodeLine{5 \textcolor{keyword}{class }\mbox{\hyperlink{class_material}{Material}}}
+\DoxyCodeLine{6 \{}
+\DoxyCodeLine{7     \textcolor{keyword}{public}:}
+\DoxyCodeLine{8         \textcolor{keyword}{enum class} CNT\_TYPE \{UD, FGV, FGO, FGX\};}
+\DoxyCodeLine{9         \textcolor{keyword}{enum class} POROUS\_TYPE \{AA, BB, CC\};}
+\DoxyCodeLine{10 }
+\DoxyCodeLine{11         \mbox{\hyperlink{class_material}{Material}}(): mod\_elasticity(0), poisson\_ratio(0), mod\_sheer\_elasticity(0), }
+\DoxyCodeLine{12                 elasticity\{0,0,0\},sheer\_elasticity\{0,0,0\}, poissons\{0,0,0\},}
+\DoxyCodeLine{13                     CNT\_type(CNT\_TYPE::UD), POROUS\_type(POROUS\_TYPE::AA) \{\}}
+\DoxyCodeLine{14         \mbox{\hyperlink{class_material}{Material}}(dtype \_mod\_elasticity,}
+\DoxyCodeLine{15                 dtype \_poisson\_ratio,}
+\DoxyCodeLine{16                 dtype \_mod\_sheer\_elasticity, }
+\DoxyCodeLine{17                 dtype \_elasticity\_0,dtype \_elasticity\_1,dtype \_elasticity\_2,}
+\DoxyCodeLine{18                     dtype \_sh\_elasticity\_0, dtype \_sh\_elasticity\_1, dtype \_sh\_elasticity\_2,}
+\DoxyCodeLine{19                     dtype \_poisson\_0, dtype \_poisson\_1, dtype \_poisson\_2,}
+\DoxyCodeLine{20                 CNT\_TYPE cnt\_type,}
+\DoxyCodeLine{21                 POROUS\_TYPE porous\_type,}
+\DoxyCodeLine{22                 dtype \_v\_str\_cnt = 0.11,}
+\DoxyCodeLine{23                 dtype \_ro\_cnt = 1400,}
+\DoxyCodeLine{24                 dtype \_ro\_m = 1150,}
+\DoxyCodeLine{25                 dtype \_eta\_star\_1 = 0.149,}
+\DoxyCodeLine{26                 dtype \_eta\_star\_2 = 0.934,}
+\DoxyCodeLine{27                 dtype \_eta\_star\_3 = 0.934,}
+\DoxyCodeLine{28                 dtype \_alpha = 0.6733,}
+\DoxyCodeLine{29                 dtype \_e = 0.1}
+\DoxyCodeLine{30             )}
+\DoxyCodeLine{31             : mod\_elasticity(\_mod\_elasticity),}
+\DoxyCodeLine{32             poisson\_ratio(\_poisson\_ratio),}
+\DoxyCodeLine{33             mod\_sheer\_elasticity(\_mod\_sheer\_elasticity), }
+\DoxyCodeLine{34             elasticity\{\_elasticity\_0, \_elasticity\_1, \_elasticity\_2\}, }
+\DoxyCodeLine{35             sheer\_elasticity\{\_sh\_elasticity\_0, \_sh\_elasticity\_1, \_sh\_elasticity\_2\}, }
+\DoxyCodeLine{36             poissons\{\_poisson\_0, \_poisson\_1, \_poisson\_2\},}
+\DoxyCodeLine{37             CNT\_type(cnt\_type), }
+\DoxyCodeLine{38             POROUS\_type(porous\_type),}
+\DoxyCodeLine{39                 v\_str\_cnt(\_v\_str\_cnt),}
+\DoxyCodeLine{40             ro\_cnt(\_ro\_cnt),}
+\DoxyCodeLine{41             mod\_ro(\_ro\_m),}
+\DoxyCodeLine{42             eta\_star\_1(\_eta\_star\_1),}
+\DoxyCodeLine{43             eta\_star\_2(\_eta\_star\_2),}
+\DoxyCodeLine{44             eta\_star\_3(\_eta\_star\_3),}
+\DoxyCodeLine{45             alpha(\_alpha),}
+\DoxyCodeLine{46             e(\_e)   \{\}}
+\DoxyCodeLine{47 }
+\DoxyCodeLine{48         \textcolor{keywordtype}{void} operator=(\textcolor{keyword}{const} \mbox{\hyperlink{class_material}{Material}}\& s);}
+\DoxyCodeLine{49         }
+\DoxyCodeLine{50         \textcolor{comment}{//member variables}}
+\DoxyCodeLine{51         dtype mod\_elasticity; \textcolor{comment}{//E\_m}}
+\DoxyCodeLine{52         dtype elasticity[3]; \textcolor{comment}{// E\_11 || E\_22 || E\_33 }}
+\DoxyCodeLine{53         dtype poisson\_ratio; \textcolor{comment}{//nu\_m}}
+\DoxyCodeLine{54         dtype poissons[3]; \textcolor{comment}{// nu12 || nu13 || nu23}}
+\DoxyCodeLine{55         dtype mod\_sheer\_elasticity; \textcolor{comment}{// G\_m}}
+\DoxyCodeLine{56         dtype sheer\_elasticity[3]; \textcolor{comment}{// G\_11 || G\_22 || G\_33}}
+\DoxyCodeLine{57         CNT\_TYPE CNT\_type; \textcolor{comment}{//TODO(kaya) : Convert this into enum}}
+\DoxyCodeLine{58         POROUS\_TYPE POROUS\_type; \textcolor{comment}{//TODO(kaya) : Convert this into enum}}
+\DoxyCodeLine{59         dtype v\_str\_cnt;}
+\DoxyCodeLine{60         dtype ro\_cnt;}
+\DoxyCodeLine{61         dtype mod\_ro;}
+\DoxyCodeLine{62         dtype eta\_star\_1;}
+\DoxyCodeLine{63         dtype eta\_star\_2;}
+\DoxyCodeLine{64         dtype eta\_star\_3;}
+\DoxyCodeLine{65         dtype alpha;}
+\DoxyCodeLine{66         dtype e;}
+\DoxyCodeLine{67 \};}
+\DoxyCodeLine{68 }
+
+\end{DoxyCode}

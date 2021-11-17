@@ -1,0 +1,149 @@
+\hypertarget{_f_g_m_8h_source}{}\doxysection{FGM.\+h}
+\label{_f_g_m_8h_source}\index{src/FGM.h@{src/FGM.h}}
+\mbox{\hyperlink{_f_g_m_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#include "{}helpers.h"{}}}
+\DoxyCodeLine{3 \textcolor{preprocessor}{\#include "{}Shape.h"{}}}
+\DoxyCodeLine{4 }
+\DoxyCodeLine{5 }
+\DoxyCodeLine{23 \textcolor{keyword}{class }\mbox{\hyperlink{class_f_g_m}{FGM}}}
+\DoxyCodeLine{24 \{}
+\DoxyCodeLine{25     \textcolor{keyword}{public}:}
+\DoxyCodeLine{26         \textcolor{comment}{// int np[3]; //not to do this everytime}}
+\DoxyCodeLine{27         \textcolor{comment}{// int nxyz;  //not to do this everytime}}
+\DoxyCodeLine{28         \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} ** np;}
+\DoxyCodeLine{29         \textcolor{keywordtype}{int} * nxyz;}
+\DoxyCodeLine{30 }
+\DoxyCodeLine{31         \textcolor{comment}{// Shape shape;}}
+\DoxyCodeLine{32         \textcolor{comment}{// Material mats[2];}}
+\DoxyCodeLine{33         \mbox{\hyperlink{class_shape}{Shape}} * shapes;}
+\DoxyCodeLine{34 }
+\DoxyCodeLine{35         \textcolor{comment}{// const double ctrl\_y;}}
+\DoxyCodeLine{36         \textcolor{comment}{// const double ctrl\_z;}}
+\DoxyCodeLine{37 }
+\DoxyCodeLine{38         \textcolor{comment}{// Tensor<double, 3> mu;}}
+\DoxyCodeLine{39         \textcolor{comment}{// Tensor<double, 3> lame;}}
+\DoxyCodeLine{40         \textcolor{comment}{// Tensor<double, 3> rho;}}
+\DoxyCodeLine{41         Tensor<double, 3> * rho;}
+\DoxyCodeLine{42 }
+\DoxyCodeLine{43 }
+\DoxyCodeLine{44         Tensor<double,3> * Q11T;}
+\DoxyCodeLine{45         Tensor<double,3> * Q12T;}
+\DoxyCodeLine{46         Tensor<double,3> * Q13T;}
+\DoxyCodeLine{47         Tensor<double,3> * Q14T;}
+\DoxyCodeLine{48         Tensor<double,3> * Q22T;}
+\DoxyCodeLine{49         Tensor<double,3> * Q23T;}
+\DoxyCodeLine{50         Tensor<double,3> * Q24T;}
+\DoxyCodeLine{51         Tensor<double,3> * Q33T;}
+\DoxyCodeLine{52         Tensor<double,3> * Q34T;}
+\DoxyCodeLine{53         Tensor<double,3> * Q44T;}
+\DoxyCodeLine{54         Tensor<double,3> * Q55T;}
+\DoxyCodeLine{55         Tensor<double,3> * Q56T;}
+\DoxyCodeLine{56         Tensor<double,3> * Q66T;}
+\DoxyCodeLine{57 }
+\DoxyCodeLine{58         Tensor<double,3> * JAC;}
+\DoxyCodeLine{59         \textcolor{comment}{// MatrixXd VD\_mu;}}
+\DoxyCodeLine{60         \textcolor{comment}{// MatrixXd VD\_lame;}}
+\DoxyCodeLine{61         \textcolor{comment}{// MatrixXd VD\_rho;}}
+\DoxyCodeLine{62 }
+\DoxyCodeLine{63         MatrixXd * VD\_lame11; }
+\DoxyCodeLine{64         MatrixXd * VD\_lame22;}
+\DoxyCodeLine{65         MatrixXd * VD\_lame33;}
+\DoxyCodeLine{66         MatrixXd * VD\_lame12;}
+\DoxyCodeLine{67         MatrixXd * VD\_lame13;}
+\DoxyCodeLine{68         MatrixXd * VD\_lame23;}
+\DoxyCodeLine{69         MatrixXd * VD\_lame44;}
+\DoxyCodeLine{70         MatrixXd * VD\_lame55;}
+\DoxyCodeLine{71         MatrixXd * VD\_lame66;}
+\DoxyCodeLine{72         MatrixXd * VD\_lame14;}
+\DoxyCodeLine{73         MatrixXd * VD\_lame24;}
+\DoxyCodeLine{74         MatrixXd * VD\_lame34;}
+\DoxyCodeLine{75         MatrixXd * VD\_lame56;}
+\DoxyCodeLine{76         MatrixXd * VD\_ro;}
+\DoxyCodeLine{77         }
+\DoxyCodeLine{78 }
+\DoxyCodeLine{79         \textcolor{comment}{// MatrixXd M;}}
+\DoxyCodeLine{80         \textcolor{comment}{// MatrixXd K;}}
+\DoxyCodeLine{81         MatrixXd * M;}
+\DoxyCodeLine{82         MatrixXd * K;}
+\DoxyCodeLine{83 }
+\DoxyCodeLine{84         MatrixXd MM;}
+\DoxyCodeLine{85         MatrixXd KK;}
+\DoxyCodeLine{86         \textcolor{keywordtype}{int} nnxyz;}
+\DoxyCodeLine{87 }
+\DoxyCodeLine{88         \textcolor{keywordtype}{int} num\_shapes;}
+\DoxyCodeLine{89 }
+\DoxyCodeLine{90         \mbox{\hyperlink{class_f_g_m}{FGM}}(\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} n\_shapes, \mbox{\hyperlink{class_shape}{Shape}}* shps);}
+\DoxyCodeLine{91         \mbox{\hyperlink{class_f_g_m}{\string~FGM}}();}
+\DoxyCodeLine{92 }
+\DoxyCodeLine{93 \textcolor{preprocessor}{\#ifdef GPU}}
+\DoxyCodeLine{101         \textcolor{keywordtype}{void} T1\_system\_matrices\_honeycomb\_GPU(\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{102         }
+\DoxyCodeLine{110         \textcolor{keywordtype}{void} T1\_system\_matrices\_GPU(\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{111 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{112 }
+\DoxyCodeLine{120         \textcolor{keywordtype}{void} \mbox{\hyperlink{class_f_g_m_a5e392cec0d7582a56afaa81db7bef88d}{T1\_system\_matrices\_honeycomb\_CPU}}(\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{121 }
+\DoxyCodeLine{129         \textcolor{keywordtype}{void} \mbox{\hyperlink{class_f_g_m_a878c9eb78f4e4fe86138f54697c8e813}{T1\_system\_matrices\_CPU}}(\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{130 }
+\DoxyCodeLine{142         \textcolor{keywordtype}{bool} \mbox{\hyperlink{class_f_g_m_a37ef79a2a602aea362506e8a653c9b4d}{T1\_system\_matrices}}(\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{143 }
+\DoxyCodeLine{144 }
+\DoxyCodeLine{145         \textcolor{keywordtype}{void} T2\_svd\_CPU(MatrixXd \&BC, MatrixXd \&V);}
+\DoxyCodeLine{146 }
+\DoxyCodeLine{147 \textcolor{preprocessor}{\#ifdef GPU}}
+\DoxyCodeLine{148         \textcolor{keywordtype}{void} T2\_svd\_GPU(MatrixXd \&BC, MatrixXd \&V);}
+\DoxyCodeLine{149 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{150 }
+\DoxyCodeLine{151         \textcolor{keywordtype}{bool} T2\_svd(MatrixXd \&BC, MatrixXd \&V);}
+\DoxyCodeLine{152 }
+\DoxyCodeLine{153 \textcolor{preprocessor}{\#ifdef GPU}}
+\DoxyCodeLine{154         \textcolor{keywordtype}{void} T3\_mul\_inv\_GPU(MatrixXd \&a0, MatrixXd \&P);}
+\DoxyCodeLine{155 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{156 }
+\DoxyCodeLine{157         \textcolor{keywordtype}{void} T3\_mul\_inv\_CPU(MatrixXd \&a0, MatrixXd \&P);}
+\DoxyCodeLine{158 }
+\DoxyCodeLine{159         \textcolor{keywordtype}{bool} T3\_mul\_inv(MatrixXd \&a0, MatrixXd \&P);}
+\DoxyCodeLine{160 }
+\DoxyCodeLine{161         \textcolor{keywordtype}{void} T4\_eigen(MatrixXd \&a0, \textcolor{keywordtype}{int} \&nconv, \textcolor{keywordtype}{double} \&small\_eig);}
+\DoxyCodeLine{162         }
+\DoxyCodeLine{163 }
+\DoxyCodeLine{164         \textcolor{keywordtype}{void} compute\_gpu\_costs(\textcolor{keyword}{const} \textcolor{keywordtype}{int} noeigs, \textcolor{keyword}{const} \textcolor{keywordtype}{int} ncv, \textcolor{keywordtype}{int} \&nconv, \textcolor{keywordtype}{double} \&small\_eig, \textcolor{keyword}{const} \textcolor{keywordtype}{double} shift = 0.01, \textcolor{keyword}{const} \textcolor{keywordtype}{int} max\_iter = -\/1, \textcolor{keyword}{const} \textcolor{keywordtype}{double} tol = -\/1, \textcolor{keywordtype}{int} g\_id = 0, \textcolor{keywordtype}{int} sample\_size = 1);}
+\DoxyCodeLine{165 }
+\DoxyCodeLine{166         \textcolor{keywordtype}{void} compute\_cpu\_costs(\textcolor{keyword}{const} \textcolor{keywordtype}{int} noeigs, \textcolor{keyword}{const} \textcolor{keywordtype}{int} ncv, \textcolor{keywordtype}{int} \&nconv, \textcolor{keywordtype}{double} \&small\_eig,}
+\DoxyCodeLine{167                 \textcolor{keyword}{const} \textcolor{keywordtype}{double} shift = 0.01, \textcolor{keyword}{const} \textcolor{keywordtype}{int} max\_iter = -\/1, \textcolor{keyword}{const} \textcolor{keywordtype}{double} tol = -\/1, \textcolor{keyword}{const} \textcolor{keywordtype}{int} sample\_size = 1);}
+\DoxyCodeLine{168 }
+\DoxyCodeLine{169         \textcolor{keywordtype}{void} removeDuplicateRows(MatrixXd \&mat);}
+\DoxyCodeLine{170 }
+\DoxyCodeLine{171         MatrixXd removeZeroRows(MatrixXd \&mat);}
+\DoxyCodeLine{172 }
+\DoxyCodeLine{173         \textcolor{keywordtype}{void} prepareBoundaryCondition(MatrixXd \&mat, \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{174 }
+\DoxyCodeLine{175         \textcolor{keywordtype}{void} compute(\textcolor{keyword}{const} \textcolor{keywordtype}{int} noeigs, \textcolor{keyword}{const} \textcolor{keywordtype}{int} ncv, \textcolor{keywordtype}{int} \&nconv, \textcolor{keywordtype}{double} \&small\_eig,}
+\DoxyCodeLine{176                 \textcolor{keyword}{const} \textcolor{keywordtype}{double} shift = 0.01, \textcolor{keyword}{const} \textcolor{keywordtype}{int} max\_iter = -\/1, \textcolor{keyword}{const} \textcolor{keywordtype}{double} tol = -\/1);}
+\DoxyCodeLine{177 }
+\DoxyCodeLine{178         MatrixXd beta\_matrix\_3d(MatrixXd \&BC\_3D, \textcolor{keywordtype}{int} xyz, \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{179         }
+\DoxyCodeLine{180 }
+\DoxyCodeLine{181         \textcolor{keywordtype}{void} FG\_var\_MT\_CNT(\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{182 }
+\DoxyCodeLine{183         \textcolor{keywordtype}{void} FG\_var\_MT\_honeycomb(\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{184 }
+\DoxyCodeLine{185         \textcolor{keywordtype}{void} tensor3(VectorXd \&v\_d3Nt, MatrixXd \&Sst, \textcolor{keywordtype}{int} n,}
+\DoxyCodeLine{186                 Tensor<double, 3> \&X);}
+\DoxyCodeLine{187 }
+\DoxyCodeLine{188         \textcolor{keywordtype}{void} inner\_helper(Tensor<double, 3> \&Axyz, Tensor<double, 3> \&Xadl, Tensor<double, 3> \&Ybem, Tensor<double, 3> \&Zcfn,}
+\DoxyCodeLine{189                 MatrixXd \&VD, \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{190         }
+\DoxyCodeLine{191 }
+\DoxyCodeLine{192 }
+\DoxyCodeLine{193         \textcolor{keywordtype}{void} inner\_product\_honeycomb(\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{194         }
+\DoxyCodeLine{195         \textcolor{keywordtype}{void} inner\_product(\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{196 }
+\DoxyCodeLine{197         MatrixXd boundary\_condition\_3d(\textcolor{keywordtype}{int} xyz, \textcolor{keywordtype}{int} ol, \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} l);}
+\DoxyCodeLine{198 }
+\DoxyCodeLine{199 \};}
+
+\end{DoxyCode}
