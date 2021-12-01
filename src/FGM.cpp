@@ -3,8 +3,8 @@
 FGM::~FGM(){
 	delete[] np;
 	delete[] nxyz;
-	delete[] rho; 
-	delete[] JAC; 
+	delete[] rho;
+	delete[] JAC;
 	delete[] Q11T;
 	delete[] Q12T;
 	delete[] Q13T;
@@ -35,6 +35,8 @@ FGM::~FGM(){
 	delete[] M;
 	delete[] K;
 }
+
+#ifndef GPU
 FGM::FGM(unsigned int n_shapes, Shape* shps)
 {
   num_shapes = n_shapes;
@@ -44,7 +46,6 @@ FGM::FGM(unsigned int n_shapes, Shape* shps)
   nnxyz = 0;
   rho = new Tensor<double, 3>[num_shapes];
   JAC = new Tensor<double,3>[num_shapes];
-
   Q11T = new Tensor<double,3>[num_shapes];
   Q12T = new Tensor<double,3>[num_shapes];
   Q13T = new Tensor<double,3>[num_shapes];
@@ -174,10 +175,155 @@ FGM::FGM(unsigned int n_shapes, Shape* shps)
   KK.setZero();
   //
 }
+#endif
+
+#ifdef GPU
+FGM::FGM(unsigned int n_shapes, Shape* shps, GPUManager gpu_mans[], int no_gpus, TaskMemoryReq task_memory_reqs)
+{
+  num_shapes = n_shapes;
+  shapes = shps;
+  task_memory_reqs_ = task_memory_reqs;
+  np = new unsigned int * [num_shapes];
+  nxyz = new int[num_shapes];
+  nnxyz = 0;
+  rho = new Tensor<double, 3>[num_shapes];
+  JAC = new Tensor<double,3>[num_shapes];
+  this->gpu_mans = gpu_mans; 
+  this->no_gpus = no_gpus;
+  Q11T = new Tensor<double,3>[num_shapes];
+  Q12T = new Tensor<double,3>[num_shapes];
+  Q13T = new Tensor<double,3>[num_shapes];
+  Q14T = new Tensor<double,3>[num_shapes];
+  Q22T = new Tensor<double,3>[num_shapes];
+  Q23T = new Tensor<double,3>[num_shapes];
+  Q24T = new Tensor<double,3>[num_shapes];
+  Q33T = new Tensor<double,3>[num_shapes];
+  Q34T = new Tensor<double,3>[num_shapes];
+  Q44T = new Tensor<double,3>[num_shapes];
+  Q55T = new Tensor<double,3>[num_shapes];
+  Q56T = new Tensor<double,3>[num_shapes];
+  Q66T = new Tensor<double,3>[num_shapes];
+
+
+  VD_lame11 = new MatrixXd[num_shapes];
+  VD_lame22 = new MatrixXd[num_shapes];
+  VD_lame33 = new MatrixXd[num_shapes];
+  
+  VD_lame12 = new MatrixXd[num_shapes];
+  VD_lame13 = new MatrixXd[num_shapes];
+  VD_lame23 = new MatrixXd[num_shapes];
+
+  VD_lame44 = new MatrixXd[num_shapes];
+  VD_lame55 = new MatrixXd[num_shapes];
+  VD_lame66 = new MatrixXd[num_shapes];
+
+  VD_lame14 = new MatrixXd[num_shapes];
+  VD_lame24 = new MatrixXd[num_shapes];
+  VD_lame34 = new MatrixXd[num_shapes];
+  VD_lame56 = new MatrixXd[num_shapes];
+  VD_ro = new MatrixXd[num_shapes];
+
+  M = new MatrixXd[num_shapes];
+  K = new MatrixXd[num_shapes];
+  for(unsigned int i = 0; i < n_shapes; i++){
+    np[i] = new unsigned int[3];
+    for(unsigned int j = 0; j < 3; j++){
+      np[i][j] = shapes[i].spaces[j].no_points;
+    }
+
+    JAC[i] = shapes[i].jac;
+    nxyz[i] = np[i][0] * np[i][1] * np[i][2];
+    nnxyz += nxyz[i];
+
+    rho[i] = Tensor<double, 3>(np[i][0], np[i][1], np[i][2]);
+    rho[i].setZero();
+
+    Q11T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+    Q11T[i].setZero();
+    Q12T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+    Q12T[i].setZero();
+    Q13T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+    Q13T[i].setZero();
+    Q14T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+    Q14T[i].setZero();
+    Q22T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+    Q22T[i].setZero();
+    Q23T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+    Q23T[i].setZero();
+    Q24T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+    Q24T[i].setZero();
+    Q33T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+    Q33T[i].setZero();
+    Q34T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+    Q34T[i].setZero();
+    Q44T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+    Q44T[i].setZero();
+    Q55T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+    Q56T[i].setZero();
+    Q66T[i] = Tensor<double,3>(np[i][0], np[i][1], np[i][2]);
+    Q66T[i].setZero();
+    
+    VD_lame11[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame11[i].setZero();
+    VD_lame22[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame22[i].setZero();
+    VD_lame33[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame33[i].setZero();
+
+
+    VD_lame12[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame12[i].setZero();
+    VD_lame13[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame13[i].setZero();
+    VD_lame23[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame23[i].setZero();
+
+    VD_lame44[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame44[i].setZero();
+    VD_lame55[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame55[i].setZero();
+    VD_lame66[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame66[i].setZero();
+
+    VD_lame14[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame14[i].setZero();
+    VD_lame24[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame24[i].setZero();
+    VD_lame34[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame34[i].setZero();
+    VD_lame56[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_lame56[i].setZero();
+
+    VD_ro[i] = MatrixXd(nxyz[i], nxyz[i]);
+    VD_ro[i].setZero();
+
+    M[i] = MatrixXd(3 * nxyz[i], 3 * nxyz[i]);
+    M[i].setZero();
+    K[i] = MatrixXd(3 * nxyz[i], 3 * nxyz[i]);
+    K[i].setZero();
+    if(i != 1)
+      FG_var_MT_CNT(i);
+    else
+      FG_var_MT_honeycomb(i);
+
+    if(i != 1)
+      inner_product(i);
+    else
+      inner_product_honeycomb(i);
+  }
+
+  //initialize MM and KK
+  MM = MatrixXd(M[0].rows() + M[1].rows() + M[2].rows(), M[0].cols() + M[1].cols() + M[2].cols());
+  MM.setZero();    
+  KK = MatrixXd(K[0].rows() + K[1].rows() + K[2].rows(), K[0].cols() + K[1].cols() + K[2].cols());
+  KK.setZero();
+  //
+}
+#endif
 
 
 #ifdef GPU
-void FGM::T1_system_matrices_honeycomb_GPU(unsigned int l)
+void FGM::T1_system_matrices_honeycomb_GPU(unsigned int l, double *gpu_mem_beg, cublasHandle_t &hndl, cudaStream_t &strm)
 {
   int ub = 0;
   int ue = nxyz[l] - 1;
@@ -211,11 +357,10 @@ void FGM::T1_system_matrices_honeycomb_GPU(unsigned int l)
   const double van = 1.0;
   const double ziro = 0.0;
 
-  double *d_VD_lame11, *d_VD_lame22, *d_VD_lame33, *d_VD_lame12, *d_VD_lame13, *d_VD_lame23, *d_VD_lame44, *d_VD_lame55, *d_VD_lame66, *d_VD_lame14, *d_VD_lame24, *d_VD_lame34, *d_VD_lame56, *d_VD_ro, *d_epx, *d_epy, *d_epz, *d_gammaxy, *d_gammayz, *d_gammaxz, *d_epxyz, *d_temp_K, *d_K, *d_temp, *gpu_mem;
-  gpu_mem = rinfos[ttt]->gpu_mem;
+  double *d_VD_lame11, *d_VD_lame22, *d_VD_lame33, *d_VD_lame12, *d_VD_lame13, *d_VD_lame23, *d_VD_lame44, *d_VD_lame55, *d_VD_lame66, *d_VD_lame14, *d_VD_lame24, *d_VD_lame34, *d_VD_lame56, *d_VD_ro, *d_epx, *d_epy, *d_epz, *d_gammaxy, *d_gammayz, *d_gammaxz, *d_epxyz, *d_temp_K, *d_K, *d_temp;
 
   int nc = epx.cols();
-  d_VD_lame11 = gpu_mem;                    //1
+  d_VD_lame11 = gpu_mem_beg;                    //1
   d_VD_lame22 = d_VD_lame11 + VD_lame11[l].size();
   d_VD_lame33 = d_VD_lame22 + VD_lame22[l].size();
   d_VD_lame12 = d_VD_lame33 + VD_lame33[l].size();
@@ -262,49 +407,49 @@ void FGM::T1_system_matrices_honeycomb_GPU(unsigned int l)
   cudaMemcpy(d_gammayz, gammayz.data(), gammayz.size() * sizeof(double), cudaMemcpyHostToDevice);
   //start of (epx.transpose() * sigx)
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame11[l].rows(), nc, VD_lame11[l].cols(), &van, d_VD_lame11, VD_lame11[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame11[l].rows()); //VD_lame11 * epx
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame11[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame11 * epx
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame11[l].rows(), nc, VD_lame11[l].cols(), &van, d_VD_lame11, VD_lame11[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame11[l].rows()); //VD_lame11 * epx
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame11[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame11 * epx
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame12[l].rows(), nc, VD_lame12[l].cols(), &van, d_VD_lame12, VD_lame12[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame12[l].rows()); //VD_lame12 * epy
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame12[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame12 * epy
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame12[l].rows(), nc, VD_lame12[l].cols(), &van, d_VD_lame12, VD_lame12[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame12[l].rows()); //VD_lame12 * epy
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame12[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame12 * epy
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame13[l].rows(), nc, VD_lame13[l].cols(), &van, d_VD_lame13, VD_lame13[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame13[l].rows()); //VD_lame13 * epz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame13[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame13 * epz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame13[l].rows(), nc, VD_lame13[l].cols(), &van, d_VD_lame13, VD_lame13[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame13[l].rows()); //VD_lame13 * epz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame13[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame13 * epz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
   //END OF (epx.transpose() * sigx)
 
   //start of (epy.transpose() * sigy)
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame12[l].rows(), nc, VD_lame12[l].cols(), &van, d_VD_lame12, VD_lame12[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame12[l].rows()); //VD_lame12 * epx
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame12[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame12 * epx
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame12[l].rows(), nc, VD_lame12[l].cols(), &van, d_VD_lame12, VD_lame12[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame12[l].rows()); //VD_lame12 * epx
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame12[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame12 * epx
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame22[l].rows(), nc, VD_lame22[l].cols(), &van, d_VD_lame22, VD_lame22[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame22[l].rows()); //VD_lame22 * epy
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame22[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame12 * epy
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame22[l].rows(), nc, VD_lame22[l].cols(), &van, d_VD_lame22, VD_lame22[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame22[l].rows()); //VD_lame22 * epy
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame22[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame12 * epy
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame23[l].rows(), nc, VD_lame23[l].cols(), &van, d_VD_lame23, VD_lame23[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame23[l].rows()); //VD_lame23 * epz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame23[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame23 * epz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame23[l].rows(), nc, VD_lame23[l].cols(), &van, d_VD_lame23, VD_lame23[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame23[l].rows()); //VD_lame23 * epz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame23[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame23 * epz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
   //END OF (epy.transpose() * sigy)
 
   //start of (epz.transpose() * sigz)
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame13[l].rows(), nc, VD_lame13[l].cols(), &van, d_VD_lame13, VD_lame13[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame13[l].rows()); //VD_lame13 * epx
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame13[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame13 * epx
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame13[l].rows(), nc, VD_lame13[l].cols(), &van, d_VD_lame13, VD_lame13[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame13[l].rows()); //VD_lame13 * epx
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame13[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame13 * epx
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame23[l].rows(), nc, VD_lame23[l].cols(), &van, d_VD_lame23, VD_lame23[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame23[l].rows()); //VD_lame23 * epy
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame23[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame23 * epy
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame23[l].rows(), nc, VD_lame23[l].cols(), &van, d_VD_lame23, VD_lame23[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame23[l].rows()); //VD_lame23 * epy
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame23[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame23 * epy
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame33[l].rows(), nc, VD_lame33[l].cols(), &van, d_VD_lame33, VD_lame33[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame33[l].rows()); //VD_lame33 * epz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame33[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame33 * epz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame33[l].rows(), nc, VD_lame33[l].cols(), &van, d_VD_lame33, VD_lame33[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame33[l].rows()); //VD_lame33 * epz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame33[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame33 * epz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
 
   //END OF (epz.transpose() * sigz)
@@ -312,40 +457,41 @@ void FGM::T1_system_matrices_honeycomb_GPU(unsigned int l)
   //start of (gammaxy.transpose() * tauxy)
 
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame44[l].rows(), nc, VD_lame44[l].cols(), &van, d_VD_lame44, VD_lame44[l].rows(), d_gammaxy, gammaxy.rows(), &ziro, d_temp, VD_lame44[l].rows()); //VD_lame44 * gammaxy
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxy.rows(), &van, d_gammaxy, gammaxy.rows(), d_temp, VD_lame44[l].rows(), &ziro, d_temp_K, nc);//gammaxyT * VD_lame44 * gammaxy
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame44[l].rows(), nc, VD_lame44[l].cols(), &van, d_VD_lame44, VD_lame44[l].rows(), d_gammaxy, gammaxy.rows(), &ziro, d_temp, VD_lame44[l].rows()); //VD_lame44 * gammaxy
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxy.rows(), &van, d_gammaxy, gammaxy.rows(), d_temp, VD_lame44[l].rows(), &ziro, d_temp_K, nc);//gammaxyT * VD_lame44 * gammaxy
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
   //END OF (gammaxy.transpose() * tauxy)
 
 
   //start of (gammayz.transpose() * tauyz)
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame55[l].rows(), nc, VD_lame55[l].cols(), &van, d_VD_lame55, VD_lame55[l].rows(), d_gammayz, gammayz.rows(), &ziro, d_temp, VD_lame55[l].rows()); //VD_lame55 * gammayz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammayz.rows(), &van, d_gammayz, gammayz.rows(), d_temp, VD_lame55[l].rows(), &ziro, d_temp_K, nc);//gammayzT * VD_lame55 * gammayz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);//Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame55[l].rows(), nc, VD_lame55[l].cols(), &van, d_VD_lame55, VD_lame55[l].rows(), d_gammayz, gammayz.rows(), &ziro, d_temp, VD_lame55[l].rows()); //VD_lame55 * gammayz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammayz.rows(), &van, d_gammayz, gammayz.rows(), d_temp, VD_lame55[l].rows(), &ziro, d_temp_K, nc);//gammayzT * VD_lame55 * gammayz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);//Add to K
 
   //END OF (gammayz.transpose() * tauyz)
 
 
   //start of (gammaxz.transpose() * tauxz)
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame66[l].rows(), nc, VD_lame66[l].cols(), &van, d_VD_lame66, VD_lame66[l].rows(), d_gammaxz, gammaxz.rows(), &ziro, d_temp, VD_lame66[l].rows()); //VD_lame66 * gammaxz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxz.rows(), &van, d_gammaxz, gammaxz.rows(), d_temp, VD_lame66[l].rows(), &ziro, d_temp_K, nc);//gammaxzT * VD_lame66 * gammaxz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);//Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame66[l].rows(), nc, VD_lame66[l].cols(), &van, d_VD_lame66, VD_lame66[l].rows(), d_gammaxz, gammaxz.rows(), &ziro, d_temp, VD_lame66[l].rows()); //VD_lame66 * gammaxz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxz.rows(), &van, d_gammaxz, gammaxz.rows(), d_temp, VD_lame66[l].rows(), &ziro, d_temp_K, nc);//gammaxzT * VD_lame66 * gammaxz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);//Add to K
   //END OF (gammaxz.transpose() * tauxz)
 
-  cudaStreamSynchronize(stream[ttt]);
+  cudaStreamSynchronize(strm);
   K[l] = MatrixXd::Zero(nc, nc);
   cudaMemcpy(K[l].data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
   cudaMemset(d_K,0, (nc * nc) * sizeof(double));
   cout<<"K SUM " <<K[l].sum()<<" MAX "<< K[l].maxCoeff()<<endl;
-  cudaMemset(gpu_mem, 0, (d_temp+(nc*nc*sizeof(double)) - gpu_mem));
+  cout << "T1 honeycomb requires " << (d_temp+(nc*nc*sizeof(double)) - gpu_mem_beg) << " bytes"<<endl;
+  cudaMemset(gpu_mem_beg, 0, (d_temp+(nc*nc*sizeof(double)) - gpu_mem_beg));
 }
 
 
 
 
-void FGM::T1_system_matrices_GPU(unsigned int l)
+void FGM::T1_system_matrices_GPU(unsigned int l, double *gpu_mem_beg, cublasHandle_t &hndl, cudaStream_t &strm)
 {
   int ub = 0;
   int ue = nxyz[l] - 1;
@@ -380,10 +526,9 @@ void FGM::T1_system_matrices_GPU(unsigned int l)
   const double ziro = 0.0;
 
   double *d_VD_lame11, *d_VD_lame22, *d_VD_lame33, *d_VD_lame12, *d_VD_lame13, *d_VD_lame23, *d_VD_lame44, *d_VD_lame55, *d_VD_lame66, *d_VD_lame14, *d_VD_lame24, *d_VD_lame34, *d_VD_lame56, *d_VD_ro, *d_epx, *d_epy, *d_epz, *d_gammaxy, *d_gammayz, *d_gammaxz, *d_epxyz, *d_temp_K, *d_K, *d_temp, *gpu_mem;
-  gpu_mem = rinfos[ttt]->gpu_mem;
 
   int nc = epx.cols();
-  d_VD_lame11 = gpu_mem;                    //1
+  d_VD_lame11 = gpu_mem_beg;                    //1
   d_VD_lame22 = d_VD_lame11 + VD_lame11[l].size();
   d_VD_lame33 = d_VD_lame22 + VD_lame22[l].size();
   d_VD_lame12 = d_VD_lame33 + VD_lame33[l].size();
@@ -431,112 +576,113 @@ void FGM::T1_system_matrices_GPU(unsigned int l)
   cudaMemcpy(d_gammayz, gammayz.data(), gammayz.size() * sizeof(double), cudaMemcpyHostToDevice);
   //start of (epx.transpose() * sigx)
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame11[l].rows(), nc, VD_lame11[l].cols(), &van, d_VD_lame11, VD_lame11[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame11[l].rows()); //VD_lame11 * epx
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame11[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame11 * epx
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame11[l].rows(), nc, VD_lame11[l].cols(), &van, d_VD_lame11, VD_lame11[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame11[l].rows()); //VD_lame11 * epx
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame11[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame11 * epx
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame12[l].rows(), nc, VD_lame12[l].cols(), &van, d_VD_lame12, VD_lame12[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame12[l].rows()); //VD_lame12 * epy
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame12[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame12 * epy
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame12[l].rows(), nc, VD_lame12[l].cols(), &van, d_VD_lame12, VD_lame12[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame12[l].rows()); //VD_lame12 * epy
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame12[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame12 * epy
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame13[l].rows(), nc, VD_lame13[l].cols(), &van, d_VD_lame13, VD_lame13[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame13[l].rows()); //VD_lame13 * epz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame13[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame13 * epz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame13[l].rows(), nc, VD_lame13[l].cols(), &van, d_VD_lame13, VD_lame13[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame13[l].rows()); //VD_lame13 * epz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame13[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame13 * epz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame14[l].rows(), nc, VD_lame14[l].cols(), &van, d_VD_lame14, VD_lame14[l].rows(), d_gammaxy, gammaxy.rows(), &ziro, d_temp, VD_lame14[l].rows()); //VD_lame14 * gammaxy
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame14[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame14 * gammaxy
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame14[l].rows(), nc, VD_lame14[l].cols(), &van, d_VD_lame14, VD_lame14[l].rows(), d_gammaxy, gammaxy.rows(), &ziro, d_temp, VD_lame14[l].rows()); //VD_lame14 * gammaxy
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epx.rows(), &van, d_epx, epx.rows(), d_temp, VD_lame14[l].rows(), &ziro, d_temp_K, nc);//epxT * VD_lame14 * gammaxy
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
   //END OF (epx.transpose() * sigx)
 
   //start of (epy.transpose() * sigy)
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame12[l].rows(), nc, VD_lame12[l].cols(), &van, d_VD_lame12, VD_lame12[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame12[l].rows()); //VD_lame12 * epx
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame12[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame12 * epx
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame12[l].rows(), nc, VD_lame12[l].cols(), &van, d_VD_lame12, VD_lame12[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame12[l].rows()); //VD_lame12 * epx
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame12[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame12 * epx
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame22[l].rows(), nc, VD_lame22[l].cols(), &van, d_VD_lame22, VD_lame22[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame22[l].rows()); //VD_lame22 * epy
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame22[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame12 * epy
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame22[l].rows(), nc, VD_lame22[l].cols(), &van, d_VD_lame22, VD_lame22[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame22[l].rows()); //VD_lame22 * epy
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame22[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame12 * epy
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame23[l].rows(), nc, VD_lame23[l].cols(), &van, d_VD_lame23, VD_lame23[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame23[l].rows()); //VD_lame23 * epz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame23[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame23 * epz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame23[l].rows(), nc, VD_lame23[l].cols(), &van, d_VD_lame23, VD_lame23[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame23[l].rows()); //VD_lame23 * epz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame23[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame23 * epz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame24[l].rows(), nc, VD_lame24[l].cols(), &van, d_VD_lame24, VD_lame24[l].rows(), d_gammaxy, gammaxy.rows(), &ziro, d_temp, VD_lame24[l].rows()); //VD_lame24 * gammaxy
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame24[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame24 * gammaxy
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame24[l].rows(), nc, VD_lame24[l].cols(), &van, d_VD_lame24, VD_lame24[l].rows(), d_gammaxy, gammaxy.rows(), &ziro, d_temp, VD_lame24[l].rows()); //VD_lame24 * gammaxy
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epy.rows(), &van, d_epy, epy.rows(), d_temp, VD_lame24[l].rows(), &ziro, d_temp_K, nc);//epyT * VD_lame24 * gammaxy
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
   //END OF (epy.transpose() * sigy)
 
   //start of (epz.transpose() * sigz)
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame13[l].rows(), nc, VD_lame13[l].cols(), &van, d_VD_lame13, VD_lame13[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame13[l].rows()); //VD_lame13 * epx
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame13[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame13 * epx
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame13[l].rows(), nc, VD_lame13[l].cols(), &van, d_VD_lame13, VD_lame13[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame13[l].rows()); //VD_lame13 * epx
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame13[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame13 * epx
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame23[l].rows(), nc, VD_lame23[l].cols(), &van, d_VD_lame23, VD_lame23[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame23[l].rows()); //VD_lame23 * epy
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame23[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame23 * epy
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame23[l].rows(), nc, VD_lame23[l].cols(), &van, d_VD_lame23, VD_lame23[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame23[l].rows()); //VD_lame23 * epy
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame23[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame23 * epy
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame33[l].rows(), nc, VD_lame33[l].cols(), &van, d_VD_lame33, VD_lame33[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame33[l].rows()); //VD_lame33 * epz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame33[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame33 * epz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame33[l].rows(), nc, VD_lame33[l].cols(), &van, d_VD_lame33, VD_lame33[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame33[l].rows()); //VD_lame33 * epz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame33[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame33 * epz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame34[l].rows(), nc, VD_lame34[l].cols(), &van, d_VD_lame34, VD_lame34[l].rows(), d_gammaxy, gammaxy.rows(), &ziro, d_temp, VD_lame34[l].rows()); //VD_lame34 * gammaxy
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame34[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame34 * gammaxy
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame34[l].rows(), nc, VD_lame34[l].cols(), &van, d_VD_lame34, VD_lame34[l].rows(), d_gammaxy, gammaxy.rows(), &ziro, d_temp, VD_lame34[l].rows()); //VD_lame34 * gammaxy
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, epz.rows(), &van, d_epz, epz.rows(), d_temp, VD_lame34[l].rows(), &ziro, d_temp_K, nc);//epzT * VD_lame34 * gammaxy
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
   //END OF (epz.transpose() * sigz)
   
   //start of (gammaxy.transpose() * tauxy)
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame14[l].rows(), nc, VD_lame14[l].cols(), &van, d_VD_lame14, VD_lame14[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame14[l].rows()); //VD_lame14 * epx
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxy.rows(), &van, d_gammaxy, gammaxy.rows(), d_temp, VD_lame14[l].rows(), &ziro, d_temp_K, nc);//gammaxyT * VD_lame14 * epx
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame14[l].rows(), nc, VD_lame14[l].cols(), &van, d_VD_lame14, VD_lame14[l].rows(), d_epx, epx.rows(), &ziro, d_temp, VD_lame14[l].rows()); //VD_lame14 * epx
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxy.rows(), &van, d_gammaxy, gammaxy.rows(), d_temp, VD_lame14[l].rows(), &ziro, d_temp_K, nc);//gammaxyT * VD_lame14 * epx
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame24[l].rows(), nc, VD_lame24[l].cols(), &van, d_VD_lame24, VD_lame24[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame24[l].rows()); //VD_lame24 * epy
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxy.rows(), &van, d_gammaxy, gammaxy.rows(), d_temp, VD_lame24[l].rows(), &ziro, d_temp_K, nc);//gammaxyT * VD_lame24 * epy
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame24[l].rows(), nc, VD_lame24[l].cols(), &van, d_VD_lame24, VD_lame24[l].rows(), d_epy, epy.rows(), &ziro, d_temp, VD_lame24[l].rows()); //VD_lame24 * epy
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxy.rows(), &van, d_gammaxy, gammaxy.rows(), d_temp, VD_lame24[l].rows(), &ziro, d_temp_K, nc);//gammaxyT * VD_lame24 * epy
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame34[l].rows(), nc, VD_lame34[l].cols(), &van, d_VD_lame34, VD_lame34[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame34[l].rows()); //VD_lame34 * epz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxy.rows(), &van, d_gammaxy, gammaxy.rows(), d_temp, VD_lame34[l].rows(), &ziro, d_temp_K, nc);//gammxyT * VD_lame34 * epz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame34[l].rows(), nc, VD_lame34[l].cols(), &van, d_VD_lame34, VD_lame34[l].rows(), d_epz, epz.rows(), &ziro, d_temp, VD_lame34[l].rows()); //VD_lame34 * epz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxy.rows(), &van, d_gammaxy, gammaxy.rows(), d_temp, VD_lame34[l].rows(), &ziro, d_temp_K, nc);//gammxyT * VD_lame34 * epz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame44[l].rows(), nc, VD_lame44[l].cols(), &van, d_VD_lame44, VD_lame44[l].rows(), d_gammaxy, gammaxy.rows(), &ziro, d_temp, VD_lame44[l].rows()); //VD_lame44 * gammaxy
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxy.rows(), &van, d_gammaxy, gammaxy.rows(), d_temp, VD_lame44[l].rows(), &ziro, d_temp_K, nc);//gammaxyT * VD_lame44 * gammaxy
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame44[l].rows(), nc, VD_lame44[l].cols(), &van, d_VD_lame44, VD_lame44[l].rows(), d_gammaxy, gammaxy.rows(), &ziro, d_temp, VD_lame44[l].rows()); //VD_lame44 * gammaxy
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxy.rows(), &van, d_gammaxy, gammaxy.rows(), d_temp, VD_lame44[l].rows(), &ziro, d_temp_K, nc);//gammaxyT * VD_lame44 * gammaxy
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc); //Add to K
 
   //END OF (gammaxy.transpose() * tauxy)
 
 
   //start of (gammayz.transpose() * tauyz)
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame55[l].rows(), nc, VD_lame55[l].cols(), &van, d_VD_lame55, VD_lame55[l].rows(), d_gammayz, gammayz.rows(), &ziro, d_temp, VD_lame55[l].rows()); //VD_lame55 * gammayz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammayz.rows(), &van, d_gammayz, gammayz.rows(), d_temp, VD_lame55[l].rows(), &ziro, d_temp_K, nc);//gammayzT * VD_lame55 * gammayz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);//Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame55[l].rows(), nc, VD_lame55[l].cols(), &van, d_VD_lame55, VD_lame55[l].rows(), d_gammayz, gammayz.rows(), &ziro, d_temp, VD_lame55[l].rows()); //VD_lame55 * gammayz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammayz.rows(), &van, d_gammayz, gammayz.rows(), d_temp, VD_lame55[l].rows(), &ziro, d_temp_K, nc);//gammayzT * VD_lame55 * gammayz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);//Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame56[l].rows(), nc, VD_lame56[l].cols(), &van, d_VD_lame56, VD_lame56[l].rows(), d_gammaxz, gammaxz.rows(), &ziro, d_temp, VD_lame56[l].rows()); //VD_lame56 * gammaxz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammayz.rows(), &van, d_gammayz, gammayz.rows(), d_temp, VD_lame56[l].rows(), &ziro, d_temp_K, nc);//gammayzT * VD_lame56 * gammaxz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);//Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame56[l].rows(), nc, VD_lame56[l].cols(), &van, d_VD_lame56, VD_lame56[l].rows(), d_gammaxz, gammaxz.rows(), &ziro, d_temp, VD_lame56[l].rows()); //VD_lame56 * gammaxz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammayz.rows(), &van, d_gammayz, gammayz.rows(), d_temp, VD_lame56[l].rows(), &ziro, d_temp_K, nc);//gammayzT * VD_lame56 * gammaxz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);//Add to K
   //END OF (gammayz.transpose() * tauyz)
 
 
   //start of (gammaxz.transpose() * tauxz)
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame56[l].rows(), nc, VD_lame56[l].cols(), &van, d_VD_lame56, VD_lame56[l].rows(), d_gammayz, gammayz.rows(), &ziro, d_temp, VD_lame56[l].rows()); //VD_lame56 * gammayz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxz.rows(), &van, d_gammaxz, gammaxz.rows(), d_temp, VD_lame56[l].rows(), &ziro, d_temp_K, nc);//gammaxzT * VD_lame56 * gammayz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);//Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame56[l].rows(), nc, VD_lame56[l].cols(), &van, d_VD_lame56, VD_lame56[l].rows(), d_gammayz, gammayz.rows(), &ziro, d_temp, VD_lame56[l].rows()); //VD_lame56 * gammayz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxz.rows(), &van, d_gammaxz, gammaxz.rows(), d_temp, VD_lame56[l].rows(), &ziro, d_temp_K, nc);//gammaxzT * VD_lame56 * gammayz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);//Add to K
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, VD_lame66[l].rows(), nc, VD_lame66[l].cols(), &van, d_VD_lame66, VD_lame66[l].rows(), d_gammaxz, gammaxz.rows(), &ziro, d_temp, VD_lame66[l].rows()); //VD_lame66 * gammaxz
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxz.rows(), &van, d_gammaxz, gammaxz.rows(), d_temp, VD_lame66[l].rows(), &ziro, d_temp_K, nc);//gammaxzT * VD_lame66 * gammaxz
-  cublasDgeam(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);//Add to K
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, VD_lame66[l].rows(), nc, VD_lame66[l].cols(), &van, d_VD_lame66, VD_lame66[l].rows(), d_gammaxz, gammaxz.rows(), &ziro, d_temp, VD_lame66[l].rows()); //VD_lame66 * gammaxz
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, gammaxz.rows(), &van, d_gammaxz, gammaxz.rows(), d_temp, VD_lame66[l].rows(), &ziro, d_temp_K, nc);//gammaxzT * VD_lame66 * gammaxz
+  cublasDgeam(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, &van, d_K, nc, &van, d_temp_K, nc, d_K, nc);//Add to K
   //END OF (gammaxz.transpose() * tauxz)
 
-  cudaStreamSynchronize(stream[ttt]);
+  cudaStreamSynchronize(strm);
   K[l] = MatrixXd::Zero(nc, nc);
   cudaMemcpy(K[l].data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
+  cout << "K Sum "<< K[l].sum()<<endl; 
   cudaMemset(d_K,0, (nc * nc) * sizeof(double));
-  cudaMemset(gpu_mem, 0, (d_temp+(nc*nc*sizeof(double)) - gpu_mem));
-  
+  cout << "T1 requires " << (d_temp+(nc*nc*sizeof(double)) - gpu_mem_beg) << " bytes"<<endl;
+  cudaMemset(gpu_mem_beg, 0, (d_temp+(nc*nc*sizeof(double)) - gpu_mem_beg));
 }
 
 #endif
@@ -628,58 +774,99 @@ void FGM::T1_system_matrices_CPU(unsigned int l)
 
 }
 
+#ifdef GPU
+bool FGM::check_and_allocate_gpu(size_t required_memory, cudaStream_t &stream, cublasHandle_t &cublasHandle, int &device_id, void* &gpu_mem_beg){
+	bool is_gpu = false;
+	device_id = -1; 
+	for(int i = 0; i<no_gpus; i++){
+		bool is_empty = gpu_mans[i].check_for_task(required_memory);
+		if(is_empty){
+			device_id = i;
+			gpuErrchk(cudaSetDevice(device_id));
+			//Create handles and streams
+			stream = gpu_mans[i].create_cuda_stream(ttt);	
+			cublasHandle = gpu_mans[i].create_cublas_handle(ttt);
+			//Allocare required memory
+			gpu_mem_beg = (double*)gpu_mans[i].allocate_memory(required_memory, is_gpu);
+			if(is_gpu) 
+				break;
+			else{
+				gpu_mans[i].destroy_cudastream(ttt);
+				gpu_mans[i].destroy_cublas_handle(ttt);
+			}
+		}
+	}
+	return is_gpu;
+}
 
-
-
+bool FGM::check_and_allocate_gpu_t2(size_t required_memory, cusolverDnHandle_t &cusolverHandle, cudaStream_t &stream, cublasHandle_t &cublasHandle, int &device_id, void* &gpu_mem_beg){
+	bool is_gpu = false;
+	device_id = -1; 
+	for(int i = 0; i<no_gpus; i++){
+		//TODO(kaya) : get size of the task dynamically from a config file or pre-run the steps.
+		bool is_empty = gpu_mans[i].check_for_task(required_memory);
+		if(is_empty){
+			device_id = i;
+			gpuErrchk(cudaSetDevice(device_id));
+			//Create handles and streams
+			stream = gpu_mans[i].create_cuda_stream(ttt);	
+			cublasHandle = gpu_mans[i].create_cublas_handle(ttt);
+			cusolverHandle = gpu_mans[i].create_cusolver_handle(ttt);
+			//Allocare required memory
+			gpu_mem_beg = (double*)gpu_mans[i].allocate_memory(required_memory, is_gpu);
+                        if(is_gpu)
+                                break;
+                        else{
+                                gpu_mans[i].destroy_cudastream(ttt);
+                                gpu_mans[i].destroy_cublas_handle(ttt);
+                        }
+		}
+	}
+	return is_gpu;
+}
+bool FGM::check_and_allocate_gpu_in_task(size_t required_memory, int device_id, double* &gpu_mem_beg){
+	bool is_empty = false;
+	if(gpu_mans[device_id].remaining_memory_ > required_memory)
+		gpu_mem_beg = (double*)gpu_mans[device_id].allocate_memory(required_memory, is_empty);
+	return is_empty;
+}
+#endif
 bool FGM::T1_system_matrices(unsigned int l)
 {
-#ifdef SMART
-  int decision = GPUID;
-  int tid = omp_get_thread_num();
-  int cid = sched_getcpu();
-  int gid = rinfos[tid]->gpu_id;
 
-  if (gloads[gid] > (cloads[cid] + ccosts[0]) * GPU_MULT)
-  {
-    decision = CPUID;
+#if defined GPU
+  if(l !=1){
+	int device_id = -1;
+	void *gpu_mem = nullptr;
+	cublasHandle_t cublasHandle;
+	cudaStream_t cudaStream;
+	if(check_and_allocate_gpu(task_memory_reqs_.T1, cudaStream, cublasHandle,device_id,gpu_mem)){
+		cout<<"T1 is taken by GPU " << device_id<< endl;
+		T1_system_matrices_GPU(l,((double*)gpu_mem), cublasHandle, cudaStream);
+		gpu_mans[device_id].free_memory((double*)gpu_mem,task_memory_reqs_.T1);
+		gpu_mans[device_id].destroy_cublas_handle(ttt);
+		gpu_mans[device_id].destroy_cudastream(ttt);
+	}else{
+		cout<<"T1 is taken by CPU"<<endl;
+    		T1_system_matrices_CPU(l);
+	}
   }
-
-  if (decision == GPUID)
-  {
-    //cout << tid << " decision 1 GPU - " << gloads[gid] << " " << cloads[cid] << endl;
-
-    omp_set_lock(&glocks[gid]);
-    gloads[gid] += gcosts[PADDING * gid][0];
-    omp_unset_lock(&glocks[gid]);
-
-    T1_system_matrices_GPU(l);
-
-    omp_set_lock(&glocks[gid]);
-    gloads[gid] -= gcosts[PADDING * gid][0];
-    omp_unset_lock(&glocks[gid]);
-    return true;
+  else{
+	int device_id = -1;
+	void *gpu_mem = nullptr;
+	cublasHandle_t cublasHandle;
+	cudaStream_t cudaStream;
+	if(check_and_allocate_gpu(task_memory_reqs_.T1_h, cudaStream, cublasHandle,device_id,gpu_mem)){
+                cout<<"T1 is taken by GPU " << device_id<< endl;
+                T1_system_matrices_honeycomb_GPU(l,((double*)gpu_mem), cublasHandle, cudaStream);
+                gpu_mans[device_id].free_memory((double*)gpu_mem,task_memory_reqs_.T1);
+                gpu_mans[device_id].destroy_cublas_handle(ttt);
+                gpu_mans[device_id].destroy_cudastream(ttt);
+        }else{
+                cout<<"T1 is taken by CPU"<<endl;
+                T1_system_matrices_honeycomb_CPU(l);
+        } 	
   }
-  else
-  {
-    //cout << tid << " decision 1 CPU - " << gloads[gid] << " " << cloads[cid] << endl;
-
-    omp_set_lock(&clocks[cid]);
-    cloads[cid] += ccosts[0];
-    omp_unset_lock(&clocks[cid]);
-
-    T1_system_matrices_CPU(l);
-
-    omp_set_lock(&clocks[cid]);
-    cloads[cid] -= ccosts[0];
-    omp_unset_lock(&clocks[cid]);
-    return false;
-  }
-
-#elif defined GPU
-  if(l !=1)
-    T1_system_matrices_GPU(l);
-  else
-    T1_system_matrices_honeycomb_GPU(l);
 
   return true;
 
@@ -707,9 +894,8 @@ void FGM::T2_svd_CPU(MatrixXd &BC, MatrixXd &V)
 
 
 #ifdef GPU
-void FGM::T2_svd_GPU(MatrixXd &BC, MatrixXd &V)
+bool FGM::T2_svd_GPU(double *gpu_mem_beg, cusolverDnHandle_t &cuslv,cublasHandle_t &hndl, cudaStream_t &strm,MatrixXd &BC, MatrixXd &V,int device_id)
 {
-  double * gpu_mem = rinfos[ttt]->gpu_mem;
   gesvdjInfo_t gesvdj_params = NULL;
 
   cusolverStatus_t status = CUSOLVER_STATUS_SUCCESS;
@@ -721,13 +907,14 @@ void FGM::T2_svd_GPU(MatrixXd &BC, MatrixXd &V)
   const int m = BC.rows();
   const int n = BC.cols();
 
-  double *d_A = gpu_mem;
+  double *d_A = gpu_mem_beg;
   double *d_S = d_A + m * n;
   double *d_U = d_S + n;
   double *d_V = d_U + m * m;
   int *d_info = (int *)(d_V + n * n);
   int lwork = 0;
   double *d_work = (double *)(d_info + n);
+  cout<<"T2 requires"<< (d_work - d_A)*sizeof(double) << endl;
 
   int info = 0;
   
@@ -779,19 +966,21 @@ void FGM::T2_svd_GPU(MatrixXd &BC, MatrixXd &V)
       assert(cudaSuccess == cudaStat1); 	
 
   //Step 4: query workspace of SVD
-  status = cusolverDnDgesvdj_bufferSize(dnhandle[ttt], jobz, econ, m, n, d_A, m, d_S, d_U, m, d_V, n, &lwork, gesvdj_params);
+  status = cusolverDnDgesvdj_bufferSize(cuslv, jobz, econ, m, n, d_A, m, d_S, d_U, m, d_V, n, &lwork, gesvdj_params);
   assert(CUSOLVER_STATUS_SUCCESS == status);
 
   
-
-
-  cudaStat1 = cudaMalloc((void**)&d_work, sizeof(double)*lwork);
+  //Divide here deallocate all the memory if this gpu does not have enough memory
+  if(!check_and_allocate_gpu_in_task(lwork*sizeof(double),device_id,d_work)){
+	return false; //GPU Failed fall back to CPU
+  }
+  //cudaStat1 = cudaMalloc((void**)&d_work, sizeof(double)*lwork);
 
   
   //assert(cudaSuccess == cudaStat1);
   
   //Step 5: compute SVD
-  status = cusolverDnDgesvdj(dnhandle[ttt], jobz, econ, m, n, d_A, m, d_S, d_U, m, d_V, n, d_work, lwork, d_info, gesvdj_params);
+  status = cusolverDnDgesvdj(cuslv, jobz, econ, m, n, d_A, m, d_S, d_U, m, d_V, n, d_work, lwork, d_info, gesvdj_params);
   cudaStat1 = cudaDeviceSynchronize(); // ???
   assert(CUSOLVER_STATUS_SUCCESS == status);
   assert(cudaSuccess == cudaStat1);
@@ -810,8 +999,8 @@ void FGM::T2_svd_GPU(MatrixXd &BC, MatrixXd &V)
     printf("WARNING: info = %d : gesvdj does not converge \n", info);
   }
 
-  cudaMemset(gpu_mem, 0, (d_work+(lwork*sizeof(double)) - gpu_mem));
-  if(d_work) cudaFree(d_work);
+  //cudaMemset(gpu_mem_beg, 0, (d_work+(lwork*sizeof(double)) - gpu_mem_beg));
+  if(d_work) gpu_mans[device_id].free_memory(d_work,lwork*sizeof(double));
 }
 
 #endif
@@ -820,45 +1009,27 @@ void FGM::T2_svd_GPU(MatrixXd &BC, MatrixXd &V)
 
 bool FGM::T2_svd(MatrixXd &BC, MatrixXd &V)
 {
-#ifdef SMART
-  int decision = GPUID;
-  int tid = omp_get_thread_num();
-  int cid = sched_getcpu();
-  int gid = rinfos[tid]->gpu_id;
-
-  if (gloads[gid] > (cloads[cid] + ccosts[1]) * GPU_MULT)
-  {
-    decision = CPUID;
+#if defined GPU
+  int device_id = -1;
+  void *gpu_mem = nullptr;
+  cublasHandle_t cublasHandle;
+  cudaStream_t cudaStream;
+  cusolverDnHandle_t cusolverHandle;
+  if(check_and_allocate_gpu_t2(task_memory_reqs_.T2, cusolverHandle, cudaStream, cublasHandle,device_id,gpu_mem)){
+	cout<<"T2 is taken by GPU " << device_id<< endl;
+	bool is_second_alloc_success = T2_svd_GPU(((double*)gpu_mem), cusolverHandle,cublasHandle, cudaStream,BC,V,device_id);
+	//T2_svd_CPU(BC,V);
+	gpu_mans[device_id].free_memory((double*)gpu_mem,task_memory_reqs_.T2);
+        gpu_mans[device_id].destroy_cublas_handle(ttt);
+        gpu_mans[device_id].destroy_cudastream(ttt);
+	if(!is_second_alloc_success){
+		cout<<"T2 - second alloc failed"<<endl;
+		T2_svd_CPU(BC,V);
+	}
+  }else{
+        cout<<"T2 is taken by CPU"<<endl;
+        T2_svd_CPU(BC,V);
   }
-
-  if (decision == GPUID)
-  {
-    omp_set_lock(&glocks[gid]);
-    gloads[gid] += gcosts[PADDING * gid][1];
-    omp_unset_lock(&glocks[gid]);
-
-    T2_svd_GPU(BC, V);
-
-    omp_set_lock(&glocks[gid]);
-    gloads[gid] -= gcosts[PADDING * gid][1];
-    omp_unset_lock(&glocks[gid]);
-    return true;
-  }
-  else
-  {
-    omp_set_lock(&clocks[cid]);
-    cloads[cid] += ccosts[1];
-    omp_unset_lock(&clocks[cid]);
-
-    T2_svd_CPU(BC, V);
-
-    omp_set_lock(&clocks[cid]);
-    cloads[cid] -= ccosts[1];
-    omp_unset_lock(&clocks[cid]);
-    return false;
-  }
-#elif defined GPU
-  T2_svd_GPU(BC, V);
   return true;
 #else
   T2_svd_CPU(BC, V);
@@ -868,18 +1039,15 @@ bool FGM::T2_svd(MatrixXd &BC, MatrixXd &V)
 
 
 #ifdef GPU
-void FGM::T3_mul_inv_GPU(MatrixXd &a0, MatrixXd &P)
+bool FGM::T3_mul_inv_GPU(double *gpu_mem_beg,cusolverDnHandle_t &cuslv,cublasHandle_t &hndl, cudaStream_t &strm, MatrixXd &a0, MatrixXd &P,int device_id)
 {
   const double van = 1.0;
   const double ziro = 0.0;
-  double *gpu_mem = rinfos[ttt]->gpu_mem;
   double *d_K, *d_M, *d_P, *d_K_phy, *d_M_phy, *d_a0, *d_temp, *d_M_phy_i, *d_work;
   int *d_pivot, *d_info, Lwork;
 
   int nc = P.cols();
-  int tid = omp_get_thread_num();
-  int gid = rinfos[tid]->gpu_id;
-  d_K = gpu_mem;                            //9
+  d_K = gpu_mem_beg;                            //9
   d_M = d_K + (KK.rows()*KK.cols());            //9
   d_P = d_M + (MM.rows()*MM.cols());            //max 9
   d_K_phy = d_P + (P.rows()*P.cols());          //max 9
@@ -890,6 +1058,7 @@ void FGM::T3_mul_inv_GPU(MatrixXd &a0, MatrixXd &P)
   d_pivot = (int *)(d_M_phy_i + (nc * nc)); //max 1
   d_info = d_pivot + nc;                    //max 1
   d_work = (double *)(d_info + nc);         //max 1.
+  cout << "T3 requires " <<d_work - d_K << endl;
 
   cudaMemcpy(d_K, KK.data(), KK.size() * sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(d_M, MM.data(), MM.size() * sizeof(double), cudaMemcpyHostToDevice);
@@ -898,24 +1067,28 @@ void FGM::T3_mul_inv_GPU(MatrixXd &a0, MatrixXd &P)
   cudaMemcpy(d_M_phy_i, Id.data(), Id.size() * sizeof(double), cudaMemcpyHostToDevice);
 
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, KK.rows(), nc, KK.cols(), &van, d_K, KK.rows(), d_P, P.rows(), &ziro, d_temp, KK.rows()); //alpha * K * P + beta * K
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, P.rows(), &van, d_P, P.rows(), d_temp, KK.rows(), &ziro, d_K_phy, P.cols());   //Pt * K * P
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, MM.rows(), nc, MM.cols(), &van, d_M, MM.rows(), d_P, P.rows(), &ziro, d_temp, MM.rows()); //M * P
-  cublasDgemm(handle[ttt], CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, P.rows(), &van, d_P, P.rows(), d_temp, MM.rows(), &ziro, d_M_phy, P.cols());   //Pt * M * P
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, KK.rows(), nc, KK.cols(), &van, d_K, KK.rows(), d_P, P.rows(), &ziro, d_temp, KK.rows()); //alpha * K * P + beta * K
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, P.rows(), &van, d_P, P.rows(), d_temp, KK.rows(), &ziro, d_K_phy, P.cols());   //Pt * K * P
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, MM.rows(), nc, MM.cols(), &van, d_M, MM.rows(), d_P, P.rows(), &ziro, d_temp, MM.rows()); //M * P
+  cublasDgemm(hndl, CUBLAS_OP_T, CUBLAS_OP_N, nc, nc, P.rows(), &van, d_P, P.rows(), d_temp, MM.rows(), &ziro, d_M_phy, P.cols());   //Pt * M * P
   
   
-  cusolveSafeCall(cusolverDnDgetrf_bufferSize(dnhandle[ttt], nc, nc, d_M_phy, nc, &Lwork));
-  cudaMalloc((void**)&d_work, sizeof(double)*Lwork);
+  cusolveSafeCall(cusolverDnDgetrf_bufferSize(cuslv, nc, nc, d_M_phy, nc, &Lwork));
+  //cudaMalloc((void**)&d_work, sizeof(double)*Lwork);
+  if(!check_and_allocate_gpu_in_task(Lwork*sizeof(double),device_id,d_work)){
+	return false; //GPU Failed fall back to CPU
+  }
 
-  cusolveSafeCall(cusolverDnDgetrf(dnhandle[ttt], nc, nc, d_M_phy, nc, d_work, d_pivot, d_info));
-  cusolveSafeCall(cusolverDnDgetrs(dnhandle[ttt], CUBLAS_OP_N, nc, nc, d_M_phy, nc, d_pivot, d_M_phy_i, nc, d_info));
+  cusolveSafeCall(cusolverDnDgetrf(cuslv, nc, nc, d_M_phy, nc, d_work, d_pivot, d_info));
+  cusolveSafeCall(cusolverDnDgetrs(cuslv, CUBLAS_OP_N, nc, nc, d_M_phy, nc, d_pivot, d_M_phy_i, nc, d_info));
 
-  cublasDgemm(handle[ttt], CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, nc, &van, d_M_phy_i, nc, d_K_phy, nc, &ziro, d_a0, nc); //M_phy_i * K_phy
-  cudaStreamSynchronize(stream[ttt]);
+  cublasDgemm(hndl, CUBLAS_OP_N, CUBLAS_OP_N, nc, nc, nc, &van, d_M_phy_i, nc, d_K_phy, nc, &ziro, d_a0, nc); //M_phy_i * K_phy
+  cudaStreamSynchronize(strm);
 
   cudaMemcpy(a0.data(), d_a0, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
-  cudaMemset(gpu_mem, 0, ((double*)(d_info+(nc*sizeof(int))) - gpu_mem));
-  if(d_work) cudaFree(d_work);
+  cudaMemset(gpu_mem_beg, 0, ((double*)(d_info+(nc*sizeof(int))) - gpu_mem_beg));
+  if(d_work) gpu_mans[device_id].free_memory(d_work, Lwork*sizeof(double));
+  return true;
 }
 #endif
 
@@ -923,9 +1096,17 @@ void FGM::T3_mul_inv_GPU(MatrixXd &a0, MatrixXd &P)
 
 void FGM::T3_mul_inv_CPU(MatrixXd &a0, MatrixXd &P)
 {
-  MatrixXd K_phy = P.transpose() * (KK * P);
-  MatrixXd M_phy = P.transpose() * (MM * P);
-  a0 = M_phy.inverse() * K_phy;  
+  //apply sparse multiplication and then ldt
+  SparseMatrix<double> KK_sparse = KK.sparseView();
+  SparseMatrix<double> MM_sparse = MM.sparseView();
+  SparseMatrix<double> P_sparse = P.sparseView();
+  KK_sparse.makeCompressed();
+  MM_sparse.makeCompressed();
+  P_sparse.makeCompressed();
+  MatrixXd K_phy = P_sparse.transpose() * (KK_sparse * P_sparse);
+  MatrixXd M_phy = P_sparse.transpose() * (MM_sparse * P_sparse);
+  
+  a0 = M_phy.llt().solve(K_phy);  
 }
 
 
@@ -933,49 +1114,30 @@ void FGM::T3_mul_inv_CPU(MatrixXd &a0, MatrixXd &P)
 
 bool FGM::T3_mul_inv(MatrixXd &a0, MatrixXd &P)
 {
-#ifdef SMART
-  int decision = GPUID;
-  int tid = omp_get_thread_num();
-  int cid = sched_getcpu();
-  int gid = rinfos[tid]->gpu_id;
-
-  if (gloads[gid] > (cloads[cid] + ccosts[2]) * GPU_MULT)
-  {
-    decision = CPUID;
-  }
-
-  if (decision == GPUID)
-  {
-    omp_set_lock(&glocks[gid]);
-    gloads[gid] += gcosts[PADDING * gid][2];
-    omp_unset_lock(&glocks[gid]);
-
-    T3_mul_inv_GPU(a0, P);
-
-    omp_set_lock(&glocks[gid]);
-    gloads[gid] -= gcosts[PADDING * gid][2];
-    omp_unset_lock(&glocks[gid]);
-    return true;
-  }
-  else
-  {
-    omp_set_lock(&clocks[cid]);
-    cloads[cid] += ccosts[2];
-    omp_unset_lock(&clocks[cid]);
-
-    T3_mul_inv_CPU(a0, P);
-
-    omp_set_lock(&clocks[cid]);
-    cloads[cid] -= ccosts[2];
-    omp_unset_lock(&clocks[cid]);
-    return false;
-  }
-#elif defined GPU
-  T3_mul_inv_GPU(a0, P);
-  return true;
+#if defined GPU
+	int device_id = -1;
+	void *gpu_mem = nullptr;
+	cublasHandle_t cublasHandle;
+	cudaStream_t cudaStream;
+	cusolverDnHandle_t cusolverHandle;
+	if(check_and_allocate_gpu_t2(task_memory_reqs_.T3, cusolverHandle, cudaStream, cublasHandle,device_id,gpu_mem)){
+		cout<<"T3 is taken by GPU " << device_id<< endl;
+		bool is_second_alloc_success = T3_mul_inv_GPU(((double*)gpu_mem),cusolverHandle, cublasHandle, cudaStream,a0,P,device_id);
+		gpu_mans[device_id].free_memory((double*)gpu_mem,task_memory_reqs_.T3);
+		gpu_mans[device_id].destroy_cublas_handle(ttt);
+		gpu_mans[device_id].destroy_cudastream(ttt);
+		if(!is_second_alloc_success){
+         		cout<<"T2 - second alloc failed"<<endl;
+                	T3_mul_inv_CPU(a0,P);
+       		 }
+	}else{
+		cout<<"T3 is taken by CPU"<<endl;
+		T3_mul_inv_CPU(a0,P);
+  	}
+	return true;
 #else
-  T3_mul_inv_CPU(a0, P);
-  return false;
+	T3_mul_inv_CPU(a0, P);
+	return false;
 #endif
 }
 

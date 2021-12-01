@@ -274,11 +274,15 @@ void Shape::vector_map_jac_curvature(double alpha, double beta){
     }
   }
 
+
   QDx = (QDxi_dxidx+QDeta_detadx+QDzeta_dzetadx);
   QDy = (QDxi_dxidy+QDeta_detady+QDzeta_dzetady);
   QDz = (QDxi_dxidz+QDeta_detadz+QDzeta_dzetadz);
 
 }
+
+
+
 
 
 void Shape::operator=(const Shape& s){
@@ -305,6 +309,8 @@ void Shape::operator=(const Shape& s){
   ctrl_z = s.ctrl_z;
   theta = s.theta;
 }
+
+
 
 void Shape::vector_map_nojac()
 {

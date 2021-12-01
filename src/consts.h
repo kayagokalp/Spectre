@@ -39,4 +39,16 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
       if (abort) exit(code);
     }
 }
+#define gpuErrchkMem(ans,success) { gpuAssertMem((ans), __FILE__, __LINE__,success); }
+inline void gpuAssertMem(cudaError_t code, const char *file, int line, bool &success)
+{
+  if (code != cudaSuccess)
+    {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      success = false;
+    }else
+    {
+	success = true;
+    }
+}
 #endif

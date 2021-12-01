@@ -45,14 +45,16 @@ double ccosts[MAX_TASKS] = {4.32, 0.95, 5.35, 0.52}; //can also be extended to c
 #endif
 
 #ifdef GPU
+#define MAX_THREADS_NO 128
 cublasHandle_t handle[MAX_THREADS_NO];
 cudaStream_t stream[MAX_THREADS_NO];
 cusolverDnHandle_t dnhandle[MAX_THREADS_NO];
 
-int ttt;
-
 rinfo **rinfos;
-#endif                                                                                                                                                                 
+#endif
+                                                                                                                                                                                 
+int ttt;
+#pragma omp threadprivate(ttt)
 
 struct DesignParameters
 {
@@ -149,21 +151,46 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 #endif
 
 	unsigned int num_layers = 3;
+// 	unsigned int xi1 = 12, xi2 = 12, xi3 = 12;
+// 	unsigned int eta1 = 12, eta2 = 12, eta3 = 12;
+// 	unsigned int zeta1 = 16, zeta2 = 12, zeta3 = 16;
  
 
+ 	//unsigned int xi1 = 5, xi2 = 5, xi3 = 5;
+ 	//unsigned int eta1 = 5, eta2 = 5, eta3 = 5;
+ 	//unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 5;	
+
+	//unsigned int xi1 = 7, xi2 = 7, xi3 = 7;
+ 	//unsigned int eta1 = 7, eta2 = 7, eta3 = 7;
+ 	//unsigned int zeta1 = 9, zeta2 = 7, zeta3 = 9;
+
+	//unsigned int xi1 = 13, xi2 = 13, xi3 = 13;
+ 	//unsigned int eta1 = 13, eta2 = 13, eta3 = 13;
+ 	//unsigned int zeta1 = 7, zeta2 = 5, zeta3 = 7;
+
+// 	unsigned int xi1 = 4, xi2 = 4, xi3 = 4;
+// 	unsigned int eta1 = 4, eta2 = 4, eta3 = 4;
+// 	unsigned int zeta1 = 5, zeta2 = 4, zeta3 = 5;
 	//temp vars for cost calculation
 	Material tfirst(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 1.9445e+12, 1.9445e+12, 3.0128e+12,0.175,0.175,0.175,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA);
 	Material tsecond(2.1e+9, 0.34, 7.0e+10, 7.0e+10, 7.0e+10, 7.0e+10, 2.6119e+10, 2.6119e+10, 2.6119e+10,0.34,0.34,0.34,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA);
 	Material tthird(2.1e+9, 0.34, 7.8358e+8, 7.08e+12, 7.08e+12, 7.08e+12, 2.6119e+10, 2.6119e+10, 3.0128e+12,0.175,0.175,0.175,Material::CNT_TYPE::UD,Material::POROUS_TYPE::AA);
 	Shape *shps = new Shape[num_layers];
 	cout<<num_layers<<endl;
+//        Shape tshape1(3, 3, 0.15, xi1, eta1, zeta1, tfirst, 0.1, 0,0.5236,-0.25,0, 0);
+//	return 0;
 	shps[0] = Shape(3,3,0.15,xi1,eta1,zeta1,tfirst, 0.1, 0, 0.5236,-0.25,0,0);
+
+//	Shape tshape2(3, 3, 0.15, xi2, eta2, zeta2, tsecond, 0, 0,0,0,0,0.15);
 	shps[1] = Shape (3, 3, 0.15, xi2, eta2, zeta2, tsecond, 0, 0,0,0,0,0.15);
+	//Shape tshape3(3, 3, 0.15, xi3, eta3, zeta3, tthird, 0.1, 0,1.0472,-0.25,0,0.45);
 	shps[2] = Shape (3, 3, 0.15, xi3, eta3, zeta3, tthird, 0.1, 0,1.0472,-0.25,0,0.45);
+	//set CPU costs for each task
 	FGM tfgm(num_layers, shps);
 	int tnconv;
 	double tmineig;
 	//tfgm.compute_cpu_costs(10, 60, tnconv, tmineig, 0.01, 100, 0.01, SAMPLE_SIZE);
+	//
 #ifdef SMART
 	cout << "CPU costs: " << endl;
 	for (int i = 0; i < 4; i++)
@@ -173,69 +200,30 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 #endif
 
 #ifdef GPU
-
 	
-	rinfos = new rinfo *[nthreads];
-
+	TaskMemoryReq task_memory_reqs;
+	string fileName = "TASK.config";//Take this as input maybe?
+	read_config(task_memory_reqs, fileName);
 	int no_gpus = atoi(argv[2]);
-
+	GPUManager gpu_mans[no_gpus];
+	for (int i = 0; i<no_gpus; i++){
+		gpuErrchk(cudaSetDevice(i));
+		size_t remaining_memory, total_memory = 0;
+		cudaMemGetInfo(&remaining_memory, &total_memory);		
+		int deviceID;
+		cudaGetDevice(&deviceID);
+		if(deviceID != i){
+			cout<<"device id is not equal to the ith index" <<endl;
+			exit(1);
+		}
+		gpu_mans[i] = GPUManager(remaining_memory,deviceID); 
+		cout << "GPU "<< deviceID << " manager is created"<<endl;
+	}
 	bool failed = false;
 #pragma omp parallel num_threads(nthreads)
-	{
-		ttt = omp_get_thread_num();
-#pragma omp critical
-		{
-			gpuErrchk(cudaSetDevice((ttt % no_gpus)));
-			cudaFree(0);
-
-			int deviceID;
-			cudaGetDevice(&deviceID);
-			if (deviceID !=  (ttt % no_gpus))
-			{
-				cout << "device ID is not equal to the given one " << endl;
-				failed = true;
-			}
-			cudaDeviceProp prop;
-			cudaGetDeviceProperties(&prop, deviceID);
-			cout << "GPU " << deviceID << ": " << prop.name << " is assigned to " << ttt << endl;
-
-			if (cublasCreate(&handle[ttt]) != CUBLAS_STATUS_SUCCESS)
-			{
-				std::cout << "blas handler initialization failed" << std::endl;
-				failed = true;
-			}
-
-			if (cusolverDnCreate(&dnhandle[ttt]) != CUSOLVER_STATUS_SUCCESS)
-			{
-				std::cout << "solver handler initialization failed" << std::endl;
-				failed = true;
-			}
-
-			cudaStreamCreate(&stream[ttt]);
-			cublasSetStream(handle[ttt], stream[ttt]);
-			cusolverDnSetStream(dnhandle[ttt], stream[ttt]);
-			rinfos[ttt] = new rinfo(ttt % no_gpus, xi1, eta1, zeta1, xi2, eta2, zeta2, xi3, eta3, zeta3);
-
-#ifdef SMART
-			//set costs for each task per gpu
-			if (ttt / no_gpus < 1)
-			{
-				int i = ttt % no_gpus;
-				//tfgm.compute_gpu_costs(11, 60, tnconv, tmineig, 0.01, 100, 0.01, i, SAMPLE_SIZE);
-				cout << "GPU" << i << " costs: " << endl;
-				for (int j = 0; j < 4; j++)
-				{
-					gcosts[PADDING * i][j] = 1;
-					cout << "T" << j + 1 << ": " << gcosts[PADDING * i][j] << endl;
-				}
-			}
-#endif
-		}
-	}
-	if (failed)
-	{
-		exit(1);
-	}
+{
+	ttt = omp_get_thread_num();
+}
 #endif
 
 
@@ -245,7 +233,7 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 
 	//geometric properties
 	double thickness = 0.1;
-	double curvature = -0.25;
+	double curvature = 0.0;
 	double asp_Rat1 = 2;
 	double Lr1 = 1;
 
@@ -256,11 +244,12 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 	{
 		for(double theta2 = -90; theta2<=90; theta2+=10)
 		{
-			//problems.push_back(DesignParameters(theta * pi/180 ,theta2*pi/180));
-			problems.push_back(DesignParameters(-60*pi/180 , -60*pi/180));
+			problems.push_back(DesignParameters(theta * pi/180 ,theta2*pi/180));
 		}
 	}
 
+
+	//problems.push_back(DesignParameters(-60*pi/180, -70*pi/180));
 
 	cout << "Preprocessing ended." << endl;
 	cout << "Time spent for preprocessing is " << omp_get_wtime() - pstart << endl;
@@ -291,7 +280,12 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 		shapes[1] = shape2;
 		Shape shape3(Lr1, asp_Rat1, thickness/4, xi3, eta3, zeta3, third, 0.1, 0,problems[i].theta2,curvature,0,3*thickness/4);
 		shapes[2] = shape3;
+		#ifdef GPU
+		FGM fgm = FGM(num_layers, shapes, gpu_mans, no_gpus,task_memory_reqs);
+		#endif
+		#ifndef GPU
 		FGM fgm = FGM(num_layers, shapes);
+		#endif
 		fgm.compute(10, 60, nconv, mineig, 0.01, 100, 0.01);
 		double end = omp_get_wtime();
 
@@ -325,13 +319,6 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 	cout << "*******************************************************************" << endl;
 	cout << "Total time: " << oend - pstart << endl;
 	cout << "*******************************************************************" << endl;
-#ifdef GPU
-	for (int i = 0; i < nthreads; i++)
-	{
-		cudaStreamDestroy(stream[i]);
-		cublasDestroy(handle[i]);
-	}
-#endif
 
 	return 0;
 }

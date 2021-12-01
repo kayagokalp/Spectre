@@ -6,13 +6,15 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Spectra/GenEigsRealShiftSolver.h>
+#include <Eigen/SparseCore>
 #include <Spectra/MatOp/DenseGenRealShiftSolve.h>
 #include <Eigen/SVD>
 #include <math.h>
 #include "consts.h"
 #include <fstream>
+#include <sstream>
 #include <iomanip> 
-
+#include <algorithm>  
 using namespace Eigen;
 using namespace Spectra;
 using namespace std;
@@ -35,17 +37,137 @@ struct rinfo
 		int nnxyz = (3 * x1 * y1 * z1) + (3 * x2 * y2 * z2) + (3 * x3 * y3 * z3);
 		no_elements = 10 * nnxyz * nnxyz;
 		
-
-
-
- 
 		no_bytes =  no_elements * sizeof(double);
 		cout<<"no_bytes "<<no_bytes<<endl;
 		gpuErrchk(cudaMalloc((void**)&gpu_mem, no_bytes));
 	}
 
 };
+#ifdef GPU
+struct TaskMemoryReq{
+	size_t T1;
+	size_t T1_h;
+	size_t T2;
+	size_t T3;
+};
 
+inline void read_config(TaskMemoryReq &task_memory_reqs, string& filename){
+	ifstream configFile(filename);
+	string line = "";
+	while(getline(configFile, line))
+	{
+		cout<<"line : "<<line<<endl;
+    		istringstream linestream(line);
+		string data;
+		string type;
+   		size_t val1;
+		linestream>>type;
+		linestream>>val1;
+		cout<<"type " <<type <<endl;
+		if(type == "T1:"){
+			task_memory_reqs.T1 = val1; 	
+		}else if(type == "T1_h:"){
+			task_memory_reqs.T1_h = val1;
+		}else if(type == "T2:"){
+			task_memory_reqs.T2 = val1;
+		}else if(type == "T3:"){
+			task_memory_reqs.T3 = val1;
+		}
+		cout<<"val1 : "<<val1<<endl;
+	}
+}
+
+class GPUManager {
+
+	public:	
+		size_t remaining_memory_;
+
+
+	GPUManager(size_t remaining_memory, int device_id): remaining_memory_(remaining_memory), device_id_(device_id) {};
+	GPUManager(): remaining_memory_(0), device_id_(0) {};
+
+	//TODO(Kaya) : change this to use a queue which we can use to estimate possible openning in GPU
+	bool check_for_task(size_t required_memory){
+		bool isGPU = false;
+		#pragma omp critical
+		{
+		if (remaining_memory_ >= required_memory){
+			cout << "GPU " << device_id_ << " has "<<remaining_memory_ << " task asked for "<<required_memory<<endl;
+			isGPU = true;
+		}else{
+			cout << "GPU " << device_id_ << " has "<<remaining_memory_ << " task asked for "<<required_memory<<endl;
+			isGPU = false;
+		}
+		}
+		return isGPU;
+	}
+
+	void* allocate_memory(size_t required_bytes, bool &success){
+		void *memory = nullptr;
+		#pragma omp critical
+		{
+		gpuErrchkMem(cudaMalloc(&memory, required_bytes*sizeof(double)),success);
+		remaining_memory_ = max(((size_t)0), (remaining_memory_ - required_bytes));
+		}
+		return memory;
+	}
+	void free_memory(void* ptr_to_delete, long number_of_bytes){
+		#pragma omp critical
+		{
+		gpuErrchk(cudaFree(ptr_to_delete));
+		remaining_memory_ += number_of_bytes;
+		}
+	}
+
+	cublasHandle_t create_cublas_handle(int thread_id){
+		#pragma omp critical 
+		{
+		if (cublasCreate(&handle_[thread_id]) != CUBLAS_STATUS_SUCCESS)
+		{
+			std::cout << "blas handler initialization failed" << std::endl;
+		}
+		cublasSetStream(handle_[thread_id], stream_[thread_id]);
+		}
+		return handle_[thread_id];
+	}
+	
+	cudaStream_t create_cuda_stream(int thread_id){
+		#pragma omp critical
+		{
+		cudaStreamCreate(&stream_[thread_id]);
+		}
+		return stream_[thread_id];
+	}
+
+	cusolverDnHandle_t create_cusolver_handle(int thread_id){
+		#pragma omp critical
+		{
+		if (cusolverDnCreate(&dnhandle_[thread_id]) != CUSOLVER_STATUS_SUCCESS)
+		{
+			std::cout << "solver handler initialization failed" << std::endl;
+		}
+		cusolverDnSetStream(dnhandle_[thread_id], stream_[thread_id]);
+		}
+		return dnhandle_[thread_id];
+	}
+
+	void destroy_cublas_handle(int thead_id){
+		#pragma omp critical
+		cublasDestroy(handle_[thead_id]);
+	}
+
+	void destroy_cudastream(int thread_id){
+		#pragma omp critical
+		cudaStreamDestroy(stream_[thread_id]);
+	}
+
+	private:
+		int device_id_;
+		cublasHandle_t handle_[MAX_THREADS_NO];
+		cudaStream_t stream_[MAX_THREADS_NO];
+		cusolverDnHandle_t dnhandle_[MAX_THREADS_NO];
+};
+#endif
 extern int ttt;
 #pragma omp threadprivate(ttt)
 

@@ -2,24 +2,7 @@
 #include "helpers.h"
 #include "Shape.h"
 
-
-/**
- * @file fgm.h
- *
- * <h1> FGM </h1>
- *
- * Functionally Graded Material, represents a {@link FGM#num_shapes}
- * layered composite structure. Calculations are done in 4 steps: 
- * <ol>
- *	<li> T1 - System Matrices </li>
- *	<li> T2 - SVD decomposition </li>
- *	<li> T3 - Multiply and Inverse </li>
- *	<li> T4 - Eigen Decomposition </li>
- * </ol>
- *  
- *  @see Shape
- *
- * */
+//Functionally graded material
 class FGM
 {
 	public:
@@ -27,7 +10,12 @@ class FGM
 		// int nxyz;  //not to do this everytime
 		unsigned int ** np;
 		int * nxyz;
-
+		
+		int no_gpus;
+		#ifdef GPU
+		GPUManager *gpu_mans;
+		TaskMemoryReq task_memory_reqs_;
+		#endif
 		// Shape shape;
 		// Material mats[2];
 		Shape * shapes;
@@ -87,71 +75,70 @@ class FGM
 
 		int num_shapes;
 
+		//FGM(): ctrl_y(0), ctrl_z(0){}
+		#ifdef GPU
+		FGM(unsigned int n_shapes, Shape* shps, GPUManager gpu_mans[] = nullptr, int no_gpus = 0, TaskMemoryReq task_memory_reqs = TaskMemoryReq{0,0,0,0});
+		#endif
+		#ifndef GPU
 		FGM(unsigned int n_shapes, Shape* shps);
+		#endif
 		~FGM();
-
+		// FGM(Shape &_shape,
+		//     Material &first, Material &second,
+		//     double _ctrl_y, double _ctrl_z) : shape(_shape),
+		//                                       ctrl_y(_ctrl_y), ctrl_z(_ctrl_z),
+		//                                       mats{first, second},
+		//                                       np{_shape.spaces[0].no_points, _shape.spaces[1].no_points, _shape.spaces[2].no_points},
+		//                                       nxyz(np[0] * np[1] * np[2]),
+		//                                       mu(np[0], np[1], np[2]),
+		//                                       lame(np[0], np[1], np[2]),
+		//                                       rho(np[0], np[1], np[2]),
+		//                                       VD_mu(nxyz, nxyz),
+		//                                       VD_lame(nxyz, nxyz),
+		//                                       VD_rho(nxyz, nxyz),
+		//                                       M(3 * nxyz, 3 * nxyz),
+		//                                       K(3 * nxyz, 3 * nxyz)
+		// {
+		//   mu.setZero();
+		//   lame.setZero();
+		//   rho.setZero();
+		//   VD_mu.setZero();
+		//   VD_lame.setZero();
+		//   VD_rho.setZero();
+		//   M.setZero();
+		//   K.setZero();
+		//   FG_var_MT()n
+		// }
 #ifdef GPU
-		/**
-		 * <h1> T1 - System Matrices Honeycomb GPU </h1>
-		 *  
-		 * T1 - System Matrices Honeycomb GPU calculates K and M matrices for honeycomb layers in the FGM using GPU.
-		 * @param l - id of the {@link Shape}
-		 *
-		 */
-		void T1_system_matrices_honeycomb_GPU(unsigned int l);
+		bool check_and_allocate_gpu(size_t required_memory, cudaStream_t &stream, cublasHandle_t &cublasHandle, int &device_id, void* &gpu_mem_beg);
+		bool check_and_allocate_gpu_t2(size_t required_memory, cusolverDnHandle_t &cusolverHandle, cudaStream_t &stream, cublasHandle_t &cublasHandle, int &device_id, void* &gpu_mem_beg);
+		bool check_and_allocate_gpu_in_task(size_t required_memory, int device_id, double* &gpu_mem_beg);
+#endif
+#ifdef GPU
+		void T1_system_matrices_honeycomb_GPU(unsigned int l, double *gpu_mem_beg, cublasHandle_t &hndl, cudaStream_t &strm);
 		
-		/**
-		 * <h1> T1 - System Matrices GPU </h1>
-		 *  
-		 * T1 - System Matrices GPU calculates K and M matrices for non-honeycomb layers in the FGM using GPU.
-		 * @param l - id of the {@link Shape}
-		 *
-		 */
-		void T1_system_matrices_GPU(unsigned int l);
+		void T1_system_matrices_GPU(unsigned int l, double * gpu_mem_beg, cublasHandle_t &cuHandle, cudaStream_t &cuStream);
 #endif
 
-		/**
-		 * <h1> T1 - System Matrices Honeycomb CPU </h1>
-		 *  
-		 * T1 - System Matrices Honeycomb CPU calculates K and M matrices for honeycomb layers in the FGM using CPU.
-		 * @param l - id of the {@link Shape}
-		 *
-		 */
-		void T1_system_matrices_honeycomb_CPU(unsigned int l);
 
-		/**
-		 * <h1> T1 - System Matrices CPU </h1>
-		 *  
-		 * T1 - System Matrices CPU calculates K and M matrices for non-honeycomb layers in the FGM using CPU.
-		 * @param l - id of the {@link Shape}
-		 *
-		 */
+		void T1_system_matrices_honeycomb_CPU(unsigned int l);
+		
 		void T1_system_matrices_CPU(unsigned int l);
 
-		/**
-		 * <h1> T1 - System Matrices </h1>
-		 *  
-		 * T1 - System Matrices selects the correct T1 function depending on the following:
-		 * 	<ul>
-		 * 		<li>If SMART version is used, using the pre-calculated costs faster option is selected. </li>
-		 * 		<li>If the layer that is being processed is a honeycombed layer (currently we are working on 3 layered FGMs in which the middle layer is always honeycomb) honeycomb version is called</li>
-		 * 	</ul> 
-		 * @param l - id of the {@link Shape}
-		 *
-		 */
 		bool T1_system_matrices(unsigned int l);
 
 
 		void T2_svd_CPU(MatrixXd &BC, MatrixXd &V);
 
 #ifdef GPU
-		void T2_svd_GPU(MatrixXd &BC, MatrixXd &V);
+		//void T2_svd_GPU(MatrixXd &BC, MatrixXd &V);
+		bool T2_svd_GPU(double *gpu_mem_beg, cusolverDnHandle_t &cuslv,cublasHandle_t &hndl, cudaStream_t &strm,MatrixXd &BC, MatrixXd &V,int device_id);
 #endif
 
 		bool T2_svd(MatrixXd &BC, MatrixXd &V);
 
 #ifdef GPU
-		void T3_mul_inv_GPU(MatrixXd &a0, MatrixXd &P);
+		bool T3_mul_inv_GPU(double *gpu_mem_beg,cusolverDnHandle_t &cuslv,cublasHandle_t &hndl, cudaStream_t &strm, MatrixXd &a0, MatrixXd &P,int device_id);
 #endif
 
 		void T3_mul_inv_CPU(MatrixXd &a0, MatrixXd &P);
