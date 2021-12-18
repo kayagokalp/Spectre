@@ -210,13 +210,14 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 		gpuErrchk(cudaSetDevice(i));
 		size_t remaining_memory, total_memory = 0;
 		cudaMemGetInfo(&remaining_memory, &total_memory);		
+		cout<<"remaining memory "<< remaining_memory<<endl;
 		int deviceID;
 		cudaGetDevice(&deviceID);
 		if(deviceID != i){
 			cout<<"device id is not equal to the ith index" <<endl;
 			exit(1);
 		}
-		gpu_mans[i] = GPUManager(remaining_memory,deviceID); 
+		gpu_mans[i] = GPUManager(remaining_memory*0.75,deviceID); 
 		cout << "GPU "<< deviceID << " manager is created"<<endl;
 	}
 	bool failed = false;
@@ -240,16 +241,17 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 	int count = 0;
 	vector<DesignParameters> problems;
 	
-	for(double theta = -90; theta<=90; theta+=10)
+	for(double theta = -90; theta<=90; theta+=30)
 	{
-		for(double theta2 = -90; theta2<=90; theta2+=10)
+		for(double theta2 = -90; theta2<=90; theta2+=30)
 		{
-			problems.push_back(DesignParameters(theta * pi/180 ,theta2*pi/180));
+
+			//problems.push_back(DesignParameters(theta * pi/180 ,theta2*pi/180));
 		}
 	}
 
 
-	//problems.push_back(DesignParameters(-60*pi/180, -70*pi/180));
+	problems.push_back(DesignParameters(-60*pi/180, -70*pi/180));
 
 	cout << "Preprocessing ended." << endl;
 	cout << "Time spent for preprocessing is " << omp_get_wtime() - pstart << endl;
@@ -319,6 +321,8 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 	cout << "*******************************************************************" << endl;
 	cout << "Total time: " << oend - pstart << endl;
 	cout << "*******************************************************************" << endl;
+	gpu_mans[0].destroy_manager();
+	cudaDeviceReset();
 
 	return 0;
 }

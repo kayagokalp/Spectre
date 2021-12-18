@@ -680,7 +680,7 @@ void FGM::T1_system_matrices_GPU(unsigned int l, double *gpu_mem_beg, cublasHand
   K[l] = MatrixXd::Zero(nc, nc);
   cudaMemcpy(K[l].data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
   cout << "K Sum "<< K[l].sum()<<endl; 
-  cudaMemset(d_K,0, (nc * nc) * sizeof(double));
+  gpuErrchk(cudaMemset(d_K,0, (nc * nc) * sizeof(double)));
   cout << "T1 requires " << (d_temp+(nc*nc*sizeof(double)) - gpu_mem_beg) << " bytes"<<endl;
   cudaMemset(gpu_mem_beg, 0, (d_temp+(nc*nc*sizeof(double)) - gpu_mem_beg));
 }
@@ -776,59 +776,44 @@ void FGM::T1_system_matrices_CPU(unsigned int l)
 
 #ifdef GPU
 bool FGM::check_and_allocate_gpu(size_t required_memory, cudaStream_t &stream, cublasHandle_t &cublasHandle, int &device_id, void* &gpu_mem_beg){
-	bool is_gpu = false;
 	device_id = -1; 
 	for(int i = 0; i<no_gpus; i++){
-		bool is_empty = gpu_mans[i].check_for_task(required_memory);
-		if(is_empty){
+		gpu_mem_beg = gpu_mans[i].check_for_task(required_memory);
+		if(gpu_mem_beg){
 			device_id = i;
 			gpuErrchk(cudaSetDevice(device_id));
 			//Create handles and streams
 			stream = gpu_mans[i].create_cuda_stream(ttt);	
 			cublasHandle = gpu_mans[i].create_cublas_handle(ttt);
 			//Allocare required memory
-			gpu_mem_beg = (double*)gpu_mans[i].allocate_memory(required_memory, is_gpu);
-			if(is_gpu) 
-				break;
-			else{
-				gpu_mans[i].destroy_cudastream(ttt);
-				gpu_mans[i].destroy_cublas_handle(ttt);
-			}
+			break;
 		}
 	}
-	return is_gpu;
+	return (gpu_mem_beg != nullptr);
 }
 
 bool FGM::check_and_allocate_gpu_t2(size_t required_memory, cusolverDnHandle_t &cusolverHandle, cudaStream_t &stream, cublasHandle_t &cublasHandle, int &device_id, void* &gpu_mem_beg){
-	bool is_gpu = false;
 	device_id = -1; 
 	for(int i = 0; i<no_gpus; i++){
-		//TODO(kaya) : get size of the task dynamically from a config file or pre-run the steps.
-		bool is_empty = gpu_mans[i].check_for_task(required_memory);
-		if(is_empty){
+		gpu_mem_beg = gpu_mans[i].check_for_task(required_memory);
+		if(gpu_mem_beg){
 			device_id = i;
 			gpuErrchk(cudaSetDevice(device_id));
 			//Create handles and streams
 			stream = gpu_mans[i].create_cuda_stream(ttt);	
 			cublasHandle = gpu_mans[i].create_cublas_handle(ttt);
 			cusolverHandle = gpu_mans[i].create_cusolver_handle(ttt);
-			//Allocare required memory
-			gpu_mem_beg = (double*)gpu_mans[i].allocate_memory(required_memory, is_gpu);
-                        if(is_gpu)
-                                break;
-                        else{
-                                gpu_mans[i].destroy_cudastream(ttt);
-                                gpu_mans[i].destroy_cublas_handle(ttt);
-                        }
+			break;
 		}
 	}
-	return is_gpu;
+	return (gpu_mem_beg != nullptr);
 }
 bool FGM::check_and_allocate_gpu_in_task(size_t required_memory, int device_id, double* &gpu_mem_beg){
-	bool is_empty = false;
-	if(gpu_mans[device_id].remaining_memory_ > required_memory)
-		gpu_mem_beg = (double*)gpu_mans[device_id].allocate_memory(required_memory, is_empty);
-	return is_empty;
+	gpu_mem_beg = nullptr;
+	void *gpu_mem_begv = gpu_mans[device_id].check_for_task(required_memory); 
+	if(gpu_mem_begv)
+		gpu_mem_beg = (double*)gpu_mem_begv;
+	return (gpu_mem_beg != nullptr);
 }
 #endif
 bool FGM::T1_system_matrices(unsigned int l)
@@ -836,6 +821,7 @@ bool FGM::T1_system_matrices(unsigned int l)
 
 #if defined GPU
   if(l !=1){
+	
 	int device_id = -1;
 	void *gpu_mem = nullptr;
 	cublasHandle_t cublasHandle;
@@ -859,7 +845,7 @@ bool FGM::T1_system_matrices(unsigned int l)
 	if(check_and_allocate_gpu(task_memory_reqs_.T1_h, cudaStream, cublasHandle,device_id,gpu_mem)){
                 cout<<"T1 is taken by GPU " << device_id<< endl;
                 T1_system_matrices_honeycomb_GPU(l,((double*)gpu_mem), cublasHandle, cudaStream);
-                gpu_mans[device_id].free_memory((double*)gpu_mem,task_memory_reqs_.T1);
+                gpu_mans[device_id].free_memory((double*)gpu_mem,task_memory_reqs_.T1_h);
                 gpu_mans[device_id].destroy_cublas_handle(ttt);
                 gpu_mans[device_id].destroy_cudastream(ttt);
         }else{
@@ -1000,7 +986,8 @@ bool FGM::T2_svd_GPU(double *gpu_mem_beg, cusolverDnHandle_t &cuslv,cublasHandle
   }
 
   //cudaMemset(gpu_mem_beg, 0, (d_work+(lwork*sizeof(double)) - gpu_mem_beg));
-  if(d_work) gpu_mans[device_id].free_memory(d_work,lwork*sizeof(double));
+  gpu_mans[device_id].free_memory(d_work,lwork*sizeof(double));
+  return true;
 }
 
 #endif
@@ -1087,7 +1074,7 @@ bool FGM::T3_mul_inv_GPU(double *gpu_mem_beg,cusolverDnHandle_t &cuslv,cublasHan
 
   cudaMemcpy(a0.data(), d_a0, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
   cudaMemset(gpu_mem_beg, 0, ((double*)(d_info+(nc*sizeof(int))) - gpu_mem_beg));
-  if(d_work) gpu_mans[device_id].free_memory(d_work, Lwork*sizeof(double));
+  gpu_mans[device_id].free_memory(d_work, Lwork*sizeof(double));
   return true;
 }
 #endif

@@ -13,6 +13,8 @@
 #include "consts.h"
 #include <fstream>
 #include <sstream>
+#include "cuda-allocators/FirstFitAllocator.h"
+#include "cuda-allocators/AllocatorBase.h"
 #include <iomanip> 
 #include <algorithm>  
 using namespace Eigen;
@@ -80,42 +82,33 @@ inline void read_config(TaskMemoryReq &task_memory_reqs, string& filename){
 class GPUManager {
 
 	public:	
-		size_t remaining_memory_;
+		AllocatorBase* allocator;
 
 
-	GPUManager(size_t remaining_memory, int device_id): remaining_memory_(remaining_memory), device_id_(device_id) {};
-	GPUManager(): remaining_memory_(0), device_id_(0) {};
-
+	GPUManager(size_t remaining_memory, int device_id): device_id_(device_id),allocator(new FirstFitAllocator(remaining_memory)) {};
+	GPUManager(): device_id_(-1), allocator(nullptr) {};
+	void destroy_manager() {delete allocator;};
 	//TODO(Kaya) : change this to use a queue which we can use to estimate possible openning in GPU
-	bool check_for_task(size_t required_memory){
+	void *check_for_task(size_t required_memory){
 		bool isGPU = false;
+		void *gpu_mem_begv = nullptr;
 		#pragma omp critical
 		{
-		if (remaining_memory_ >= required_memory){
-			cout << "GPU " << device_id_ << " has "<<remaining_memory_ << " task asked for "<<required_memory<<endl;
-			isGPU = true;
+		gpuErrchk(cudaSetDevice(device_id_));
+		isGPU = allocator->allocate_memory(gpu_mem_begv,required_memory*sizeof(double));
+		if (isGPU){
+			cout << "GPU " << device_id_ << " has "<<allocator->get_free_space() << " task asked for "<<required_memory<<endl;
 		}else{
-			cout << "GPU " << device_id_ << " has "<<remaining_memory_ << " task asked for "<<required_memory<<endl;
-			isGPU = false;
+			cout << "GPU " << device_id_ << " has "<<allocator->get_free_space() << " task asked for "<<required_memory<<endl;
 		}
 		}
-		return isGPU;
+		return gpu_mem_begv;
 	}
 
-	void* allocate_memory(size_t required_bytes, bool &success){
-		void *memory = nullptr;
-		#pragma omp critical
-		{
-		gpuErrchkMem(cudaMalloc(&memory, required_bytes*sizeof(double)),success);
-		remaining_memory_ = max(((size_t)0), (remaining_memory_ - required_bytes));
-		}
-		return memory;
-	}
 	void free_memory(void* ptr_to_delete, long number_of_bytes){
 		#pragma omp critical
 		{
-		gpuErrchk(cudaFree(ptr_to_delete));
-		remaining_memory_ += number_of_bytes;
+		allocator->deallocate_memory(ptr_to_delete);
 		}
 	}
 
