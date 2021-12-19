@@ -86,7 +86,6 @@ class GPUManager {
 	GPUManager(size_t remaining_memory, int device_id): remaining_memory_(remaining_memory), device_id_(device_id) {};
 	GPUManager(): remaining_memory_(0), device_id_(0) {};
 
-	//TODO(Kaya) : change this to use a queue which we can use to estimate possible openning in GPU
 	bool check_for_task(size_t required_memory){
 		bool isGPU = false;
 		#pragma omp critical
@@ -106,7 +105,6 @@ class GPUManager {
 		void *memory = nullptr;
 		#pragma omp critical
 		{
-		gpuErrchkMem(cudaMalloc(&memory, required_bytes*sizeof(double)),success);
 		remaining_memory_ = max(((size_t)0), (remaining_memory_ - required_bytes));
 		}
 		return memory;
@@ -114,7 +112,6 @@ class GPUManager {
 	void free_memory(void* ptr_to_delete, long number_of_bytes){
 		#pragma omp critical
 		{
-		gpuErrchk(cudaFree(ptr_to_delete));
 		remaining_memory_ += number_of_bytes;
 		}
 	}

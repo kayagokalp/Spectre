@@ -249,7 +249,6 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 	}
 
 
-	//problems.push_back(DesignParameters(-60*pi/180, -70*pi/180));
 
 	cout << "Preprocessing ended." << endl;
 	cout << "Time spent for preprocessing is " << omp_get_wtime() - pstart << endl;

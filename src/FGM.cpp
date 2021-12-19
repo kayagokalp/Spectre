@@ -323,8 +323,14 @@ FGM::FGM(unsigned int n_shapes, Shape* shps, GPUManager gpu_mans[], int no_gpus,
 
 
 #ifdef GPU
-void FGM::T1_system_matrices_honeycomb_GPU(unsigned int l, double *gpu_mem_beg, cublasHandle_t &hndl, cudaStream_t &strm)
+bool FGM::T1_system_matrices_honeycomb_GPU(unsigned int l, std::vector<double*> &allocated_blocks, int device_id)
 {
+  cudaStream_t strm = gpu_mans[device_id].create_cuda_stream(ttt);
+  cublasHandle_t hndl = gpu_mans[device_id].create_cublas_handle(ttt);
+  bool success = false;
+  gpuErrchkMem(cudaSetDevice(device_id),success);
+  if(!success)
+	  return false;
   int ub = 0;
   int ue = nxyz[l] - 1;
   int vb = nxyz[l];
@@ -360,29 +366,120 @@ void FGM::T1_system_matrices_honeycomb_GPU(unsigned int l, double *gpu_mem_beg, 
   double *d_VD_lame11, *d_VD_lame22, *d_VD_lame33, *d_VD_lame12, *d_VD_lame13, *d_VD_lame23, *d_VD_lame44, *d_VD_lame55, *d_VD_lame66, *d_VD_lame14, *d_VD_lame24, *d_VD_lame34, *d_VD_lame56, *d_VD_ro, *d_epx, *d_epy, *d_epz, *d_gammaxy, *d_gammayz, *d_gammaxz, *d_epxyz, *d_temp_K, *d_K, *d_temp;
 
   int nc = epx.cols();
-  d_VD_lame11 = gpu_mem_beg;                    //1
-  d_VD_lame22 = d_VD_lame11 + VD_lame11[l].size();
-  d_VD_lame33 = d_VD_lame22 + VD_lame22[l].size();
-  d_VD_lame12 = d_VD_lame33 + VD_lame33[l].size();
-  d_VD_lame13 = d_VD_lame12 + VD_lame12[l].size();
-  d_VD_lame23 = d_VD_lame13 + VD_lame13[l].size();
-  d_VD_lame44 = d_VD_lame23 + VD_lame23[l].size();
-  d_VD_lame55 = d_VD_lame44 + VD_lame44[l].size();
-  d_VD_lame66 = d_VD_lame55 + VD_lame55[l].size();
-  d_VD_lame14 = d_VD_lame66 + VD_lame66[l].size();
-  d_VD_lame24 = d_VD_lame14 + VD_lame14[l].size();
-  d_VD_lame34 = d_VD_lame24 + VD_lame24[l].size();
-  d_VD_lame56 = d_VD_lame34 + VD_lame34[l].size();
-  d_VD_ro = d_VD_lame56 + VD_lame56[l].size();   //1
-  d_epx = d_VD_ro + VD_ro[l].size();         //3
-  d_epy = d_epx + epx.size();             //3
-  d_epz = d_epy + epy.size();             //3
-  d_gammaxy = d_epz + epz.size();         //3
-  d_gammaxz = d_gammaxy + gammaxy.size(); //3
-  d_gammayz = d_gammaxz + gammaxz.size(); //3
-  d_temp_K = d_gammayz + gammayz.size();        //9
-  d_K = d_temp_K + (nc * nc);             //9
-  d_temp = d_K + (nc * nc);               //3
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame11,VD_lame11[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame11);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame22,VD_lame22[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame22);
+		  
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame33,VD_lame33[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame33);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame12,VD_lame12[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame12);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame13,VD_lame13[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame13);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame23,VD_lame23[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame23);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame44,VD_lame44[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame44);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame55,VD_lame55[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame55);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame66,VD_lame66[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame66);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame14,VD_lame14[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame14);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame24,VD_lame24[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame24);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame34,VD_lame34[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame34);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame56,VD_lame56[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame56);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_ro,VD_ro[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_ro);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_epx,epx.size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_epx);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_epy,epy.size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_epy);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_epz,epz.size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_epz);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_gammaxy,gammaxy.size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_gammaxy);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_gammaxz,gammaxz.size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_gammaxz);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_gammayz,gammayz.size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_gammayz);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_temp_K,(nc*nc)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_temp_K);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_K,(nc*nc)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_K);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_temp,(nc*nc)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_temp);
 
   cudaMemcpy(d_VD_lame11, VD_lame11[l].data(), VD_lame11[l].size() * sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(d_VD_lame22, VD_lame22[l].data(), VD_lame22[l].size() * sizeof(double), cudaMemcpyHostToDevice);
@@ -482,17 +579,22 @@ void FGM::T1_system_matrices_honeycomb_GPU(unsigned int l, double *gpu_mem_beg, 
   cudaStreamSynchronize(strm);
   K[l] = MatrixXd::Zero(nc, nc);
   cudaMemcpy(K[l].data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
-  cudaMemset(d_K,0, (nc * nc) * sizeof(double));
-  cout<<"K SUM " <<K[l].sum()<<" MAX "<< K[l].maxCoeff()<<endl;
-  cout << "T1 honeycomb requires " << (d_temp+(nc*nc*sizeof(double)) - gpu_mem_beg) << " bytes"<<endl;
-  cudaMemset(gpu_mem_beg, 0, (d_temp+(nc*nc*sizeof(double)) - gpu_mem_beg));
+  clear_mem(allocated_blocks);
+  gpu_mans[device_id].destroy_cublas_handle(ttt);
+  gpu_mans[device_id].destroy_cudastream(ttt);
+  return true;
 }
 
 
 
-
-void FGM::T1_system_matrices_GPU(unsigned int l, double *gpu_mem_beg, cublasHandle_t &hndl, cudaStream_t &strm)
+bool FGM::T1_system_matrices_GPU(unsigned int l, std::vector<double*> &allocated_blocks, int device_id)
 {
+  cudaStream_t strm = gpu_mans[device_id].create_cuda_stream(ttt);
+  cublasHandle_t hndl = gpu_mans[device_id].create_cublas_handle(ttt);
+  bool success = false;
+  gpuErrchkMem(cudaSetDevice(device_id),success);
+  if(!success)
+	  return false;
   int ub = 0;
   int ue = nxyz[l] - 1;
   int vb = nxyz[l];
@@ -528,29 +630,120 @@ void FGM::T1_system_matrices_GPU(unsigned int l, double *gpu_mem_beg, cublasHand
   double *d_VD_lame11, *d_VD_lame22, *d_VD_lame33, *d_VD_lame12, *d_VD_lame13, *d_VD_lame23, *d_VD_lame44, *d_VD_lame55, *d_VD_lame66, *d_VD_lame14, *d_VD_lame24, *d_VD_lame34, *d_VD_lame56, *d_VD_ro, *d_epx, *d_epy, *d_epz, *d_gammaxy, *d_gammayz, *d_gammaxz, *d_epxyz, *d_temp_K, *d_K, *d_temp, *gpu_mem;
 
   int nc = epx.cols();
-  d_VD_lame11 = gpu_mem_beg;                    //1
-  d_VD_lame22 = d_VD_lame11 + VD_lame11[l].size();
-  d_VD_lame33 = d_VD_lame22 + VD_lame22[l].size();
-  d_VD_lame12 = d_VD_lame33 + VD_lame33[l].size();
-  d_VD_lame13 = d_VD_lame12 + VD_lame12[l].size();
-  d_VD_lame23 = d_VD_lame13 + VD_lame13[l].size();
-  d_VD_lame44 = d_VD_lame23 + VD_lame23[l].size();
-  d_VD_lame55 = d_VD_lame44 + VD_lame44[l].size();
-  d_VD_lame66 = d_VD_lame55 + VD_lame55[l].size();
-  d_VD_lame14 = d_VD_lame66 + VD_lame66[l].size();
-  d_VD_lame24 = d_VD_lame14 + VD_lame14[l].size();
-  d_VD_lame34 = d_VD_lame24 + VD_lame24[l].size();
-  d_VD_lame56 = d_VD_lame34 + VD_lame34[l].size();
-  d_VD_ro = d_VD_lame56 + VD_lame56[l].size();   //1
-  d_epx = d_VD_ro + VD_ro[l].size();         //3
-  d_epy = d_epx + epx.size();             //3
-  d_epz = d_epy + epy.size();             //3
-  d_gammaxy = d_epz + epz.size();         //3
-  d_gammaxz = d_gammaxy + gammaxy.size(); //3
-  d_gammayz = d_gammaxz + gammaxz.size(); //3
-  d_temp_K = d_gammayz + gammayz.size();        //9
-  d_K = d_temp_K + (nc * nc);             //9
-  d_temp = d_K + (nc * nc);               //3
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame11,VD_lame11[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame11);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame22,VD_lame22[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame22);
+		  
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame33,VD_lame33[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame33);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame12,VD_lame12[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame12);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame13,VD_lame13[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame13);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame23,VD_lame23[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame23);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame44,VD_lame44[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame44);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame55,VD_lame55[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame55);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame66,VD_lame66[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame66);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame14,VD_lame14[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame14);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame24,VD_lame24[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame24);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame34,VD_lame34[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame34);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame56,VD_lame56[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_lame56);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_VD_ro,VD_ro[l].size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_VD_ro);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_epx,epx.size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_epx);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_epy,epy.size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_epy);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_epz,epz.size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_epz);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_gammaxy,gammaxy.size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_gammaxy);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_gammaxz,gammaxz.size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_gammaxz);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_gammayz,gammayz.size()*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_gammayz);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_temp_K,(nc*nc)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_temp_K);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_K,(nc*nc)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_K);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_temp,(nc*nc)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_temp);
   
 
   cudaMemcpy(d_VD_lame11, VD_lame11[l].data(), VD_lame11[l].size() * sizeof(double), cudaMemcpyHostToDevice);
@@ -679,10 +872,10 @@ void FGM::T1_system_matrices_GPU(unsigned int l, double *gpu_mem_beg, cublasHand
   cudaStreamSynchronize(strm);
   K[l] = MatrixXd::Zero(nc, nc);
   cudaMemcpy(K[l].data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
-  cout << "K Sum "<< K[l].sum()<<endl; 
-  cudaMemset(d_K,0, (nc * nc) * sizeof(double));
-  cout << "T1 requires " << (d_temp+(nc*nc*sizeof(double)) - gpu_mem_beg) << " bytes"<<endl;
-  cudaMemset(gpu_mem_beg, 0, (d_temp+(nc*nc*sizeof(double)) - gpu_mem_beg));
+  clear_mem(allocated_blocks);
+  gpu_mans[device_id].destroy_cublas_handle(ttt);
+  gpu_mans[device_id].destroy_cudastream(ttt);
+  return true;
 }
 
 #endif
@@ -775,97 +968,44 @@ void FGM::T1_system_matrices_CPU(unsigned int l)
 }
 
 #ifdef GPU
-bool FGM::check_and_allocate_gpu(size_t required_memory, cudaStream_t &stream, cublasHandle_t &cublasHandle, int &device_id, void* &gpu_mem_beg){
-	bool is_gpu = false;
-	device_id = -1; 
-	for(int i = 0; i<no_gpus; i++){
-		bool is_empty = gpu_mans[i].check_for_task(required_memory);
-		if(is_empty){
-			device_id = i;
-			gpuErrchk(cudaSetDevice(device_id));
-			//Create handles and streams
-			stream = gpu_mans[i].create_cuda_stream(ttt);	
-			cublasHandle = gpu_mans[i].create_cublas_handle(ttt);
-			//Allocare required memory
-			gpu_mem_beg = (double*)gpu_mans[i].allocate_memory(required_memory, is_gpu);
-			if(is_gpu) 
-				break;
-			else{
-				gpu_mans[i].destroy_cudastream(ttt);
-				gpu_mans[i].destroy_cublas_handle(ttt);
-			}
-		}
+
+void FGM::clear_mem(std::vector<double*> &allocated_pool){
+	for(int i = 0; i<allocated_pool.size(); i++){
+		gpuErrchk(cudaFree(allocated_pool[i]));
 	}
-	return is_gpu;
+	allocated_pool.clear();
 }
 
-bool FGM::check_and_allocate_gpu_t2(size_t required_memory, cusolverDnHandle_t &cusolverHandle, cudaStream_t &stream, cublasHandle_t &cublasHandle, int &device_id, void* &gpu_mem_beg){
-	bool is_gpu = false;
-	device_id = -1; 
-	for(int i = 0; i<no_gpus; i++){
-		//TODO(kaya) : get size of the task dynamically from a config file or pre-run the steps.
-		bool is_empty = gpu_mans[i].check_for_task(required_memory);
-		if(is_empty){
-			device_id = i;
-			gpuErrchk(cudaSetDevice(device_id));
-			//Create handles and streams
-			stream = gpu_mans[i].create_cuda_stream(ttt);	
-			cublasHandle = gpu_mans[i].create_cublas_handle(ttt);
-			cusolverHandle = gpu_mans[i].create_cusolver_handle(ttt);
-			//Allocare required memory
-			gpu_mem_beg = (double*)gpu_mans[i].allocate_memory(required_memory, is_gpu);
-                        if(is_gpu)
-                                break;
-                        else{
-                                gpu_mans[i].destroy_cudastream(ttt);
-                                gpu_mans[i].destroy_cublas_handle(ttt);
-                        }
-		}
-	}
-	return is_gpu;
-}
-bool FGM::check_and_allocate_gpu_in_task(size_t required_memory, int device_id, double* &gpu_mem_beg){
-	bool is_empty = false;
-	if(gpu_mans[device_id].remaining_memory_ > required_memory)
-		gpu_mem_beg = (double*)gpu_mans[device_id].allocate_memory(required_memory, is_empty);
-	return is_empty;
-}
 #endif
 bool FGM::T1_system_matrices(unsigned int l)
 {
 
 #if defined GPU
+  int device_id = 0;
+  std::vector<double*> allocated_address;
   if(l !=1){
-	int device_id = -1;
-	void *gpu_mem = nullptr;
-	cublasHandle_t cublasHandle;
-	cudaStream_t cudaStream;
-	if(check_and_allocate_gpu(task_memory_reqs_.T1, cudaStream, cublasHandle,device_id,gpu_mem)){
-		cout<<"T1 is taken by GPU " << device_id<< endl;
-		T1_system_matrices_GPU(l,((double*)gpu_mem), cublasHandle, cudaStream);
-		gpu_mans[device_id].free_memory((double*)gpu_mem,task_memory_reqs_.T1);
-		gpu_mans[device_id].destroy_cublas_handle(ttt);
-		gpu_mans[device_id].destroy_cudastream(ttt);
-	}else{
-		cout<<"T1 is taken by CPU"<<endl;
+	cout<<"T1 is taken by GPU " <<  endl;
+	bool success = T1_system_matrices_GPU(l,allocated_address,device_id);
+	if(!success){
+		std::cout<<"rolling back..."<<std::endl;
+		clear_mem(allocated_address);
+		cout<<"T1 is taken by CPU " << endl;
     		T1_system_matrices_CPU(l);
+	}else{
+		std::cout<<"T1 - GPU done!"<<std::endl;
 	}
   }
   else{
-	int device_id = -1;
-	void *gpu_mem = nullptr;
-	cublasHandle_t cublasHandle;
-	cudaStream_t cudaStream;
-	if(check_and_allocate_gpu(task_memory_reqs_.T1_h, cudaStream, cublasHandle,device_id,gpu_mem)){
-                cout<<"T1 is taken by GPU " << device_id<< endl;
-                T1_system_matrices_honeycomb_GPU(l,((double*)gpu_mem), cublasHandle, cudaStream);
-                gpu_mans[device_id].free_memory((double*)gpu_mem,task_memory_reqs_.T1);
-                gpu_mans[device_id].destroy_cublas_handle(ttt);
-                gpu_mans[device_id].destroy_cudastream(ttt);
-        }else{
-                cout<<"T1 is taken by CPU"<<endl;
-                T1_system_matrices_honeycomb_CPU(l);
-        } 	
+	cout<<"T1 is taken by GPU " <<  endl;
+	bool success = T1_system_matrices_honeycomb_GPU(l,allocated_address,device_id);
+	if(!success){
+		std::cout<<"rolling back..."<<std::endl;
+		clear_mem(allocated_address);
+		cout<<"T1 is taken by CPU " << endl;
+    		T1_system_matrices_honeycomb_CPU(l);
+	}else{
+		std::cout<<"T1 - GPU done!"<<std::endl;
+	} 
   }
 
   return true;
@@ -894,8 +1034,15 @@ void FGM::T2_svd_CPU(MatrixXd &BC, MatrixXd &V)
 
 
 #ifdef GPU
-bool FGM::T2_svd_GPU(double *gpu_mem_beg, cusolverDnHandle_t &cuslv,cublasHandle_t &hndl, cudaStream_t &strm,MatrixXd &BC, MatrixXd &V,int device_id)
+bool FGM::T2_svd_GPU(std::vector<double*>& allocated_blocks, int device_id,MatrixXd &BC, MatrixXd &V)
 {
+  bool success = false;
+  gpuErrchkMem(cudaSetDevice(device_id), success);
+  if(!success)
+	  return false;
+  cudaStream_t strm = gpu_mans[device_id].create_cuda_stream(ttt);
+  cublasHandle_t hndl = gpu_mans[device_id].create_cublas_handle(ttt);
+  cusolverDnHandle_t cuslv = gpu_mans[device_id].create_cusolver_handle(ttt);
   gesvdjInfo_t gesvdj_params = NULL;
 
   cusolverStatus_t status = CUSOLVER_STATUS_SUCCESS;
@@ -907,14 +1054,36 @@ bool FGM::T2_svd_GPU(double *gpu_mem_beg, cusolverDnHandle_t &cuslv,cublasHandle
   const int m = BC.rows();
   const int n = BC.cols();
 
-  double *d_A = gpu_mem_beg;
-  double *d_S = d_A + m * n;
-  double *d_U = d_S + n;
-  double *d_V = d_U + m * m;
-  int *d_info = (int *)(d_V + n * n);
+  double *d_A, *d_S, *d_U, *d_V, *d_work;
+  int *d_info;
+
+
+  gpuErrchkMem(cudaMalloc((void**)&d_A, (m*n)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_A);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_S,n*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_S);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_U,(m*n)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_U);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_V,(n*n)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_V);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_info,(n)*sizeof(int)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back((double*)d_info);
+
   int lwork = 0;
-  double *d_work = (double *)(d_info + n);
-  cout<<"T2 requires"<< (d_work - d_A)*sizeof(double) << endl;
 
   int info = 0;
   
@@ -971,10 +1140,10 @@ bool FGM::T2_svd_GPU(double *gpu_mem_beg, cusolverDnHandle_t &cuslv,cublasHandle
 
   
   //Divide here deallocate all the memory if this gpu does not have enough memory
-  if(!check_and_allocate_gpu_in_task(lwork*sizeof(double),device_id,d_work)){
-	return false; //GPU Failed fall back to CPU
-  }
-  //cudaStat1 = cudaMalloc((void**)&d_work, sizeof(double)*lwork);
+  gpuErrchkMem(cudaMalloc((void**)&d_work,(lwork)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_work);
 
   
   //assert(cudaSuccess == cudaStat1);
@@ -1000,7 +1169,10 @@ bool FGM::T2_svd_GPU(double *gpu_mem_beg, cusolverDnHandle_t &cuslv,cublasHandle
   }
 
   //cudaMemset(gpu_mem_beg, 0, (d_work+(lwork*sizeof(double)) - gpu_mem_beg));
-  if(d_work) gpu_mans[device_id].free_memory(d_work,lwork*sizeof(double));
+  clear_mem(allocated_blocks);
+  gpu_mans[device_id].destroy_cublas_handle(ttt);
+  gpu_mans[device_id].destroy_cudastream(ttt);
+  return true;
 }
 
 #endif
@@ -1010,28 +1182,21 @@ bool FGM::T2_svd_GPU(double *gpu_mem_beg, cusolverDnHandle_t &cuslv,cublasHandle
 bool FGM::T2_svd(MatrixXd &BC, MatrixXd &V)
 {
 #if defined GPU
-  int device_id = -1;
-  void *gpu_mem = nullptr;
-  cublasHandle_t cublasHandle;
-  cudaStream_t cudaStream;
-  cusolverDnHandle_t cusolverHandle;
-  if(check_and_allocate_gpu_t2(task_memory_reqs_.T2, cusolverHandle, cudaStream, cublasHandle,device_id,gpu_mem)){
-	cout<<"T2 is taken by GPU " << device_id<< endl;
-	bool is_second_alloc_success = T2_svd_GPU(((double*)gpu_mem), cusolverHandle,cublasHandle, cudaStream,BC,V,device_id);
-	//T2_svd_CPU(BC,V);
-	gpu_mans[device_id].free_memory((double*)gpu_mem,task_memory_reqs_.T2);
-        gpu_mans[device_id].destroy_cublas_handle(ttt);
-        gpu_mans[device_id].destroy_cudastream(ttt);
-	if(!is_second_alloc_success){
-		cout<<"T2 - second alloc failed"<<endl;
-		T2_svd_CPU(BC,V);
-	}
+  int device_id = 0;
+  std::vector<double*> allocated_address;
+  cout<<"T2 is taken by GPU " <<  endl;
+  bool success = T2_svd_GPU(allocated_address,device_id,BC,V);
+  if(!success){
+      std::cout<<"rolling back..."<<std::endl;
+      clear_mem(allocated_address);
+      cout<<"T2 is taken by CPU " << endl;
+      T2_svd_CPU(BC,V);
   }else{
-        cout<<"T2 is taken by CPU"<<endl;
-        T2_svd_CPU(BC,V);
+      cout<<"T2 - GPU done!"<<std::endl;
   }
   return true;
 #else
+  cout<<"T2 is taken by CPU " << endl;
   T2_svd_CPU(BC, V);
   return false;
 #endif
@@ -1039,26 +1204,70 @@ bool FGM::T2_svd(MatrixXd &BC, MatrixXd &V)
 
 
 #ifdef GPU
-bool FGM::T3_mul_inv_GPU(double *gpu_mem_beg,cusolverDnHandle_t &cuslv,cublasHandle_t &hndl, cudaStream_t &strm, MatrixXd &a0, MatrixXd &P,int device_id)
+bool FGM::T3_mul_inv_GPU(std::vector<double*> &allocated_blocks, int device_id, MatrixXd &a0, MatrixXd &P)
 {
+  bool success = false;
+  gpuErrchkMem(cudaSetDevice(device_id), success);
+  if(!success)
+	  return false;
+  cudaStream_t strm = gpu_mans[device_id].create_cuda_stream(ttt);
+  cublasHandle_t hndl = gpu_mans[device_id].create_cublas_handle(ttt);
+  cusolverDnHandle_t cuslv = gpu_mans[device_id].create_cusolver_handle(ttt);
   const double van = 1.0;
   const double ziro = 0.0;
   double *d_K, *d_M, *d_P, *d_K_phy, *d_M_phy, *d_a0, *d_temp, *d_M_phy_i, *d_work;
   int *d_pivot, *d_info, Lwork;
 
   int nc = P.cols();
-  d_K = gpu_mem_beg;                            //9
-  d_M = d_K + (KK.rows()*KK.cols());            //9
-  d_P = d_M + (MM.rows()*MM.cols());            //max 9
-  d_K_phy = d_P + (P.rows()*P.cols());          //max 9
-  d_M_phy = d_K_phy + (nc * nc);            //max 9
-  d_a0 = d_M_phy + (nc * nc);               //max 9
-  d_temp = d_a0 + (nc * nc);                //max 9
-  d_M_phy_i = d_temp + (3 * KK.rows() * nc);     //max 9
-  d_pivot = (int *)(d_M_phy_i + (nc * nc)); //max 1
-  d_info = d_pivot + nc;                    //max 1
-  d_work = (double *)(d_info + nc);         //max 1.
-  cout << "T3 requires " <<d_work - d_K << endl;
+  gpuErrchkMem(cudaMalloc((void**)&d_K, (KK.rows()*KK.cols())*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_K);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_M, (MM.rows()*MM.cols())*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_M);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_P, (P.cols()*P.rows())*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_P);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_K_phy, (nc*nc)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_K_phy);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_M_phy, (nc*nc)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_M_phy);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_a0, (nc*nc)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_a0);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_temp, (3*KK.rows() * nc)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_temp);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_M_phy_i, (nc * nc)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_M_phy_i);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_pivot, (nc)*sizeof(int)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back((double*)d_pivot);
+
+  gpuErrchkMem(cudaMalloc((void**)&d_info, (nc)*sizeof(int)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back((double*)d_info);
 
   cudaMemcpy(d_K, KK.data(), KK.size() * sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(d_M, MM.data(), MM.size() * sizeof(double), cudaMemcpyHostToDevice);
@@ -1074,10 +1283,10 @@ bool FGM::T3_mul_inv_GPU(double *gpu_mem_beg,cusolverDnHandle_t &cuslv,cublasHan
   
   
   cusolveSafeCall(cusolverDnDgetrf_bufferSize(cuslv, nc, nc, d_M_phy, nc, &Lwork));
-  //cudaMalloc((void**)&d_work, sizeof(double)*Lwork);
-  if(!check_and_allocate_gpu_in_task(Lwork*sizeof(double),device_id,d_work)){
-	return false; //GPU Failed fall back to CPU
-  }
+  gpuErrchkMem(cudaMalloc((void**)&d_work, (Lwork)*sizeof(double)),success);                    //1
+  if(!success)
+	  return false;
+  allocated_blocks.push_back(d_work);
 
   cusolveSafeCall(cusolverDnDgetrf(cuslv, nc, nc, d_M_phy, nc, d_work, d_pivot, d_info));
   cusolveSafeCall(cusolverDnDgetrs(cuslv, CUBLAS_OP_N, nc, nc, d_M_phy, nc, d_pivot, d_M_phy_i, nc, d_info));
@@ -1086,8 +1295,9 @@ bool FGM::T3_mul_inv_GPU(double *gpu_mem_beg,cusolverDnHandle_t &cuslv,cublasHan
   cudaStreamSynchronize(strm);
 
   cudaMemcpy(a0.data(), d_a0, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
-  cudaMemset(gpu_mem_beg, 0, ((double*)(d_info+(nc*sizeof(int))) - gpu_mem_beg));
-  if(d_work) gpu_mans[device_id].free_memory(d_work, Lwork*sizeof(double));
+  clear_mem(allocated_blocks);
+  gpu_mans[device_id].destroy_cublas_handle(ttt);
+  gpu_mans[device_id].destroy_cudastream(ttt);
   return true;
 }
 #endif
@@ -1115,25 +1325,18 @@ void FGM::T3_mul_inv_CPU(MatrixXd &a0, MatrixXd &P)
 bool FGM::T3_mul_inv(MatrixXd &a0, MatrixXd &P)
 {
 #if defined GPU
-	int device_id = -1;
-	void *gpu_mem = nullptr;
-	cublasHandle_t cublasHandle;
-	cudaStream_t cudaStream;
-	cusolverDnHandle_t cusolverHandle;
-	if(check_and_allocate_gpu_t2(task_memory_reqs_.T3, cusolverHandle, cudaStream, cublasHandle,device_id,gpu_mem)){
-		cout<<"T3 is taken by GPU " << device_id<< endl;
-		bool is_second_alloc_success = T3_mul_inv_GPU(((double*)gpu_mem),cusolverHandle, cublasHandle, cudaStream,a0,P,device_id);
-		gpu_mans[device_id].free_memory((double*)gpu_mem,task_memory_reqs_.T3);
-		gpu_mans[device_id].destroy_cublas_handle(ttt);
-		gpu_mans[device_id].destroy_cudastream(ttt);
-		if(!is_second_alloc_success){
-         		cout<<"T2 - second alloc failed"<<endl;
-                	T3_mul_inv_CPU(a0,P);
-       		 }
-	}else{
-		cout<<"T3 is taken by CPU"<<endl;
+	int device_id = 0;
+	std::vector<double*> allocated_address;
+	cout<<"T3 is taken by GPU " <<  endl;
+	bool success = T3_mul_inv_GPU(allocated_address,device_id,a0,P);
+	if(!success){
+		std::cout<<"rolling back..."<<std::endl;
+		clear_mem(allocated_address);
+		cout<<"T3 is taken by CPU " << endl;
 		T3_mul_inv_CPU(a0,P);
-  	}
+	}else{
+		std::cout<<"T3 - GPU done!"<<std::endl;
+	}
 	return true;
 #else
 	T3_mul_inv_CPU(a0, P);
@@ -1147,10 +1350,8 @@ bool FGM::T3_mul_inv(MatrixXd &a0, MatrixXd &P)
 void FGM::T4_eigen(MatrixXd &a0, int &nconv, double &small_eig)
 {
   MatrixXd MMM = a0;
-  cout<<"a0 "<< a0.sum()<<endl<<endl;
   DenseGenRealShiftSolve<double> op(MMM);
   GenEigsRealShiftSolver<DenseGenRealShiftSolve<double>> eigs(op, 10, 50, 0.001);
-
 
   eigs.init();
   {
@@ -1351,7 +1552,6 @@ void FGM::compute(const int noeigs, const int ncv, int &nconv, double &small_eig
     KK(seq(copyStartX, copyStartX + K[i].rows() - 1), seq(copyStartY, copyStartY+K[i].rows() - 1)) = K[i];
     copyStartX += M[i].rows();
     copyStartY += M[i].cols(); 
-    cout << "T1 (system-matrices) => GPU: " << gpu_load << " Cost: " << cost << " secs " << endl;
   }
 
   MatrixXd BC_3D_I = boundary_condition_3d(2, 1, 0);
@@ -1468,7 +1668,6 @@ void FGM::compute(const int noeigs, const int ncv, int &nconv, double &small_eig
   double t2t = omp_get_wtime();
   bool ranOnGPU = T2_svd(BC, V);
   double cost = omp_get_wtime() - t2t;
-  cout <<  "T2 (svd) => GPU: " << ranOnGPU << " Cost: " << cost << " secs" << endl;
 #ifdef SMART
   if (ranOnGPU)
   {
@@ -1495,7 +1694,6 @@ void FGM::compute(const int noeigs, const int ncv, int &nconv, double &small_eig
     ccosts[2] = cost;
   }
 #endif
-  cout <<  "T3 (Mul-and-Inv) => GPU: " << gpu_load << " Cost: " << cost << " secs" << endl;
   double t4t = omp_get_wtime();
   T4_eigen(a0, nconv, small_eig);
   cost = omp_get_wtime() - t4t;
