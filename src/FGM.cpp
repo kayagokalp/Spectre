@@ -363,146 +363,40 @@ bool FGM::T1_system_matrices_honeycomb_GPU(unsigned int l, std::vector<void*> &a
   const double van = 1.0;
   const double ziro = 0.0;
 
-  double *d_VD_lame11, *d_VD_lame22, *d_VD_lame33, *d_VD_lame12, *d_VD_lame13, *d_VD_lame23, *d_VD_lame44, *d_VD_lame55, *d_VD_lame66, *d_VD_lame14, *d_VD_lame24, *d_VD_lame34, *d_VD_lame56, *d_VD_ro, *d_epx, *d_epy, *d_epz, *d_gammaxy, *d_gammayz, *d_gammaxz, *d_epxyz, *d_temp_K, *d_K, *d_temp;
-
+  double *d_VD_lame11, *d_VD_lame22, *d_VD_lame33, *d_VD_lame12, *d_VD_lame13, *d_VD_lame23, *d_VD_lame44, *d_VD_lame55, *d_VD_lame66, *d_VD_lame14, *d_VD_lame24, *d_VD_lame34, *d_VD_lame56, *d_VD_ro, *d_epx, *d_epy, *d_epz, *d_gammaxy, *d_gammayz, *d_gammaxz, *d_epxyz, *d_temp_K, *d_K, *d_temp, *gpu_mem_beg;
   int nc = epx.cols();
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame11,VD_lame11[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame11);
-  gpuErrchk(cudaMemset(d_VD_lame11,0,VD_lame11[l].size()*sizeof(double)));
 
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame22,VD_lame22[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame22);
-  gpuErrchk(cudaMemset(d_VD_lame22,0,VD_lame22[l].size()*sizeof(double)));
-		  
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame33,VD_lame33[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame33);
-  gpuErrchk(cudaMemset(d_VD_lame33,0,VD_lame33[l].size()*sizeof(double)));
+  size_t total_bytes = (VD_lame11[l].size() * sizeof(double)) + (VD_lame22[l].size()*sizeof(double)) + (VD_lame33[l].size() * sizeof(double)) + (VD_lame12[l].size()*sizeof(double)) + (VD_lame13[l].size()*sizeof(double)) + (VD_lame23[l].size() * sizeof(double)) + (VD_lame44[l].size() * sizeof(double)) + (VD_lame55[l].size() * sizeof(double)) + (VD_lame66[l].size() * sizeof(double)) + (VD_lame14[l].size() * sizeof(double)) + (VD_lame24[l].size() * sizeof(double)) + (VD_lame34[l].size() * sizeof(double)) + (VD_lame56[l].size() * sizeof(double)) + (VD_ro[l].size() * sizeof(double)) + (epx.size() * sizeof(double)) + (epy.size() * sizeof(double)) + (epz.size() * sizeof(double)) + (gammaxy.size() * sizeof(double)) + (gammaxz.size() * sizeof(double)) + (gammayz.size() * sizeof(double)) + (nc*nc*sizeof(double)) + (nc*nc*sizeof(double)) + (nc*nc*sizeof(double));
 
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame12,VD_lame12[l].size()*sizeof(double)),success);                    //1
+  gpuErrchkMem(cudaMalloc((void**)&gpu_mem_beg,total_bytes),success);                    //1
   if(!success)
 	  return false;
-  allocated_blocks.push_back(d_VD_lame12);
-  gpuErrchk(cudaMemset(d_VD_lame12,0,VD_lame12[l].size()*sizeof(double)));
+  allocated_blocks.push_back(gpu_mem_beg);
+  gpuErrchk(cudaMemset(gpu_mem_beg,0,total_bytes));
 
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame13,VD_lame13[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame13);
-  gpuErrchk(cudaMemset(d_VD_lame13,0,VD_lame13[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame23,VD_lame23[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame23);
-  gpuErrchk(cudaMemset(d_VD_lame23,0,VD_lame23[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame44,VD_lame44[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame44);
-  gpuErrchk(cudaMemset(d_VD_lame44,0,VD_lame44[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame55,VD_lame55[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame55);
-  gpuErrchk(cudaMemset(d_VD_lame55,0,VD_lame55[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame66,VD_lame66[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame66);
-  gpuErrchk(cudaMemset(d_VD_lame66,0,VD_lame66[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame14,VD_lame14[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame14);
-  gpuErrchk(cudaMemset(d_VD_lame14,0,VD_lame14[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame24,VD_lame24[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame24);
-  gpuErrchk(cudaMemset(d_VD_lame24,0,VD_lame24[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame34,VD_lame34[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame34);
-  gpuErrchk(cudaMemset(d_VD_lame34,0,VD_lame34[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame56,VD_lame56[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame56);
-  gpuErrchk(cudaMemset(d_VD_lame56,0,VD_lame56[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_ro,VD_ro[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_ro);
-  gpuErrchk(cudaMemset(d_VD_ro,0,VD_ro[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_epx,epx.size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_epx);
-  gpuErrchk(cudaMemset(d_epx,0,epx.size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_epy,epy.size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_epy);
-  gpuErrchk(cudaMemset(d_epy,0,epy.size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_epz,epz.size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_epz);
-  gpuErrchk(cudaMemset(d_epz,0,epz.size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_gammaxy,gammaxy.size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_gammaxy);
-  gpuErrchk(cudaMemset(d_gammaxy,0,gammaxy.size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_gammaxz,gammaxz.size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_gammaxz);
-  gpuErrchk(cudaMemset(d_gammaxz,0,gammaxz.size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_gammayz,gammayz.size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_gammayz);
-  gpuErrchk(cudaMemset(d_gammayz,0,gammayz.size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_temp_K,(nc*nc)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_temp_K);
-  gpuErrchk(cudaMemset(d_temp_K,0,(nc*nc)*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_K,(nc*nc)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_K);
-  gpuErrchk(cudaMemset(d_K,0,(nc*nc)*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_temp,(nc*nc)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_temp);
-  gpuErrchk(cudaMemset(d_temp,0,(nc*nc)*sizeof(double)));
+  d_VD_lame11 = gpu_mem_beg;                    //1
+  d_VD_lame22 = d_VD_lame11 + VD_lame11[l].size();
+  d_VD_lame33 = d_VD_lame22 + VD_lame22[l].size();
+  d_VD_lame12 = d_VD_lame33 + VD_lame33[l].size();
+  d_VD_lame13 = d_VD_lame12 + VD_lame12[l].size();
+  d_VD_lame23 = d_VD_lame13 + VD_lame13[l].size();
+  d_VD_lame44 = d_VD_lame23 + VD_lame23[l].size();
+  d_VD_lame55 = d_VD_lame44 + VD_lame44[l].size();
+  d_VD_lame66 = d_VD_lame55 + VD_lame55[l].size();
+  d_VD_lame14 = d_VD_lame66 + VD_lame66[l].size();
+  d_VD_lame24 = d_VD_lame14 + VD_lame14[l].size();
+  d_VD_lame34 = d_VD_lame24 + VD_lame24[l].size();
+  d_VD_lame56 = d_VD_lame34 + VD_lame34[l].size();
+  d_VD_ro = d_VD_lame56 + VD_lame56[l].size();   //1
+  d_epx = d_VD_ro + VD_ro[l].size();         //3
+  d_epy = d_epx + epx.size();             //3
+  d_epz = d_epy + epy.size();             //3
+  d_gammaxy = d_epz + epz.size();         //3
+  d_gammaxz = d_gammaxy + gammaxy.size(); //3
+  d_gammayz = d_gammaxz + gammaxz.size(); //3
+  d_temp_K = d_gammayz + gammayz.size();        //9
+  d_K = d_temp_K + (nc * nc);             //9
+  d_temp = d_K + (nc * nc);               //3
 
   cudaMemcpy(d_VD_lame11, VD_lame11[l].data(), VD_lame11[l].size() * sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(d_VD_lame22, VD_lame22[l].data(), VD_lame22[l].size() * sizeof(double), cudaMemcpyHostToDevice);
@@ -648,146 +542,40 @@ bool FGM::T1_system_matrices_GPU(unsigned int l, std::vector<void*> &allocated_b
   const double van = 1.0;
   const double ziro = 0.0;
 
-  double *d_VD_lame11, *d_VD_lame22, *d_VD_lame33, *d_VD_lame12, *d_VD_lame13, *d_VD_lame23, *d_VD_lame44, *d_VD_lame55, *d_VD_lame66, *d_VD_lame14, *d_VD_lame24, *d_VD_lame34, *d_VD_lame56, *d_VD_ro, *d_epx, *d_epy, *d_epz, *d_gammaxy, *d_gammayz, *d_gammaxz, *d_epxyz, *d_temp_K, *d_K, *d_temp, *gpu_mem;
-
+  double *d_VD_lame11, *d_VD_lame22, *d_VD_lame33, *d_VD_lame12, *d_VD_lame13, *d_VD_lame23, *d_VD_lame44, *d_VD_lame55, *d_VD_lame66, *d_VD_lame14, *d_VD_lame24, *d_VD_lame34, *d_VD_lame56, *d_VD_ro, *d_epx, *d_epy, *d_epz, *d_gammaxy, *d_gammayz, *d_gammaxz, *d_epxyz, *d_temp_K, *d_K, *d_temp, *gpu_mem_beg;
   int nc = epx.cols();
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame11,VD_lame11[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame11);
-  gpuErrchk(cudaMemset(d_VD_lame11,0,VD_lame11[l].size()*sizeof(double)));
 
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame22,VD_lame22[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame22);
-  gpuErrchk(cudaMemset(d_VD_lame22,0,VD_lame22[l].size()*sizeof(double)));
-		  
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame33,VD_lame33[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame33);
-  gpuErrchk(cudaMemset(d_VD_lame33,0,VD_lame33[l].size()*sizeof(double)));
+  size_t total_bytes = (VD_lame11[l].size() * sizeof(double)) + (VD_lame22[l].size()*sizeof(double)) + (VD_lame33[l].size() * sizeof(double)) + (VD_lame12[l].size()*sizeof(double)) + (VD_lame13[l].size()*sizeof(double)) + (VD_lame23[l].size() * sizeof(double)) + (VD_lame44[l].size() * sizeof(double)) + (VD_lame55[l].size() * sizeof(double)) + (VD_lame66[l].size() * sizeof(double)) + (VD_lame14[l].size() * sizeof(double)) + (VD_lame24[l].size() * sizeof(double)) + (VD_lame34[l].size() * sizeof(double)) + (VD_lame56[l].size() * sizeof(double)) + (VD_ro[l].size() * sizeof(double)) + (epx.size() * sizeof(double)) + (epy.size() * sizeof(double)) + (epz.size() * sizeof(double)) + (gammaxy.size() * sizeof(double)) + (gammaxz.size() * sizeof(double)) + (gammayz.size() * sizeof(double)) + (nc*nc*sizeof(double)) + (nc*nc*sizeof(double)) + (nc*nc*sizeof(double));
 
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame12,VD_lame12[l].size()*sizeof(double)),success);                    //1
+  gpuErrchkMem(cudaMalloc((void**)&gpu_mem_beg,total_bytes),success);                    //1
   if(!success)
 	  return false;
-  allocated_blocks.push_back(d_VD_lame12);
-  gpuErrchk(cudaMemset(d_VD_lame12,0,VD_lame12[l].size()*sizeof(double)));
+  allocated_blocks.push_back(gpu_mem_beg);
+  gpuErrchk(cudaMemset(gpu_mem_beg,0,total_bytes));
 
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame13,VD_lame13[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame13);
-  gpuErrchk(cudaMemset(d_VD_lame13,0,VD_lame13[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame23,VD_lame23[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame23);
-  gpuErrchk(cudaMemset(d_VD_lame23,0,VD_lame23[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame44,VD_lame44[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame44);
-  gpuErrchk(cudaMemset(d_VD_lame44,0,VD_lame44[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame55,VD_lame55[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame55);
-  gpuErrchk(cudaMemset(d_VD_lame55,0,VD_lame55[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame66,VD_lame66[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame66);
-  gpuErrchk(cudaMemset(d_VD_lame66,0,VD_lame66[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame14,VD_lame14[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame14);
-  gpuErrchk(cudaMemset(d_VD_lame14,0,VD_lame14[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame24,VD_lame24[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame24);
-  gpuErrchk(cudaMemset(d_VD_lame24,0,VD_lame24[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame34,VD_lame34[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame34);
-  gpuErrchk(cudaMemset(d_VD_lame34,0,VD_lame34[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_lame56,VD_lame56[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_lame56);
-  gpuErrchk(cudaMemset(d_VD_lame56,0,VD_lame56[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_VD_ro,VD_ro[l].size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_VD_ro);
-  gpuErrchk(cudaMemset(d_VD_ro,0,VD_ro[l].size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_epx,epx.size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_epx);
-  gpuErrchk(cudaMemset(d_epx,0,epx.size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_epy,epy.size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_epy);
-  gpuErrchk(cudaMemset(d_epy,0,epy.size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_epz,epz.size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_epz);
-  gpuErrchk(cudaMemset(d_epz,0,epz.size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_gammaxy,gammaxy.size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_gammaxy);
-  gpuErrchk(cudaMemset(d_gammaxy,0,gammaxy.size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_gammaxz,gammaxz.size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_gammaxz);
-  gpuErrchk(cudaMemset(d_gammaxz,0,gammaxz.size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_gammayz,gammayz.size()*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_gammayz);
-  gpuErrchk(cudaMemset(d_gammayz,0,gammayz.size()*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_temp_K,(nc*nc)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_temp_K);
-  gpuErrchk(cudaMemset(d_temp_K,0,(nc*nc)*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_K,(nc*nc)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_K);
-  gpuErrchk(cudaMemset(d_K,0,(nc*nc)*sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_temp,(nc*nc)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_temp);
-  gpuErrchk(cudaMemset(d_temp,0,(nc*nc)*sizeof(double)));
+  d_VD_lame11 = gpu_mem_beg;
+  d_VD_lame22 = d_VD_lame11 + VD_lame11[l].size();
+  d_VD_lame33 = d_VD_lame22 + VD_lame22[l].size();
+  d_VD_lame12 = d_VD_lame33 + VD_lame33[l].size();
+  d_VD_lame13 = d_VD_lame12 + VD_lame12[l].size();
+  d_VD_lame23 = d_VD_lame13 + VD_lame13[l].size();
+  d_VD_lame44 = d_VD_lame23 + VD_lame23[l].size();
+  d_VD_lame55 = d_VD_lame44 + VD_lame44[l].size();
+  d_VD_lame66 = d_VD_lame55 + VD_lame55[l].size();
+  d_VD_lame14 = d_VD_lame66 + VD_lame66[l].size();
+  d_VD_lame24 = d_VD_lame14 + VD_lame14[l].size();
+  d_VD_lame34 = d_VD_lame24 + VD_lame24[l].size();
+  d_VD_lame56 = d_VD_lame34 + VD_lame34[l].size();
+  d_VD_ro = d_VD_lame56 + VD_lame56[l].size();   //1
+  d_epx = d_VD_ro + VD_ro[l].size();         //3
+  d_epy = d_epx + epx.size();             //3
+  d_epz = d_epy + epy.size();             //3
+  d_gammaxy = d_epz + epz.size();         //3
+  d_gammaxz = d_gammaxy + gammaxy.size(); //3
+  d_gammayz = d_gammaxz + gammaxz.size(); //3
+  d_temp_K = d_gammayz + gammayz.size();        //9
+  d_K = d_temp_K + (nc * nc);             //9
+  d_temp = d_K + (nc * nc);               //3
 
   cudaMemcpy(d_VD_lame11, VD_lame11[l].data(), VD_lame11[l].size() * sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(d_VD_lame22, VD_lame22[l].data(), VD_lame22[l].size() * sizeof(double), cudaMemcpyHostToDevice);
@@ -1118,41 +906,24 @@ bool FGM::T2_svd_GPU(std::vector<void*>& allocated_blocks, int device_id,MatrixX
   const int m = BC.rows();
   const int n = BC.cols();
 
-  double *d_A, *d_S, *d_U, *d_V, *d_work;
+  double *d_A, *d_S, *d_U, *d_V, *d_work, *gpu_mem_beg;
   int *d_info;
 
+  size_t total_bytes = ((m*n*sizeof(double)) + (n*sizeof(double)) + (m*n*sizeof(double)) + (n*n*sizeof(double)) + (n*sizeof(int)) + (n*sizeof(int)));
 
-  gpuErrchkMem(cudaMalloc((void**)&d_A, (m*n)*sizeof(double)),success);                    //1
+  gpuErrchkMem(cudaMalloc((void**)&gpu_mem_beg, total_bytes),success);                    //1
   if(!success)
 	  return false;
-  allocated_blocks.push_back(d_A);
-  gpuErrchk(cudaMemset(d_A, 0, (m*n) * sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_S,n*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_S);
-  gpuErrchk(cudaMemset(d_S, 0, (n) * sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_U,(m*n)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back((void*)d_U);
-  gpuErrchk(cudaMemset(d_U, 0, (m*n) * sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_V,(n*n)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back((void*)d_V);
-  gpuErrchk(cudaMemset(d_V, 0, (n*n) * sizeof(double)));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_info,(n)*sizeof(int)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back((void*)d_info);
-  gpuErrchk(cudaMemset(d_info, 0, (n) * sizeof(int)));
-
+  allocated_blocks.push_back(gpu_mem_beg);
+  gpuErrchk(cudaMemset(gpu_mem_beg, 0, total_bytes));
+  
+  d_A = gpu_mem_beg;
+  d_S = d_A + m * n;
+  d_U = d_S + n;
+  d_V = d_U + m * m;
+  d_info = (int *)(d_V + n * n);
   int lwork = 0;
+  d_work = (double *)(d_info + n);
 
   int info = 0;
   
@@ -1292,69 +1063,30 @@ bool FGM::T3_mul_inv_GPU(std::vector<void*> &allocated_blocks, int device_id, Ma
 	  return false;
   const double van = 1.0;
   const double ziro = 0.0;
-  double *d_K, *d_M, *d_P, *d_K_phy, *d_M_phy, *d_a0, *d_temp, *d_M_phy_i, *d_work;
+  double *d_K, *d_M, *d_P, *d_K_phy, *d_M_phy, *d_a0, *d_temp, *d_M_phy_i, *d_work, *gpu_mem_beg;
   int *d_pivot, *d_info, Lwork;
-
   int nc = P.cols();
-  gpuErrchkMem(cudaMalloc((void**)&d_K, (KK.rows()*KK.cols())*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_K);
-  gpuErrchk(cudaMemset(d_K,0,(KK.rows()*KK.cols()*sizeof(double))));
 
-  gpuErrchkMem(cudaMalloc((void**)&d_M, (MM.rows()*MM.cols())*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_M);
-  gpuErrchk(cudaMemset(d_M,0,(MM.rows()*MM.cols()*sizeof(double))));
+  long total_bytes = (KK.rows() * KK.cols() * sizeof(double)) + (MM.rows() * MM.cols() * sizeof(double)) + (P.cols() * P.rows() * sizeof(double)) + (nc*nc*sizeof(double)) + (nc*nc*sizeof(double)) + (nc*nc*sizeof(double)) + (3*KK.rows()*nc*sizeof(double)) + (nc*nc*sizeof(double)) + (nc*sizeof(int)) + (nc*sizeof(int)) + (nc*sizeof(int));
 
-  gpuErrchkMem(cudaMalloc((void**)&d_P, (P.cols()*P.rows())*sizeof(double)),success);                    //1
+  gpuErrchkMem(cudaMalloc((void**)&gpu_mem_beg, total_bytes),success);                    //1
   if(!success)
 	  return false;
-  allocated_blocks.push_back(d_P);
-  gpuErrchk(cudaMemset(d_P,0,(P.rows()*P.cols()*sizeof(double))));
+  allocated_blocks.push_back(gpu_mem_beg);
+  gpuErrchk(cudaMemset(gpu_mem_beg,0,total_bytes));
 
-  gpuErrchkMem(cudaMalloc((void**)&d_K_phy, (nc*nc)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_K_phy);
-  gpuErrchk(cudaMemset(d_K_phy,0,(nc*nc*sizeof(double))));
+  d_K = gpu_mem_beg;                            //9
+  d_M = d_K + (KK.rows()*KK.cols());            //9
+  d_P = d_M + (MM.rows()*MM.cols());            //max 9
+  d_K_phy = d_P + (P.rows()*P.cols());          //max 9
+  d_M_phy = d_K_phy + (nc * nc);            //max 9
+  d_a0 = d_M_phy + (nc * nc);               //max 9
+  d_temp = d_a0 + (nc * nc);                //max 9
+  d_M_phy_i = d_temp + (3 * KK.rows() * nc);     //max 9
+  d_pivot = (int *)(d_M_phy_i + (nc * nc)); //max 1
+  d_info = d_pivot + nc;                    //max 1
+  d_work = (double *)(d_info + nc);         //max 1.
 
-  gpuErrchkMem(cudaMalloc((void**)&d_M_phy, (nc*nc)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_M_phy);
-  gpuErrchk(cudaMemset(d_M_phy,0,(nc*nc*sizeof(double))));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_a0, (nc*nc)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_a0);
-  gpuErrchk(cudaMemset(d_a0,0,(nc*nc*sizeof(double))));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_temp, (3*KK.rows() * nc)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_temp);
-  gpuErrchk(cudaMemset(d_temp,0,(3*KK.rows()*sizeof(double))));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_M_phy_i, (nc * nc)*sizeof(double)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_M_phy_i);
-  gpuErrchk(cudaMemset(d_M_phy_i,0,(nc*nc*sizeof(double))));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_pivot, (nc)*sizeof(int)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_pivot);
-  gpuErrchk(cudaMemset(d_pivot,0,(nc*sizeof(int))));
-
-  gpuErrchkMem(cudaMalloc((void**)&d_info, (nc)*sizeof(int)),success);                    //1
-  if(!success)
-	  return false;
-  allocated_blocks.push_back(d_info);
-  gpuErrchk(cudaMemset(d_pivot,0,(nc*sizeof(int))));
 
   cudaMemcpy(d_K, KK.data(), KK.size() * sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(d_M, MM.data(), MM.size() * sizeof(double), cudaMemcpyHostToDevice);
