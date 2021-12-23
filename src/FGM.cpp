@@ -325,8 +325,8 @@ FGM::FGM(unsigned int n_shapes, Shape* shps, GPUManager gpu_mans[], int no_gpus,
 #ifdef GPU
 bool FGM::T1_system_matrices_honeycomb_GPU(unsigned int l, std::vector<void*> &allocated_blocks, int device_id)
 {
-  cudaStream_t strm = gpu_mans[device_id].create_cuda_stream(ttt);
-  cublasHandle_t hndl = gpu_mans[device_id].create_cublas_handle(ttt);
+  cudaStream_t strm = gpu_mans[device_id].get_cuda_stream(ttt);
+  cublasHandle_t hndl = gpu_mans[device_id].get_cublas_handle(ttt);
   bool success = false;
   gpuErrchkMem(cudaSetDevice(device_id),success);
   if(!success)
@@ -603,8 +603,6 @@ bool FGM::T1_system_matrices_honeycomb_GPU(unsigned int l, std::vector<void*> &a
   K[l] = MatrixXd::Zero(nc, nc);
   cudaMemcpy(K[l].data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
   clear_mem(allocated_blocks, device_id);
-  gpu_mans[device_id].destroy_cublas_handle(ttt);
-  gpu_mans[device_id].destroy_cudastream(ttt);
   return true;
 }
 
@@ -612,8 +610,8 @@ bool FGM::T1_system_matrices_honeycomb_GPU(unsigned int l, std::vector<void*> &a
 
 bool FGM::T1_system_matrices_GPU(unsigned int l, std::vector<void*> &allocated_blocks, int device_id)
 {
-  cudaStream_t strm = gpu_mans[device_id].create_cuda_stream(ttt);
-  cublasHandle_t hndl = gpu_mans[device_id].create_cublas_handle(ttt);
+  cudaStream_t strm = gpu_mans[device_id].get_cuda_stream(ttt);
+  cublasHandle_t hndl = gpu_mans[device_id].get_cublas_handle(ttt);
   bool success = false;
   gpuErrchkMem(cudaSetDevice(device_id),success);
   if(!success)
@@ -918,8 +916,6 @@ bool FGM::T1_system_matrices_GPU(unsigned int l, std::vector<void*> &allocated_b
   K[l] = MatrixXd::Zero(nc, nc);
   cudaMemcpy(K[l].data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
   clear_mem(allocated_blocks,device_id);
-  gpu_mans[device_id].destroy_cublas_handle(ttt);
-  gpu_mans[device_id].destroy_cudastream(ttt);
   return true;
 }
 
@@ -1105,9 +1101,9 @@ void FGM::T2_svd_CPU(MatrixXd &BC, MatrixXd &V)
 bool FGM::T2_svd_GPU(std::vector<void*>& allocated_blocks, int device_id,MatrixXd &BC, MatrixXd &V)
 {
   bool success = false;
-  cudaStream_t strm = gpu_mans[device_id].create_cuda_stream(ttt);
-  cublasHandle_t hndl = gpu_mans[device_id].create_cublas_handle(ttt);
-  cusolverDnHandle_t cuslv = gpu_mans[device_id].create_cusolver_handle(ttt);
+  cudaStream_t strm = gpu_mans[device_id].get_cuda_stream(ttt);
+  cublasHandle_t hndl = gpu_mans[device_id].get_cublas_handle(ttt);
+  cusolverDnHandle_t cuslv = gpu_mans[device_id].get_cusolver_handle(ttt);
   gpuErrchkMem(cudaSetDevice(device_id), success);
   if(!success)
 	  return false;
@@ -1245,9 +1241,6 @@ bool FGM::T2_svd_GPU(std::vector<void*>& allocated_blocks, int device_id,MatrixX
 
   //cudaMemset(gpu_mem_beg, 0, (d_work+(lwork*sizeof(double)) - gpu_mem_beg));
   clear_mem(allocated_blocks,device_id);
-  gpu_mans[device_id].destroy_cusolve_handle(ttt);
-  gpu_mans[device_id].destroy_cublas_handle(ttt);
-  gpu_mans[device_id].destroy_cudastream(ttt);
   return true;
 }
 
@@ -1291,9 +1284,9 @@ bool FGM::T2_svd(MatrixXd &BC, MatrixXd &V)
 bool FGM::T3_mul_inv_GPU(std::vector<void*> &allocated_blocks, int device_id, MatrixXd &a0, MatrixXd &P)
 {
   bool success = false;
-  cudaStream_t strm = gpu_mans[device_id].create_cuda_stream(ttt);
-  cublasHandle_t hndl = gpu_mans[device_id].create_cublas_handle(ttt);
-  cusolverDnHandle_t cuslv = gpu_mans[device_id].create_cusolver_handle(ttt);
+  cudaStream_t strm = gpu_mans[device_id].get_cuda_stream(ttt);
+  cublasHandle_t hndl = gpu_mans[device_id].get_cublas_handle(ttt);
+  cusolverDnHandle_t cuslv = gpu_mans[device_id].get_cusolver_handle(ttt);
   gpuErrchkMem(cudaSetDevice(device_id), success);
   if(!success)
 	  return false;
@@ -1391,9 +1384,6 @@ bool FGM::T3_mul_inv_GPU(std::vector<void*> &allocated_blocks, int device_id, Ma
 
   cudaMemcpy(a0.data(), d_a0, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
   clear_mem(allocated_blocks,device_id);
-  gpu_mans[device_id].destroy_cusolve_handle(ttt);
-  gpu_mans[device_id].destroy_cublas_handle(ttt);
-  gpu_mans[device_id].destroy_cudastream(ttt);
   return true;
 }
 #endif

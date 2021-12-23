@@ -212,13 +212,16 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 			exit(1);
 		}
 		gpu_mans[i] = GPUManager(remaining_memory,deviceID); 
+		#pragma omp parallel num_threads(nthreads)
+		{
+			ttt = omp_get_thread_num();
+			gpu_mans[i].create_cuda_stream(ttt);	
+			gpu_mans[i].create_cublas_handle(ttt);
+			gpu_mans[i].create_cusolver_handle(ttt);
+		}
 		cout << "GPU "<< deviceID << " manager is created"<<endl;
 	}
 	bool failed = false;
-#pragma omp parallel num_threads(nthreads)
-{
-	ttt = omp_get_thread_num();
-}
 #endif
 
 
@@ -315,6 +318,14 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 	cout << "Total time: " << oend - pstart << endl;
 	cout << "*******************************************************************" << endl;
 
+	#pragma omp parallel num_threads(nthreads)
+	{
+		for(int i = 0; i<no_gpus; i++){
+			gpu_mans[i].destroy_cublas_handle(ttt);
+			gpu_mans[i].destroy_cusolver_handle(ttt);
+			gpu_mans[i].destroy_cuda_stream(ttt);
+		}
+	}
 	return 0;
 }
 
