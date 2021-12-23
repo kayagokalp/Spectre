@@ -21,29 +21,6 @@ using namespace std;
 
 #ifdef GPU
 #define MAX_THREADS_NO 128
-extern cublasHandle_t handle[MAX_THREADS_NO];
-extern cudaStream_t stream[MAX_THREADS_NO];
-extern cusolverDnHandle_t dnhandle[MAX_THREADS_NO];
-struct rinfo
-{
-	double *gpu_mem = nullptr;
-	int gpu_id;
-	unsigned long no_bytes;
-	unsigned int no_elements;
-
-	rinfo(int gpu_id, int x1, int y1, int z1, int x2, int y2, int z2, int x3, int y3, int z3)  : gpu_id(gpu_id)
-	{
-		
-		int nnxyz = (3 * x1 * y1 * z1) + (3 * x2 * y2 * z2) + (3 * x3 * y3 * z3);
-		no_elements = 10 * nnxyz * nnxyz;
-		
-		no_bytes =  no_elements * sizeof(double);
-		cout<<"no_bytes "<<no_bytes<<endl;
-		gpuErrchk(cudaMalloc((void**)&gpu_mem, no_bytes));
-	}
-
-};
-#ifdef GPU
 struct TaskMemoryReq{
 	size_t T1;
 	size_t T1_h;
@@ -115,10 +92,19 @@ class GPUManager {
 		remaining_memory_ += number_of_bytes;
 		}
 	}
+	inline void set_device(){
+		gpuErrchk(cudaSetDevice(device_id_));
+		int get_id = -1;
+		gpuErrchk(cudaGetDevice(&get_id))
+		if(get_id != device_id_){
+			exit(1);
+		}
+	}
 
 	cublasHandle_t create_cublas_handle(int thread_id){
-		#pragma omp critical 
+		#pragma omp critical
 		{
+		set_device();
 		if (cublasCreate(&handle_[thread_id]) != CUBLAS_STATUS_SUCCESS)
 		{
 			std::cout << "blas handler initialization failed" << std::endl;
@@ -131,6 +117,7 @@ class GPUManager {
 	cudaStream_t create_cuda_stream(int thread_id){
 		#pragma omp critical
 		{
+		set_device();
 		cudaStreamCreate(&stream_[thread_id]);
 		}
 		return stream_[thread_id];
@@ -139,6 +126,7 @@ class GPUManager {
 	cusolverDnHandle_t create_cusolver_handle(int thread_id){
 		#pragma omp critical
 		{
+		set_device();
 		if (cusolverDnCreate(&dnhandle_[thread_id]) != CUSOLVER_STATUS_SUCCESS)
 		{
 			std::cout << "solver handler initialization failed" << std::endl;
@@ -150,12 +138,25 @@ class GPUManager {
 
 	void destroy_cublas_handle(int thead_id){
 		#pragma omp critical
+		{
+		set_device();
 		cublasDestroy(handle_[thead_id]);
+		}
 	}
 
 	void destroy_cudastream(int thread_id){
 		#pragma omp critical
+		{
+		set_device();
 		cudaStreamDestroy(stream_[thread_id]);
+		}
+	}
+	void destroy_cusolve_handle(int thread_id){
+		#pragma omp critical
+		{
+		set_device();
+		cusolverDnDestroy(dnhandle_[thread_id]);
+		}
 	}
 
 	private:
@@ -164,7 +165,6 @@ class GPUManager {
 		cudaStream_t stream_[MAX_THREADS_NO];
 		cusolverDnHandle_t dnhandle_[MAX_THREADS_NO];
 };
-#endif
 extern int ttt;
 #pragma omp threadprivate(ttt)
 
@@ -212,7 +212,6 @@ inline void __cusolveSafeCall(cusolverStatus_t err, const char *file, const int 
 }
 inline void cusolveSafeCall(cusolverStatus_t err) { __cusolveSafeCall(err, __FILE__, __LINE__); }
 
-extern rinfo **rinfos;
 #endif
 
 inline void outputMatrix(string& fileName,MatrixXd &matrixToOutput){

@@ -110,15 +110,12 @@ class FGM
 		//   FG_var_MT()n
 		// }
 #ifdef GPU
-		void clear_mem(std::vector<double*> &allocated_pool);
-		bool check_and_allocate_gpu(size_t required_memory, cudaStream_t &stream, cublasHandle_t &cublasHandle, int &device_id, void* &gpu_mem_beg);
-		bool check_and_allocate_gpu_t2(size_t required_memory, cusolverDnHandle_t &cusolverHandle, cudaStream_t &stream, cublasHandle_t &cublasHandle, int &device_id, void* &gpu_mem_beg);
-		bool check_and_allocate_gpu_in_task(size_t required_memory, int device_id, double* &gpu_mem_beg);
+		void clear_mem(std::vector<void*> &allocated_pool, int device_id);
 #endif
 #ifdef GPU
-		bool T1_system_matrices_honeycomb_GPU(unsigned int l, std::vector<double*> &allocated_memory, int device_id);
+		bool T1_system_matrices_honeycomb_GPU(unsigned int l, std::vector<void*> &allocated_memory, int device_id);
 		
-		bool T1_system_matrices_GPU(unsigned int l, std::vector<double*> &allocated_memory, int device_id);
+		bool T1_system_matrices_GPU(unsigned int l, std::vector<void*> &allocated_memory, int device_id);
 #endif
 
 
@@ -133,13 +130,13 @@ class FGM
 
 #ifdef GPU
 		//void T2_svd_GPU(MatrixXd &BC, MatrixXd &V);
-		bool T2_svd_GPU(std::vector<double*>& allocated_blocks, int device_id,MatrixXd &BC, MatrixXd &V);
+		bool T2_svd_GPU(std::vector<void*>& allocated_blocks, int device_id,MatrixXd &BC, MatrixXd &V);
 #endif
 
 		bool T2_svd(MatrixXd &BC, MatrixXd &V);
 
 #ifdef GPU
-		bool T3_mul_inv_GPU(std::vector<double*> &allocated_blocks, int device_id, MatrixXd &a0, MatrixXd &P);
+		bool T3_mul_inv_GPU(std::vector<void*> &allocated_blocks, int device_id, MatrixXd &a0, MatrixXd &P);
 #endif
 
 		void T3_mul_inv_CPU(MatrixXd &a0, MatrixXd &P);

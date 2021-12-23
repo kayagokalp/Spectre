@@ -46,11 +46,7 @@ double ccosts[MAX_TASKS] = {4.32, 0.95, 5.35, 0.52}; //can also be extended to c
 
 #ifdef GPU
 #define MAX_THREADS_NO 128
-cublasHandle_t handle[MAX_THREADS_NO];
-cudaStream_t stream[MAX_THREADS_NO];
-cusolverDnHandle_t dnhandle[MAX_THREADS_NO];
 
-rinfo **rinfos;
 #endif
                                                                                                                                                                                  
 int ttt;
@@ -129,8 +125,7 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 	double pstart = omp_get_wtime();
 	Eigen::setNbThreads(1);
 	mkl_set_num_threads_local(1);
-//	mkl_set_dynamic(0);
-	//mkl_set_num_threads(1);
+	mkl_set_num_threads(1);
 //	omp_set_nested(1);
 
 //	int xdim = atoi(argv[1]);
@@ -249,6 +244,7 @@ unsigned int zeta1 = 0, zeta2 = 0, zeta3 = 0;
 	}
 
 
+			//problems.push_back(DesignParameters(-60 * pi/180 ,60*pi/180));
 
 	cout << "Preprocessing ended." << endl;
 	cout << "Time spent for preprocessing is " << omp_get_wtime() - pstart << endl;
