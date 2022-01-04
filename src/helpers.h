@@ -63,35 +63,6 @@ class GPUManager {
 	GPUManager(size_t remaining_memory, int device_id): remaining_memory_(remaining_memory), device_id_(device_id) {};
 	GPUManager(): remaining_memory_(0), device_id_(0) {};
 
-	bool check_for_task(size_t required_memory){
-		bool isGPU = false;
-		#pragma omp critical
-		{
-		if (remaining_memory_ >= required_memory){
-			cout << "GPU " << device_id_ << " has "<<remaining_memory_ << " task asked for "<<required_memory<<endl;
-			isGPU = true;
-		}else{
-			cout << "GPU " << device_id_ << " has "<<remaining_memory_ << " task asked for "<<required_memory<<endl;
-			isGPU = false;
-		}
-		}
-		return isGPU;
-	}
-
-	void* allocate_memory(size_t required_bytes, bool &success){
-		void *memory = nullptr;
-		#pragma omp critical
-		{
-		remaining_memory_ = max(((size_t)0), (remaining_memory_ - required_bytes));
-		}
-		return memory;
-	}
-	void free_memory(void* ptr_to_delete, long number_of_bytes){
-		#pragma omp critical
-		{
-		remaining_memory_ += number_of_bytes;
-		}
-	}
 	inline void set_device(){
 		gpuErrchk(cudaSetDevice(device_id_));
 		int get_id = -1;
@@ -101,8 +72,7 @@ class GPUManager {
 		}
 	}
 
-	cublasHandle_t create_cublas_handle(int thread_id){
-		#pragma omp critical
+	void create_cublas_handle(int thread_id){
 		{
 		set_device();
 		if (cublasCreate(&handle_[thread_id]) != CUBLAS_STATUS_SUCCESS)
@@ -111,20 +81,16 @@ class GPUManager {
 		}
 		cublasSetStream(handle_[thread_id], stream_[thread_id]);
 		}
-		return handle_[thread_id];
 	}
 	
-	cudaStream_t create_cuda_stream(int thread_id){
-		#pragma omp critical
+	void create_cuda_stream(int thread_id){
 		{
 		set_device();
 		cudaStreamCreate(&stream_[thread_id]);
 		}
-		return stream_[thread_id];
 	}
 
-	cusolverDnHandle_t create_cusolver_handle(int thread_id){
-		#pragma omp critical
+	void create_cusolver_handle(int thread_id){
 		{
 		set_device();
 		if (cusolverDnCreate(&dnhandle_[thread_id]) != CUSOLVER_STATUS_SUCCESS)
@@ -133,30 +99,38 @@ class GPUManager {
 		}
 		cusolverDnSetStream(dnhandle_[thread_id], stream_[thread_id]);
 		}
-		return dnhandle_[thread_id];
 	}
 
 	void destroy_cublas_handle(int thead_id){
-		#pragma omp critical
 		{
 		set_device();
 		cublasDestroy(handle_[thead_id]);
 		}
 	}
 
-	void destroy_cudastream(int thread_id){
-		#pragma omp critical
+	void destroy_cuda_stream(int thread_id){
 		{
 		set_device();
 		cudaStreamDestroy(stream_[thread_id]);
 		}
 	}
-	void destroy_cusolve_handle(int thread_id){
-		#pragma omp critical
+	void destroy_cusolver_handle(int thread_id){
 		{
 		set_device();
 		cusolverDnDestroy(dnhandle_[thread_id]);
 		}
+	}
+
+	cublasHandle_t get_cublas_handle(int thread_id){
+		return handle_[thread_id];
+	}
+
+	cusolverDnHandle_t get_cusolver_handle(int thread_id){
+		return dnhandle_[thread_id];
+	}
+
+	cudaStream_t get_cuda_stream(int thread_id){
+		return stream_[thread_id];
 	}
 
 	private:
