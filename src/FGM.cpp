@@ -325,8 +325,8 @@ FGM::FGM(unsigned int n_shapes, Shape* shps, GPUManager gpu_mans[], int no_gpus,
 #ifdef GPU
 bool FGM::T1_system_matrices_honeycomb_GPU(unsigned int l, std::vector<void*> &allocated_blocks, int device_id)
 {
-  cudaStream_t strm = gpu_mans[device_id].get_cuda_stream(ttt);
-  cublasHandle_t hndl = gpu_mans[device_id].get_cublas_handle(ttt);
+  cudaStream_t strm = gpu_mans[device_id].create_cuda_stream(ttt);
+  cublasHandle_t hndl = gpu_mans[device_id].create_cublas_handle(ttt);
   bool success = false;
   gpuErrchkMem(cudaSetDevice(device_id),success);
   if(!success)
@@ -603,6 +603,8 @@ bool FGM::T1_system_matrices_honeycomb_GPU(unsigned int l, std::vector<void*> &a
   K[l] = MatrixXd::Zero(nc, nc);
   cudaMemcpy(K[l].data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
   clear_mem(allocated_blocks, device_id);
+  gpu_mans[device_id].destroy_cublas_handle(ttt);
+  gpu_mans[device_id].destroy_cudastream(ttt);
   return true;
 }
 
@@ -610,8 +612,8 @@ bool FGM::T1_system_matrices_honeycomb_GPU(unsigned int l, std::vector<void*> &a
 
 bool FGM::T1_system_matrices_GPU(unsigned int l, std::vector<void*> &allocated_blocks, int device_id)
 {
-  cudaStream_t strm = gpu_mans[device_id].get_cuda_stream(ttt);
-  cublasHandle_t hndl = gpu_mans[device_id].get_cublas_handle(ttt);
+  cudaStream_t strm = gpu_mans[device_id].create_cuda_stream(ttt);
+  cublasHandle_t hndl = gpu_mans[device_id].create_cublas_handle(ttt);
   bool success = false;
   gpuErrchkMem(cudaSetDevice(device_id),success);
   if(!success)
@@ -916,6 +918,8 @@ bool FGM::T1_system_matrices_GPU(unsigned int l, std::vector<void*> &allocated_b
   K[l] = MatrixXd::Zero(nc, nc);
   cudaMemcpy(K[l].data(), d_K, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
   clear_mem(allocated_blocks,device_id);
+  gpu_mans[device_id].destroy_cublas_handle(ttt);
+  gpu_mans[device_id].destroy_cudastream(ttt);
   return true;
 }
 
@@ -1030,9 +1034,11 @@ bool FGM::T1_system_matrices(unsigned int l)
 #if defined GPU
   if(l !=1){
 	std::vector<void*> allocated_address;
-  	int device_id = 0;
+	int device_id = 0;
+	int index = 0;
 	bool success = false;
-	while(device_id < no_gpus){
+	while(index < no_gpus){
+		device_id = (index+ttt) % no_gpus;
 		cout<<"T1 is taken by GPU "<< device_id <<  endl;
 		success = T1_system_matrices_GPU(l,allocated_address,device_id);
 		if(!success){
@@ -1043,6 +1049,7 @@ bool FGM::T1_system_matrices(unsigned int l)
 			std::cout<<"T1 - GPU done!"<<std::endl;
 			break;
 		}
+		index++;
 	}
 	if(!success){
 		cout<<"T1 is taken by CPU " << endl;
@@ -1052,8 +1059,10 @@ bool FGM::T1_system_matrices(unsigned int l)
   else{
 	bool success = false;
   	int device_id = 0;
+	int index = 0;
  	std::vector<void*> allocated_address;
-	while(device_id < no_gpus){
+	while(index < no_gpus){
+		device_id = (index+ttt)%no_gpus;
 		cout<<"T1 is taken by GPU " << device_id << endl;
 		success = T1_system_matrices_honeycomb_GPU(l,allocated_address,device_id);
 		if(!success){
@@ -1064,6 +1073,7 @@ bool FGM::T1_system_matrices(unsigned int l)
 			std::cout<<"T1 - GPU done!"<<std::endl;
 			break;
 		}
+		index++;
 	}
 	if(!success){
 		cout<<"T1 is taken by CPU " << endl;
@@ -1101,9 +1111,9 @@ void FGM::T2_svd_CPU(MatrixXd &BC, MatrixXd &V)
 bool FGM::T2_svd_GPU(std::vector<void*>& allocated_blocks, int device_id,MatrixXd &BC, MatrixXd &V)
 {
   bool success = false;
-  cudaStream_t strm = gpu_mans[device_id].get_cuda_stream(ttt);
-  cublasHandle_t hndl = gpu_mans[device_id].get_cublas_handle(ttt);
-  cusolverDnHandle_t cuslv = gpu_mans[device_id].get_cusolver_handle(ttt);
+  cudaStream_t strm = gpu_mans[device_id].create_cuda_stream(ttt);
+  cublasHandle_t hndl = gpu_mans[device_id].create_cublas_handle(ttt);
+  cusolverDnHandle_t cuslv = gpu_mans[device_id].create_cusolver_handle(ttt);
   gpuErrchkMem(cudaSetDevice(device_id), success);
   if(!success)
 	  return false;
@@ -1241,6 +1251,9 @@ bool FGM::T2_svd_GPU(std::vector<void*>& allocated_blocks, int device_id,MatrixX
 
   //cudaMemset(gpu_mem_beg, 0, (d_work+(lwork*sizeof(double)) - gpu_mem_beg));
   clear_mem(allocated_blocks,device_id);
+  gpu_mans[device_id].destroy_cusolve_handle(ttt);
+  gpu_mans[device_id].destroy_cublas_handle(ttt);
+  gpu_mans[device_id].destroy_cudastream(ttt);
   return true;
 }
 
@@ -1253,8 +1266,10 @@ bool FGM::T2_svd(MatrixXd &BC, MatrixXd &V)
 #if defined GPU
   bool success = false;
   int device_id = 0;
+  int index = 0;
   std::vector<void*> allocated_address;
-  while(device_id < no_gpus){
+  while(index < no_gpus){
+	device_id = (ttt+index) % no_gpus;
   	cout<<"T2 is taken by GPU "<<device_id <<  endl;
  	success = T2_svd_GPU(allocated_address,device_id,BC,V);
   	if(!success){
@@ -1265,6 +1280,7 @@ bool FGM::T2_svd(MatrixXd &BC, MatrixXd &V)
 		std::cout<<"T2 on GPU done!"<<std::endl;
 		break;
 	}
+	index++;
   }
   if(!success){
     	cout<<"T2 is taken by CPU " << endl;
@@ -1284,9 +1300,9 @@ bool FGM::T2_svd(MatrixXd &BC, MatrixXd &V)
 bool FGM::T3_mul_inv_GPU(std::vector<void*> &allocated_blocks, int device_id, MatrixXd &a0, MatrixXd &P)
 {
   bool success = false;
-  cudaStream_t strm = gpu_mans[device_id].get_cuda_stream(ttt);
-  cublasHandle_t hndl = gpu_mans[device_id].get_cublas_handle(ttt);
-  cusolverDnHandle_t cuslv = gpu_mans[device_id].get_cusolver_handle(ttt);
+  cudaStream_t strm = gpu_mans[device_id].create_cuda_stream(ttt);
+  cublasHandle_t hndl = gpu_mans[device_id].create_cublas_handle(ttt);
+  cusolverDnHandle_t cuslv = gpu_mans[device_id].create_cusolver_handle(ttt);
   gpuErrchkMem(cudaSetDevice(device_id), success);
   if(!success)
 	  return false;
@@ -1384,6 +1400,9 @@ bool FGM::T3_mul_inv_GPU(std::vector<void*> &allocated_blocks, int device_id, Ma
 
   cudaMemcpy(a0.data(), d_a0, nc * nc * sizeof(double), cudaMemcpyDeviceToHost);
   clear_mem(allocated_blocks,device_id);
+  gpu_mans[device_id].destroy_cusolve_handle(ttt);
+  gpu_mans[device_id].destroy_cublas_handle(ttt);
+  gpu_mans[device_id].destroy_cudastream(ttt);
   return true;
 }
 #endif
@@ -1412,8 +1431,10 @@ bool FGM::T3_mul_inv(MatrixXd &a0, MatrixXd &P)
 {
 #if defined GPU
 	bool success = false;
+	int index = 0;
 	int device_id = 0;
-	while(device_id < no_gpus){
+	while(index< no_gpus){
+		device_id = (ttt+index) % no_gpus;
 		std::vector<void*> allocated_address;
 		cout<<"T3 is taken by GPU " << device_id << endl;
 		success = T3_mul_inv_GPU(allocated_address,device_id,a0,P);
@@ -1425,6 +1446,7 @@ bool FGM::T3_mul_inv(MatrixXd &a0, MatrixXd &P)
 			std::cout<<"T3 on GPU done!"<<std::endl;
 			break;
 		}
+		index++;
 	}
 	if(!success){
 		std::cout<<"T3 is taken by CPU"<<std::endl;	
@@ -1457,10 +1479,6 @@ void FGM::T4_eigen(MatrixXd &a0, int &nconv, double &small_eig)
   {
     evalues = eigs.eigenvalues();
     small_eig = evalues(nconv - 1).real();
-  }
-  if(small_eig < 0 ){
-	cout<<"NEG EIG!!"<<endl;
-  	exit(1);
   }
 }
 
