@@ -1031,8 +1031,10 @@ bool FGM::T1_system_matrices(unsigned int l)
   if(l !=1){
 	std::vector<void*> allocated_address;
   	int device_id = 0;
+	int index = 0;
 	bool success = false;
-	while(device_id < no_gpus){
+	while(index < no_gpus){
+		device_id = (ttt+index) % no_gpus;
 		cout<<"T1 is taken by GPU "<< device_id <<  endl;
 		success = T1_system_matrices_GPU(l,allocated_address,device_id);
 		if(!success){
@@ -1043,6 +1045,7 @@ bool FGM::T1_system_matrices(unsigned int l)
 			std::cout<<"T1 - GPU done!"<<std::endl;
 			break;
 		}
+		index++;
 	}
 	if(!success){
 		cout<<"T1 is taken by CPU " << endl;
@@ -1052,8 +1055,10 @@ bool FGM::T1_system_matrices(unsigned int l)
   else{
 	bool success = false;
   	int device_id = 0;
+	int index = 0;
  	std::vector<void*> allocated_address;
-	while(device_id < no_gpus){
+	while(index < no_gpus){
+		device_id = (ttt+index) % no_gpus;
 		cout<<"T1 is taken by GPU " << device_id << endl;
 		success = T1_system_matrices_honeycomb_GPU(l,allocated_address,device_id);
 		if(!success){
@@ -1064,6 +1069,7 @@ bool FGM::T1_system_matrices(unsigned int l)
 			std::cout<<"T1 - GPU done!"<<std::endl;
 			break;
 		}
+		index++;
 	}
 	if(!success){
 		cout<<"T1 is taken by CPU " << endl;
@@ -1083,6 +1089,8 @@ bool FGM::T1_system_matrices(unsigned int l)
   return false;
 #endif
 }
+
+
 
 
 
@@ -1247,14 +1255,15 @@ bool FGM::T2_svd_GPU(std::vector<void*>& allocated_blocks, int device_id,MatrixX
 #endif
 
 
-
 bool FGM::T2_svd(MatrixXd &BC, MatrixXd &V)
 {
 #if defined GPU
   bool success = false;
   int device_id = 0;
+  int index = 0;
   std::vector<void*> allocated_address;
-  while(device_id < no_gpus){
+  while(index < no_gpus){
+	device_id = (ttt+index) % no_gpus;
   	cout<<"T2 is taken by GPU "<<device_id <<  endl;
  	success = T2_svd_GPU(allocated_address,device_id,BC,V);
   	if(!success){
@@ -1265,6 +1274,7 @@ bool FGM::T2_svd(MatrixXd &BC, MatrixXd &V)
 		std::cout<<"T2 on GPU done!"<<std::endl;
 		break;
 	}
+	index++;
   }
   if(!success){
     	cout<<"T2 is taken by CPU " << endl;
@@ -1405,16 +1415,15 @@ void FGM::T3_mul_inv_CPU(MatrixXd &a0, MatrixXd &P)
   a0 = M_phy.llt().solve(K_phy);  
 }
 
-
-
-
 bool FGM::T3_mul_inv(MatrixXd &a0, MatrixXd &P)
 {
 #if defined GPU
 	bool success = false;
 	int device_id = 0;
-	while(device_id < no_gpus){
+	int index = 0;
+	while(index < no_gpus){
 		std::vector<void*> allocated_address;
+		device_id = (ttt+index) % no_gpus;
 		cout<<"T3 is taken by GPU " << device_id << endl;
 		success = T3_mul_inv_GPU(allocated_address,device_id,a0,P);
 		if(!success){
@@ -1425,6 +1434,7 @@ bool FGM::T3_mul_inv(MatrixXd &a0, MatrixXd &P)
 			std::cout<<"T3 on GPU done!"<<std::endl;
 			break;
 		}
+		index++;
 	}
 	if(!success){
 		std::cout<<"T3 is taken by CPU"<<std::endl;	
@@ -1437,8 +1447,6 @@ bool FGM::T3_mul_inv(MatrixXd &a0, MatrixXd &P)
 	return false;
 #endif
 }
-
-
 
 
 void FGM::T4_eigen(MatrixXd &a0, int &nconv, double &small_eig)
